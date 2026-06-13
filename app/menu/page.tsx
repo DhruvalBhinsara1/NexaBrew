@@ -77,6 +77,10 @@ export default function MenuPage(): React.ReactElement {
   const [coupon, setCoupon] = useState("");
   const [placing, setPlacing] = useState(false);
   const [payOrder, setPayOrder] = useState<{ id: string; number: string; total: number } | null>(null);
+  // Tracks a draft online order that was created but not yet paid.
+  // Cancelling it before re-placing avoids duplicate orders when the user
+  // edits the cart after closing the PaymentDialog.
+  const [pendingOrderId, setPendingOrderId] = useState<string | null>(null);
 
   const showToast = (title: string, variant?: "default" | "destructive") => toast({ title, variant });
 
@@ -183,6 +187,13 @@ export default function MenuPage(): React.ReactElement {
     if (cartLines.length === 0) return;
     setPlacing(true);
     try {
+      // If an unpaid online order already exists, cancel it first so we don't
+      // accumulate duplicate draft orders when the user edits and re-submits.
+      if (mode === "online" && pendingOrderId) {
+        await fetch(`/api/orders/${pendingOrderId}/cancel`, { method: "POST" });
+        setPendingOrderId(null);
+      }
+
       const res = await fetch("/api/orders/mine", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -198,22 +209,25 @@ export default function MenuPage(): React.ReactElement {
         return;
       }
       const order = data.data as OrderWithItems;
-      // For counter orders: clear immediately (payment is at the counter, we're done).
-      // For online orders: keep the cart until the payment is actually confirmed (onPaid).
-      // This way closing the payment dialog (✕) doesn't wipe the customer's cart.
+
       if (mode === "counter") {
+        // Counter: payment is handled at the desk — clear cart immediately.
         setCart({});
         if (userId) localStorage.removeItem(CART_STORAGE_KEY(userId));
-      }
-      setCoupon("");
-      setTableId("");
-      setCartOpen(false);
-      if (mode === "online") {
-        setPayOrder({ id: order.id, number: order.order_number, total: Number(order.total_amount) });
-      } else {
+        setCoupon("");
+        setTableId("");
+        setCartOpen(false);
         showToast("Order placed — it's roasting to perfection! ☕");
         setTab("orders");
         void loadOrders();
+      } else {
+        // Online: keep cart alive until payment is confirmed.
+        // Store the order ID so the next attempt can cancel this one first.
+        setPendingOrderId(order.id);
+        setCoupon("");
+        setTableId("");
+        setCartOpen(false);
+        setPayOrder({ id: order.id, number: order.order_number, total: Number(order.total_amount) });
       }
     } catch {
       showToast("Something brewed wrong. Please try again.", "destructive");
@@ -503,16 +517,18 @@ export default function MenuPage(): React.ReactElement {
           total={payOrder.total}
           open={!!payOrder}
           onClose={() => {
-            // Stay on the menu tab with the cart still intact.
-            // The user can edit their cart and re-open it from the bottom bar.
+            // Dismissed without paying — cart stays open for editing.
+            // pendingOrderId is kept so the NEXT "Place & pay online" tap
+            // cancels this draft before creating a fresh order.
             setPayOrder(null);
             setCartOpen(true);
-            showToast("Order saved — edit your cart or pay when ready.");
+            showToast("Edit your cart and tap \"Place & pay online\" when ready.");
           }}
           onlineOnly
           onPaid={() => {
-            // Payment confirmed — now it's safe to clear the cart.
+            // Payment confirmed — clear the pending order + cart.
             setPayOrder(null);
+            setPendingOrderId(null);
             setCart({});
             if (userId) localStorage.removeItem(CART_STORAGE_KEY(userId));
             setTab("orders");
