@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Minus, Plus, Ticket, Trash2, User, UtensilsCrossed } from "lucide-react";
+import { Minus, Plus, Receipt, Ticket, Trash2, User, UtensilsCrossed } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { usePosStore } from "@/store/usePosStore";
@@ -20,6 +20,9 @@ interface Props {
   onApplyCoupon: () => void;
   onAssignCustomer: () => void;
   onSendToKitchen: () => void;
+  onNewBill: () => void;
+  onOpenBills: () => void;
+  openBillCount: number;
   sending: boolean;
 }
 
@@ -32,6 +35,9 @@ export function CartPanel({
   onApplyCoupon,
   onAssignCustomer,
   onSendToKitchen,
+  onNewBill,
+  onOpenBills,
+  openBillCount,
   sending,
 }: Props): React.ReactElement {
   const { cartItems, tableNumber, orderId, orderNumber, orderStatus, orderRefresh, couponCode, customerName, setQty, removeItem } =
@@ -87,19 +93,50 @@ export function CartPanel({
                 ? `Table ${tableNumber}`
                 : "New Order"}
           </h2>
-          <button
-            onClick={onTableSelect}
-            disabled={isActiveOrder}
-            className="rounded-md bg-surface-muted px-2 py-1 text-xs font-medium text-zinc-600 hover:bg-brand-50 hover:text-brand-700 disabled:opacity-50"
-          >
-            {tableNumber ? `T${tableNumber} ✓` : "Select Table"}
-          </button>
+          <div className="flex items-center gap-1.5">
+            <button
+              type="button"
+              onClick={onOpenBills}
+              className="relative rounded-md bg-surface-muted px-2 py-1 text-xs font-medium text-zinc-600 hover:bg-brand-50 hover:text-brand-700"
+            >
+              <Receipt className="h-3.5 w-3.5" />
+              {openBillCount > 0 && (
+                <span className="absolute -right-1 -top-1 flex h-3.5 min-w-3.5 items-center justify-center rounded-full bg-amber-500 px-0.5 text-[9px] font-bold text-white">
+                  {openBillCount}
+                </span>
+              )}
+            </button>
+            <button
+              type="button"
+              onClick={onTableSelect}
+              disabled={isActiveOrder}
+              className="rounded-md bg-surface-muted px-2 py-1 text-xs font-medium text-zinc-600 hover:bg-brand-50 hover:text-brand-700 disabled:opacity-50"
+            >
+              {tableNumber ? `T${tableNumber} ✓` : "Select Table"}
+            </button>
+          </div>
         </div>
+        {customerName && (
+          <p className="mt-1 text-xs text-zinc-500">
+            Customer: <span className="font-medium text-zinc-700">{customerName}</span>
+          </p>
+        )}
         {orderStatus && (
           <p className="mt-1 text-xs text-zinc-400">
             Status:{" "}
             <span className="font-medium text-brand-600">{orderStatus.replace(/_/g, " ")}</span>
           </p>
+        )}
+        {isActiveOrder && (
+          <Button
+            variant="outline"
+            size="sm"
+            className="mt-2 w-full text-xs"
+            onClick={onNewBill}
+          >
+            <Plus className="mr-1.5 h-3 w-3" />
+            New Bill for Another Customer
+          </Button>
         )}
       </div>
 

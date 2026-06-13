@@ -44,10 +44,19 @@ type PaymentMethod = "cash" | "razorpay";
 
 interface Props {
   onPaymentComplete: () => void;
+  onNewBill?: () => void;
+  onOpenBills?: () => void;
+  openBillCount?: number;
   toast: (msg: string, variant?: "success" | "error") => void;
 }
 
-export function PaymentPanel({ onPaymentComplete, toast }: Props): React.ReactElement {
+export function PaymentPanel({
+  onPaymentComplete,
+  onNewBill,
+  onOpenBills,
+  openBillCount = 0,
+  toast,
+}: Props): React.ReactElement {
   const { orderId, orderStatus, orderNumber, orderRefresh, reset } = usePosStore();
 
   const [method, setMethod] = useState<PaymentMethod>("razorpay");
@@ -206,6 +215,24 @@ export function PaymentPanel({ onPaymentComplete, toast }: Props): React.ReactEl
         <p className="text-xs text-zinc-400">
           Payment panel activates when kitchen marks order ready.
         </p>
+        {(onNewBill || onOpenBills) && (
+          <div className="mt-2 flex w-full flex-col gap-2">
+            {onNewBill && (
+              <SlideTextButton tone="neutral" onClick={onNewBill}>
+                New Bill for Another Customer
+              </SlideTextButton>
+            )}
+            {onOpenBills && openBillCount > 1 && (
+              <button
+                type="button"
+                onClick={onOpenBills}
+                className="text-xs font-medium text-brand-600 hover:underline"
+              >
+                View {openBillCount} open bills
+              </button>
+            )}
+          </div>
+        )}
       </div>
     );
   }
@@ -325,6 +352,15 @@ export function PaymentPanel({ onPaymentComplete, toast }: Props): React.ReactEl
         </div>
 
         <div className="border-t border-surface-border p-4">
+          {onNewBill && (
+            <button
+              type="button"
+              onClick={onNewBill}
+              className="mb-3 w-full text-center text-xs font-medium text-zinc-500 hover:text-brand-600"
+            >
+              Park this bill &amp; start a new one
+            </button>
+          )}
           {method === "razorpay" ? (
             <SlideTextButton
               onClick={() => void openRazorpayCheckout()}

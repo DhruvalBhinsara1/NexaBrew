@@ -45,6 +45,17 @@ interface PosStore {
   setOrder: (id: string, num: string, status: string) => void;
   updateStatus: (status: string) => void;
   bumpOrder: () => void;
+  loadOrder: (order: {
+    id: string;
+    orderNumber: string;
+    status: string;
+    customerId?: string | null;
+    customerName?: string | null;
+    tableId?: string | null;
+    tableNumber?: number | null;
+    couponCode?: string;
+  }) => void;
+  startNewBill: () => void;
 
   // Reset everything (after payment)
   reset: () => void;
@@ -97,6 +108,30 @@ export const usePosStore = create<PosStore>((set) => ({
   setOrder: (id, num, status) => set({ orderId: id, orderNumber: num, orderStatus: status }),
   updateStatus: (status) => set({ orderStatus: status }),
   bumpOrder: () => set((s) => ({ orderRefresh: s.orderRefresh + 1 })),
+  loadOrder: (order) =>
+    set({
+      orderId: order.id,
+      orderNumber: order.orderNumber,
+      orderStatus: order.status,
+      customerId: order.customerId ?? null,
+      customerName: order.customerName ?? null,
+      tableId: order.tableId ?? null,
+      tableNumber: order.tableNumber ?? null,
+      couponCode: order.couponCode ?? "",
+      cartItems: [],
+    }),
+  startNewBill: () =>
+    set({
+      orderId: null,
+      orderNumber: null,
+      orderStatus: null,
+      cartItems: [],
+      couponCode: "",
+      customerId: null,
+      customerName: null,
+      tableId: null,
+      tableNumber: null,
+    }),
 
   reset: () =>
     set({

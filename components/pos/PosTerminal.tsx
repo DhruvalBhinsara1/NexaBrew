@@ -12,6 +12,7 @@ import { PaymentPanel } from "@/components/pos/PaymentPanel";
 import { TableSelectorDialog } from "@/components/pos/TableSelectorDialog";
 import { CouponDialog } from "@/components/pos/CouponDialog";
 import { CustomerDialog } from "@/components/pos/CustomerDialog";
+import { OpenBillsSheet, fetchOpenBillCount } from "@/components/pos/OpenBillsSheet";
 import { useToast } from "@/hooks/use-toast";
 import type { Category, FloorWithTables, ProductWithCategory, Table } from "@/types/domain.types";
 
@@ -36,6 +37,9 @@ export function PosTerminal(): React.ReactElement {
   const [tableSelectorOpen, setTableSelectorOpen] = useState(false);
   const [couponDialogOpen, setCouponDialogOpen] = useState(false);
   const [customerDialogOpen, setCustomerDialogOpen] = useState(false);
+  const [openBillsOpen, setOpenBillsOpen] = useState(false);
+  const [openBillCount, setOpenBillCount] = useState(0);
+  const [billsRefreshKey, setBillsRefreshKey] = useState(0);
   const [sending, setSending] = useState(false);
 
   // Store
@@ -46,6 +50,7 @@ export function PosTerminal(): React.ReactElement {
     customerId,
     orderId,
     setOrder, updateStatus, bumpOrder,
+    startNewBill,
   } = usePosStore();
 
   // Load initial data
@@ -112,6 +117,26 @@ export function PosTerminal(): React.ReactElement {
     };
   }, [orderId, supabase, updateStatus]);
 
+  const refreshOpenBillCount = useCallback(async () => {
+    if (!session?.id) {
+      setOpenBillCount(0);
+      return;
+    }
+    try {
+      setOpenBillCount(await fetchOpenBillCount(session.id));
+    } catch {
+      // non-fatal
+    }
+  }, [session?.id]);
+
+  useEffect(() => {
+    void refreshOpenBillCount();
+  }, [refreshOpenBillCount, billsRefreshKey, orderId]);
+
+  function bumpBills(): void {
+    setBillsRefreshKey((k) => k + 1);
+  }
+
   function handleTableSelect(table: Table): void {
     setTable(table.id, table.table_number);
   }
@@ -155,6 +180,7 @@ export function PosTerminal(): React.ReactElement {
         updateStatus("sent_to_kitchen");
         clearCart();
         bumpOrder();
+        bumpBills();
         showToast("Items added to the bill and sent to kitchen!", "success");
         return;
       }
@@ -195,6 +221,7 @@ export function PosTerminal(): React.ReactElement {
 
       setOrder(order.id, order.order_number, "sent_to_kitchen");
       clearCart();
+      bumpBills();
       showToast(`Order #${order.order_number} sent to kitchen!`, "success");
     } catch {
       showToast("Something went wrong. Please try again.", "error");
@@ -247,6 +274,19 @@ export function PosTerminal(): React.ReactElement {
         </div>
 
         <nav className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => setOpenBillsOpen(true)}
+            className="relative flex items-center gap-1 rounded-md px-2 py-1 text-xs text-zinc-500 hover:text-zinc-800"
+          >
+            <Receipt className="h-3.5 w-3.5" />
+            Open Bills
+            {openBillCount > 0 && (
+              <span className="ml-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-amber-500 px-1 text-[10px] font-bold text-white">
+                {openBillCount}
+              </span>
+            )}
+          </button>
           <Link
             href="/pos/orders"
             className="flex items-center gap-1 rounded-md px-2 py-1 text-xs text-zinc-500 hover:text-zinc-800"
@@ -302,6 +342,13 @@ export function PosTerminal(): React.ReactElement {
             onApplyCoupon={() => setCouponDialogOpen(true)}
             onAssignCustomer={() => setCustomerDialogOpen(true)}
             onSendToKitchen={() => void handleSendToKitchen()}
+            onNewBill={() => {
+              startNewBill();
+              bumpBills();
+              showToast("Ready for a new bill", "success");
+            }}
+            onOpenBills={() => setOpenBillsOpen(true)}
+            openBillCount={openBillCount}
             sending={sending}
           />
         </div>
@@ -311,8 +358,16 @@ export function PosTerminal(): React.ReactElement {
           <PaymentPanel
             onPaymentComplete={() => {
               clearCart();
+              bumpBills();
               showToast("Ready for next order!", "success");
             }}
+            onNewBill={() => {
+              startNewBill();
+              bumpBills();
+              showToast("Ready for a new bill", "success");
+            }}
+            onOpenBills={() => setOpenBillsOpen(true)}
+            openBillCount={openBillCount}
             toast={showToast}
           />
         </div>
@@ -328,6 +383,14 @@ export function PosTerminal(): React.ReactElement {
       />
       <CouponDialog open={couponDialogOpen} onClose={() => setCouponDialogOpen(false)} />
       <CustomerDialog open={customerDialogOpen} onClose={() => setCustomerDialogOpen(false)} />
+      <OpenBillsSheet
+        open={openBillsOpen}
+        onClose={() => setOpenBillsOpen(false)}
+        sessionId={session?.id ?? null}
+        refreshKey={billsRefreshKey}
+        onBillSwitched={bumpBills}
+        toast={showToast}
+      />
     </div>
   );
 }
