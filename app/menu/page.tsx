@@ -198,9 +198,13 @@ export default function MenuPage(): React.ReactElement {
         return;
       }
       const order = data.data as OrderWithItems;
-      // Clear persisted cart on successful placement
-      setCart({});
-      if (userId) localStorage.removeItem(CART_STORAGE_KEY(userId));
+      // For counter orders: clear immediately (payment is at the counter, we're done).
+      // For online orders: keep the cart until the payment is actually confirmed (onPaid).
+      // This way closing the payment dialog (✕) doesn't wipe the customer's cart.
+      if (mode === "counter") {
+        setCart({});
+        if (userId) localStorage.removeItem(CART_STORAGE_KEY(userId));
+      }
       setCoupon("");
       setTableId("");
       setCartOpen(false);
@@ -498,10 +502,21 @@ export default function MenuPage(): React.ReactElement {
           orderNumber={payOrder.number}
           total={payOrder.total}
           open={!!payOrder}
-          onClose={() => setPayOrder(null)}
+          onClose={() => {
+            // User dismissed without paying — order exists but is unpaid.
+            // Redirect to My Orders so they can complete payment there.
+            // Cart is intentionally preserved so they can see what they ordered.
+            setPayOrder(null);
+            setTab("orders");
+            void loadOrders();
+            showToast("Your order is saved — complete payment from My Orders.");
+          }}
           onlineOnly
           onPaid={() => {
+            // Payment confirmed — now it's safe to clear the cart.
             setPayOrder(null);
+            setCart({});
+            if (userId) localStorage.removeItem(CART_STORAGE_KEY(userId));
             setTab("orders");
             void loadOrders();
           }}
