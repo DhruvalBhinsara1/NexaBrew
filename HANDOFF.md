@@ -10,6 +10,40 @@ Project root: `/Users/dhruvalbhinsara/NexaBrew`
 
 ---
 
+## 🚀 Deployment — LIVE on Vercel (2026-06-14)
+
+| Item | Value |
+|---|---|
+| **Production URL** | https://nexabrew.vercel.app |
+| **GitHub repo** | https://github.com/DhruvalBhinsara1/NexaBrew |
+| **Vercel project** | `dhruval-bhinsaras-projects/nexabrew` |
+| **Deployment ID** | `dpl_gBNuaR3qsDmVXQHLspxmW3GqPXSj` |
+| **Build** | ✅ 61 routes — compiled clean, 0 TS/lint errors |
+| **CI/CD** | Every push to `main` auto-deploys via Vercel ↔ GitHub integration |
+
+### Vercel env vars set (production)
+
+| Variable | Notes |
+|---|---|
+| `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Public anon key |
+| `SUPABASE_SERVICE_ROLE_KEY` | Server-only, bypasses RLS |
+| `NEXT_PUBLIC_APP_URL` | `https://nexabrew.vercel.app` |
+| `NEXT_PUBLIC_RAZORPAY_KEY_ID` | Razorpay test key (swap for live before go-live) |
+| `RAZORPAY_KEY_SECRET` | Server-only Razorpay secret |
+
+> **`RESEND_API_KEY` not set** — email receipts (Phase 8 P1) will fail silently until a real key is added via `vercel env add RESEND_API_KEY production`.
+
+### Redeploy after any change
+
+```bash
+git add -A && git commit -m "..." && git push origin main
+# Vercel auto-deploys from main. Or force manually:
+npx vercel --prod --yes
+```
+
+---
+
 ## Progress: full app COMPLETE (backend + all UI + 4 roles). Phase 17 (P3 export) optional.
 
 Core phases 0–16 done. Since then, several feature rounds shipped on top
