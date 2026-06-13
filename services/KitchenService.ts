@@ -113,6 +113,13 @@ export const KitchenService = {
       throw new AppError("Only draft orders can be sent to kitchen", "ORDER_NOT_SENDABLE", 409);
     }
 
+    // Mark the table occupied now that the order is in the kitchen (a draft
+    // alone does not occupy the table). Best-effort: a failure here must not
+    // undo a successfully-sent order, so we don't roll back on it.
+    if (order.table_id) {
+      await supabase.from("tables").update({ status: "occupied" }).eq("id", order.table_id);
+    }
+
     return { order: updatedOrder, ticket };
   },
 

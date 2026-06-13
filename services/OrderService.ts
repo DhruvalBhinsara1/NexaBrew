@@ -145,23 +145,9 @@ export const OrderService = {
       }
     }
 
-    if (payload.table_id) {
-      const { data: occupiedTable, error: tableUpdateError } = await supabase
-        .from("tables")
-        .update({ status: "occupied" })
-        .eq("id", payload.table_id)
-        .eq("status", "available")
-        .select("id")
-        .maybeSingle();
-      if (tableUpdateError) {
-        await supabase.from("orders").delete().eq("id", inserted.id);
-        throw new AppError(tableUpdateError.message, "TABLE_UPDATE_FAILED", 400);
-      }
-      if (!occupiedTable) {
-        await supabase.from("orders").delete().eq("id", inserted.id);
-        throw new AppError("Table is already occupied", "TABLE_OCCUPIED", 409);
-      }
-    }
+    // NOTE: the table is NOT marked occupied here. A draft order leaves the
+    // table available; it only becomes occupied once the order is sent to the
+    // kitchen (KitchenService.sendToKitchen). Freed again on cancel/payment.
 
     return { order: await this.getById(supabase, inserted.id), created: true };
   },

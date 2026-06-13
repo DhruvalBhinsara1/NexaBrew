@@ -65,10 +65,10 @@ try {
   if (order.status !== "draft") throw new Error("expected draft");
   if (order.items.length !== 2) throw new Error("expected 2 line items");
 
-  // verify table now occupied
+  // a draft does NOT occupy the table — it stays available until sent to kitchen
   const { data: t2 } = await db.from("tables").select("status").eq("id", table.id).single();
-  if (t2!.status !== "occupied") throw new Error("table should be occupied");
-  ok(`table T${table.table_number} -> occupied`);
+  if (t2!.status !== "available") throw new Error("table should still be available for a draft");
+  ok(`table T${table.table_number} still available (draft does not occupy)`);
 
   // ── 3. active-order reuse (DECISION-004) ─────────────────────────────────
   step("3. Active-order strategy");
@@ -82,6 +82,10 @@ try {
   ticketId = sk.ticket.id;
   ok(`ticket ${sk.ticket.ticket_number} status=${sk.ticket.status}, order=${sk.order.status}`);
   if (sk.order.status !== "sent_to_kitchen") throw new Error("order should be sent_to_kitchen");
+
+  const { data: t3 } = await db.from("tables").select("status").eq("id", table.id).single();
+  if (t3!.status !== "occupied") throw new Error("table should be occupied after send-to-kitchen");
+  ok(`table T${table.table_number} -> occupied (on send-to-kitchen)`);
 
   // ── 5. KDS advance to completed (DECISION-005) ───────────────────────────
   step("5. KDS advance");
