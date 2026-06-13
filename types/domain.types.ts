@@ -71,3 +71,35 @@ export interface SessionCloseSummary {
   cash_collected: number;
   card_collected: number;
 }
+
+export interface OrderReceipt {
+  order_id: string;
+  order_number: string;
+  status: OrderStatus | string;
+  paid_at: string | null;
+  session_id: string;
+  table: Pick<Table, "id" | "table_number"> | null;
+  customer: Pick<Customer, "id" | "name" | "email"> | null;
+  employee: Pick<User, "id" | "name"> | null;
+  items: OrderItem[];
+  subtotal: number;
+  discount_amount: number;
+  tax_amount: number;
+  total_amount: number;
+  payment: Payment;
+}
+
+export interface PaymentResult {
+  payment: Payment;
+  order: OrderWithItems;
+  receipt: OrderReceipt;
+}
+
+export interface UpiQrPayload {
+  order_id: string;
+  order_number: string;
+  amount: number;
+  upi_id: string;
+  uri: string;
+  qr_data_url: string;
+}

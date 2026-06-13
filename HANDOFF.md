@@ -182,6 +182,16 @@ Verified before this handoff update:
 
 Payments (`PaymentService.process`, cash/card/UPI validation, order -> paid, table -> available, coupon `used_count`, receipt route/email, UPI QR).
 
+2026-06-13 Windows continuation update:
+- Backend Phase 8 is implemented in `schemas/payment.schema.ts`, `services/PaymentService.ts`, `app/api/orders/[id]/payment/route.ts`, `app/api/orders/[id]/payment/upi-qr/route.ts`, `app/api/orders/[id]/receipt/route.ts`, and `app/api/orders/[id]/receipt/email/route.ts`.
+- `POST /api/orders/:id/payment` validates cash/card/UPI, creates a completed payment row, moves `payment_pending -> paid`, frees the table, increments coupon `used_count`, and returns `{ payment, order, receipt }`.
+- `GET /api/orders/:id/payment/upi-qr` returns a UPI intent URI plus QR data URL.
+- `GET /api/orders/:id/receipt` returns the paid-order receipt payload.
+- `POST /api/orders/:id/receipt/email` sends via Resend using the customer email or request email. It requires a real `RESEND_API_KEY`.
+- Local checks: `npx tsc --noEmit` passed, `npm run lint` passed, and `npm run build` passed when placeholder build-time Supabase env vars were supplied.
+- Live verification is still pending because `.env.local` is absent and this PowerShell session currently reports `supabase` and `gh` as not found on PATH.
+- NEXT: restore env/PATH, run the live payment service flow, then continue to Phase 9 Realtime hooks.
+
 Historical Phase 5 plan:
 
 ### 5.0 Replace `lib/utils/calculateTotals.ts` (currently a throwing stub)
