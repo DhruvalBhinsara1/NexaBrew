@@ -65,7 +65,14 @@ export default function LoginPage(): React.ReactElement {
       .maybeSingle();
 
     const role = (profile as { role: string } | null)?.role;
-    const home = role === "admin" ? "/dashboard" : role === "customer" ? "/menu" : "/pos/terminal";
+    const home =
+      role === "admin"
+        ? "/dashboard"
+        : role === "customer"
+          ? "/menu"
+          : role === "kitchen"
+            ? "/kds"
+            : "/pos/terminal";
     router.replace(home);
     router.refresh();
   }

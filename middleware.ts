@@ -1,13 +1,14 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 
-type UserRole = "admin" | "employee" | "customer";
+type UserRole = "admin" | "employee" | "customer" | "kitchen";
 
 const AUTH_PATHS = ["/login", "/signup"];
 
 function homeForRole(role: UserRole): string {
   if (role === "admin") return "/dashboard";
   if (role === "customer") return "/menu";
+  if (role === "kitchen") return "/kds";
   return "/pos/terminal";
 }
 
@@ -92,6 +93,12 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
   if (role === "customer") {
     if (path === "/menu" || path.startsWith("/menu/")) return response;
     return redirectTo("/menu");
+  }
+
+  // Kitchen accounts are locked to the Kitchen Display. (/kds is short-circuited
+  // as public above, so a kitchen user reaches it; everything else → /kds.)
+  if (role === "kitchen") {
+    return redirectTo("/kds");
   }
 
   // Admin-only dashboard.
