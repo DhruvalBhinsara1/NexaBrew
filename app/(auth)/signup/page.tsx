@@ -79,12 +79,12 @@ export default function SignupPage(): React.ReactElement {
   }
 
   return (
-    <Card>
-      <CardHeader className="space-y-1 text-center">
-        <CardTitle className="text-3xl font-bold tracking-tight text-brand-700">
+    <Card className="border-surface-border shadow-sm">
+      <CardHeader className="space-y-1">
+        <CardTitle className="text-2xl font-bold tracking-tight text-zinc-900">
           Create your account
         </CardTitle>
-        <CardDescription>NexaBrew — create a customer account to browse the menu and track your orders</CardDescription>
+        <CardDescription>Browse the menu and track your orders</CardDescription>
       </CardHeader>
       <Form {...form}>
         <form method="post" onSubmit={form.handleSubmit(onSubmit)}>

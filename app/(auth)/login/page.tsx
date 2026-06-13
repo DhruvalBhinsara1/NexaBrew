@@ -65,17 +65,18 @@ export default function LoginPage(): React.ReactElement {
       .maybeSingle();
 
     const role = (profile as { role: string } | null)?.role;
-    router.replace(role === "admin" ? "/dashboard" : "/pos/terminal");
+    const home = role === "admin" ? "/dashboard" : role === "customer" ? "/menu" : "/pos/terminal";
+    router.replace(home);
     router.refresh();
   }
 
   return (
-    <Card>
-      <CardHeader className="space-y-1 text-center">
-        <CardTitle className="text-3xl font-bold tracking-tight text-brand-700">
-          NexaBrew
+    <Card className="border-surface-border shadow-sm">
+      <CardHeader className="space-y-1">
+        <CardTitle className="text-2xl font-bold tracking-tight text-zinc-900">
+          Welcome back
         </CardTitle>
-        <CardDescription>Cafe Management System</CardDescription>
+        <CardDescription>Sign in to your NexaBrew account</CardDescription>
       </CardHeader>
       <Form {...form}>
         <form method="post" onSubmit={form.handleSubmit(onSubmit)}>
