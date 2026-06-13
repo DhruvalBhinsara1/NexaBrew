@@ -192,7 +192,7 @@ export const SessionService = {
       .select("opened_by_user:users!sessions_opened_by_fkey(id, name)")
       .not("opened_by_user", "is", null)
       .order("opened_at", { ascending: false });
-    
+
     if (error) throw new AppError(error.message, "SESSIONS_USERS_FAILED", 500);
 
     // Extract unique users

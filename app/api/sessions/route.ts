@@ -16,7 +16,7 @@ export const GET = withAuth(async (req) => {
     ? SessionStatusFilter.parse(statusParam)
     : undefined;
   const openedBy = openedByParam ? String(openedByParam) : undefined;
-  
+
   // Backward compatible: POS fetches the array (to find the open session);
   // the dashboard sessions page passes page/limit for paginated history.
   if (sp.has("page") || sp.has("limit")) {
