@@ -151,6 +151,19 @@ export default function MenuPage(): React.ReactElement {
       <main className="flex-1 p-4">
         {tab === "menu" ? (
           <>
+            {/* Hero */}
+            <section className="mb-5 overflow-hidden rounded-wiseCard bg-wise-primary-pale px-5 py-6 sm:px-7 sm:py-7">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-wise-ink-deep/70">
+                NexaBrew Cafe
+              </p>
+              <h1 className="mt-1.5 font-display text-3xl font-extrabold tracking-tight text-wise-ink sm:text-4xl">
+                What can we get you?
+              </h1>
+              <p className="mt-2 max-w-md text-sm text-wise-body">
+                Fresh coffee and all-day bites. Browse below — our staff take your order and you can track it live.
+              </p>
+            </section>
+
             {/* Category filter */}
             <div className="mb-4 flex flex-wrap gap-2">
               <button
@@ -174,17 +187,34 @@ export default function MenuPage(): React.ReactElement {
             {filtered.length === 0 && !loading ? (
               <EmptyState icon={UtensilsCrossed} title="No items" subtitle="The menu is being prepared." />
             ) : (
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-                {filtered.map((p) => (
-                  <Card key={p.id} className="overflow-hidden border-wise-border">
-                    <div className="h-1.5 w-full" style={{ backgroundColor: p.category?.color ?? "#e2e8f0" }} />
-                    <CardContent className="p-3">
-                      <p className="font-semibold text-wise-ink">{p.name}</p>
-                      {p.category && <p className="text-xs text-wise-mute">{p.category.name}</p>}
-                      <p className="mt-2 text-lg font-bold text-wise-ink-deep">{formatCurrency(Number(p.price))}</p>
-                    </CardContent>
-                  </Card>
-                ))}
+              <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+                {filtered.map((p) => {
+                  const color = p.category?.color ?? "#9fe870";
+                  return (
+                    <Card
+                      key={p.id}
+                      className="group overflow-hidden border-wise-border transition-all duration-200 hover:-translate-y-1 hover:shadow-wiseCard"
+                    >
+                      {/* Category-colored header tile (image placeholder) */}
+                      <div
+                        className="relative flex h-24 items-end justify-end overflow-hidden p-2"
+                        style={{ background: `linear-gradient(135deg, ${color}, ${color}cc)` }}
+                      >
+                        <span className="absolute left-3 top-3 font-display text-2xl font-extrabold text-white/90">
+                          {p.name.charAt(0).toUpperCase()}
+                        </span>
+                        <UtensilsCrossed className="h-7 w-7 text-white/30 transition-transform duration-300 group-hover:scale-110" />
+                      </div>
+                      <CardContent className="p-3.5">
+                        <p className="font-semibold leading-snug text-wise-ink">{p.name}</p>
+                        {p.category && <p className="text-xs text-wise-mute">{p.category.name}</p>}
+                        <p className="mt-2.5 inline-flex rounded-wisePill bg-wise-primary-pale px-2.5 py-0.5 text-sm font-bold text-wise-ink-deep">
+                          {formatCurrency(Number(p.price))}
+                        </p>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
               </div>
             )}
             <p className="mt-6 text-center text-xs text-wise-mute">
@@ -225,7 +255,7 @@ export default function MenuPage(): React.ReactElement {
                         {stage !== "cancelled" && (
                           <div className="mt-3 flex gap-1">
                             {STAGE_STEPS.map((s, i) => (
-                              <div key={s} className={cn("h-1.5 flex-1 rounded-full", i <= stepIdx ? "bg-wise-primary" : "bg-wise-canvas-border")} />
+                              <div key={s} className={cn("h-1.5 flex-1 rounded-full", i <= stepIdx ? "bg-wise-primary" : "bg-wise-border")} />
                             ))}
                           </div>
                         )}
