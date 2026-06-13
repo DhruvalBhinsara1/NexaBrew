@@ -18,7 +18,6 @@ import {
   BarChart3,
   Banknote,
   CreditCard,
-  IndianRupee,
   Receipt,
   ShoppingCart,
   Smartphone,
@@ -137,7 +136,6 @@ export default function ReportsPage(): React.ReactElement {
     orders: byDate.get(d)?.order_count ?? 0,
   }));
   const ordersSpark = chartData.map((c) => c.orders);
-  const revenueSpark = chartData.map((c) => c.revenue);
 
   // Paid orders within the selected period → Order History.
   const history = orders
@@ -177,15 +175,30 @@ export default function ReportsPage(): React.ReactElement {
         }
       />
 
+      {/* Hero: total revenue for the period (matches dashboard) */}
+      <section className="relative overflow-hidden rounded-wiseCard bg-wise-ink px-6 py-7 shadow-wiseCard sm:px-8">
+        <div className="pointer-events-none absolute -right-20 -top-24 h-72 w-72 rounded-full bg-wise-primary/10 blur-3xl" />
+        <div className="relative">
+          <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-white/45">
+            <span className="h-1.5 w-1.5 rounded-full bg-wise-primary motion-safe:animate-pulse" />
+            Total revenue · {period === "today" ? "Today" : period === "week" ? "This Week" : "This Month"}
+          </div>
+          <p className="mt-2 font-display text-5xl font-extrabold leading-none tracking-tight text-wise-primary sm:text-6xl">
+            {loading ? "—" : formatCurrency(totalRevenue)}
+          </p>
+          <div className="mt-5 flex flex-wrap gap-x-7 gap-y-2 text-sm text-white/60">
+            <span><span className="font-semibold text-white">{totalOrders}</span> orders</span>
+            <span><span className="font-semibold text-white">{totalOrders ? formatCurrency(avgOrder) : "—"}</span> avg order</span>
+            <span><span className="font-semibold text-white">{topProduct?.product_name ?? "—"}</span> top product</span>
+          </div>
+        </div>
+      </section>
+
       {/* Stat cards */}
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <StatCard
           title="Total Orders" value={String(totalOrders)} sub={`in ${chartData.length} days`}
           icon={ShoppingCart} accent="#2ead4b" tint="from-wise-primary-pale" spark={ordersSpark} loading={loading} delay={0}
-        />
-        <StatCard
-          title="Total Revenue" value={formatCurrency(totalRevenue)} sub="after discounts + tax"
-          icon={IndianRupee} accent="#16a34a" tint="from-green-50" spark={revenueSpark} loading={loading} delay={60}
         />
         <StatCard
           title="Avg Order Value" value={totalOrders ? formatCurrency(avgOrder) : "—"} sub={totalOrders ? `over ${totalOrders} orders` : "no orders"}
