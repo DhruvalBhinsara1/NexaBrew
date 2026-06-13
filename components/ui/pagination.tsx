@@ -30,13 +30,13 @@ export function Pagination({
     return (
         <div className={cn("flex items-center justify-between gap-4", className)}>
             {/* Page-size selector */}
-            <div className="flex items-center gap-2 text-sm text-zinc-500">
+            <div className="flex items-center gap-2 text-sm text-wise-body">
                 <span className="shrink-0">Show</span>
                 <select
                     value={pageSize ?? 10}
                     onChange={(e) => onPageSizeChange?.(Number(e.target.value))}
                     disabled={!onPageSizeChange || isLoading}
-                    className="rounded-md border border-surface-border bg-white px-2 py-1 text-sm text-zinc-700 focus:outline-none focus:ring-2 focus:ring-brand-300 disabled:opacity-40"
+                    className="rounded-md border border-wise-border bg-white px-2 py-1 text-sm text-wise-body focus:outline-none focus:ring-2 focus:ring-wise-primary disabled:opacity-40"
                 >
                     {PAGE_SIZE_OPTIONS.map((n) => (
                         <option key={n} value={n}>{n}</option>
@@ -58,7 +58,7 @@ export function Pagination({
                     Previous
                 </Button>
 
-                <span className="text-sm font-medium text-zinc-600 tabular-nums">
+                <span className="text-sm font-medium text-wise-body tabular-nums">
                     {page} / {totalPages}
                 </span>
 

@@ -211,11 +211,11 @@ export function Skiper71(): React.ReactElement {
       <div className="pointer-events-none absolute inset-0 z-[2] flex flex-col justify-between p-10">
         {/* Header */}
         <div className="flex items-center gap-2">
-          <Coffee className="h-6 w-6 text-brand-400" />
+          <Coffee className="h-6 w-6 text-wise-primary" />
           <span className="text-lg font-bold tracking-tight text-white">
             NexaBrew
           </span>
-          <span className="rounded-full border border-brand-500/30 bg-brand-500/20 px-2 py-0.5 text-[10px] font-medium text-brand-300">
+          <span className="rounded-full border border-wise-primary/30 bg-wise-primary/20 px-2 py-0.5 text-[10px] font-medium text-wise-primary">
             POS Platform
           </span>
         </div>
@@ -240,7 +240,7 @@ export function Skiper71(): React.ReactElement {
               <ul className="mt-5 space-y-2.5 text-sm text-zinc-200">
                 {sec.bullets.map((b) => (
                   <li key={b} className="flex items-center gap-2.5">
-                    <span className="flex h-5 w-5 items-center justify-center rounded-full border border-brand-500/40 bg-brand-500/25 text-[10px] font-bold text-brand-400">
+                    <span className="flex h-5 w-5 items-center justify-center rounded-full border border-wise-primary/40 bg-wise-primary/25 text-[10px] font-bold text-wise-primary">
                       ✓
                     </span>
                     <span className="font-medium">{b}</span>
@@ -254,7 +254,7 @@ export function Skiper71(): React.ReactElement {
         {/* Footer */}
         <div className="flex items-center justify-between text-xs text-white/40">
           <p>© NexaBrew — Cafe POS &amp; Management</p>
-          <div className="flex items-center gap-1 text-brand-400">
+          <div className="flex items-center gap-1 text-wise-primary">
             <span className="animate-bounce">
               <ChevronDown className="h-3.5 w-3.5" />
             </span>
@@ -279,7 +279,7 @@ export function Skiper71(): React.ReactElement {
             aria-label={`Go to section ${i + 1}`}
             className={`h-2.5 w-2.5 rounded-full border transition-all duration-300 ${
               i === activeSection
-                ? "scale-125 border-brand-400 bg-brand-500"
+                ? "scale-125 border-wise-primary bg-wise-primary"
                 : "border-white/20 bg-white/10 hover:bg-white/20"
             }`}
             onClick={() => {

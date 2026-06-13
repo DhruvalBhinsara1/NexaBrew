@@ -89,7 +89,7 @@ function TicketCard({ ticket, stage, onAdvance, onCompleteItem }: TicketCardProp
   return (
     <div
       className={cn(
-        "rounded-xl border border-surface-border border-l-4 bg-white p-4 shadow-sm transition-all",
+        "rounded-xl border border-wise-border border-l-4 bg-white p-4 shadow-sm transition-all",
         stage.cardBorder,
         canAdvance && "cursor-pointer hover:shadow-md hover:-translate-y-0.5"
       )}
@@ -98,8 +98,8 @@ function TicketCard({ ticket, stage, onAdvance, onCompleteItem }: TicketCardProp
       {/* Header */}
       <div className="mb-3 flex items-start justify-between">
         <div>
-          <p className="text-lg font-bold text-zinc-900">#{ticket.ticket_number}</p>
-          <div className="mt-0.5 flex items-center gap-1 text-xs text-zinc-400">
+          <p className="text-lg font-bold text-wise-ink">#{ticket.ticket_number}</p>
+          <div className="mt-0.5 flex items-center gap-1 text-xs text-wise-mute">
             <Clock className="h-3 w-3" />
             {elapsed(ticket.sent_at)} ago
           </div>
@@ -121,8 +121,8 @@ function TicketCard({ ticket, stage, onAdvance, onCompleteItem }: TicketCardProp
             className={cn(
               "flex items-center justify-between rounded-lg px-3 py-2 text-sm transition-colors",
               item.is_completed
-                ? "bg-surface-muted text-zinc-400 line-through"
-                : "bg-surface-muted text-zinc-800 hover:bg-brand-50"
+                ? "bg-wise-canvas-soft text-wise-mute line-through"
+                : "bg-wise-canvas-soft text-wise-ink hover:bg-wise-primary-pale"
             )}
             onClick={(e) => {
               e.stopPropagation();
@@ -130,7 +130,7 @@ function TicketCard({ ticket, stage, onAdvance, onCompleteItem }: TicketCardProp
             }}
           >
             <span className="font-medium">{item.product_name}</span>
-            <span className="ml-2 shrink-0 rounded-full bg-white px-2 py-0.5 text-xs font-bold text-zinc-600 shadow-sm">
+            <span className="ml-2 shrink-0 rounded-full bg-white px-2 py-0.5 text-xs font-bold text-wise-body shadow-sm">
               ×{item.quantity}
             </span>
           </li>
@@ -151,7 +151,7 @@ interface ColumnProps {
 
 function KdsColumn({ stage, tickets, onAdvance, onCompleteItem }: ColumnProps): React.ReactElement {
   return (
-    <div className="flex min-h-0 flex-col overflow-hidden rounded-2xl border border-surface-border bg-surface-muted">
+    <div className="flex min-h-0 flex-col overflow-hidden rounded-2xl border border-wise-border bg-wise-canvas-soft">
       {/* Accent bar */}
       <div className={cn("h-1 w-full", stage.headerBar)} />
       {/* Column header */}
@@ -168,7 +168,7 @@ function KdsColumn({ stage, tickets, onAdvance, onCompleteItem }: ColumnProps): 
       {/* Cards */}
       <div className="flex-1 space-y-3 overflow-y-auto p-3">
         {tickets.length === 0 ? (
-          <div className="flex flex-col items-center gap-2 py-12 text-center text-zinc-300">
+          <div className="flex flex-col items-center gap-2 py-12 text-center text-wise-mute">
             <UtensilsCrossed className="h-8 w-8" />
             <p className="text-xs">No {stage.label.toLowerCase()} tickets</p>
           </div>
@@ -286,49 +286,49 @@ export default function KdsPage(): React.ReactElement {
   }
 
   return (
-    <div className="flex h-screen flex-col bg-surface-muted text-zinc-900">
+    <div className="flex h-screen flex-col bg-wise-canvas-soft text-wise-ink">
       {/* Header */}
-      <header className="flex items-center justify-between border-b border-surface-border bg-white px-6 py-3 shadow-sm">
+      <header className="flex items-center justify-between border-b border-wise-border bg-white px-6 py-3 shadow-sm">
         <div className="flex items-center gap-2.5">
-          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-brand-500 to-brand-700 text-white">
+          <span className="flex h-8 w-8 items-center justify-center rounded-wise bg-wise-primary text-wise-ink">
             <Coffee className="h-4 w-4" />
           </span>
           <div className="leading-tight">
-            <span className="block text-sm font-bold text-zinc-900">NexaBrew</span>
-            <span className="block text-[11px] text-zinc-400">Kitchen Display</span>
+            <span className="block text-sm font-bold text-wise-ink">NexaBrew</span>
+            <span className="block text-[11px] text-wise-mute">Kitchen Display</span>
           </div>
         </div>
 
         <div className="flex items-center gap-3">
           {/* Search */}
           <div className="relative">
-            <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-zinc-400" />
+            <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-wise-mute" />
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search item or ticket…"
-              className="w-48 rounded-lg border border-surface-border bg-white py-1.5 pl-8 pr-2 text-sm text-zinc-800 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-brand-400"
+              className="w-48 rounded-lg border border-wise-border bg-white py-1.5 pl-8 pr-2 text-sm text-wise-ink placeholder:text-wise-mute focus:outline-none focus:ring-2 focus:ring-wise-primary"
             />
           </div>
           {/* Category filter */}
           <select
             value={categoryId}
             onChange={(e) => setCategoryId(e.target.value)}
-            className="rounded-lg border border-surface-border bg-white px-2 py-1.5 text-sm text-zinc-800 focus:outline-none focus:ring-2 focus:ring-brand-400"
+            className="rounded-lg border border-wise-border bg-white px-2 py-1.5 text-sm text-wise-ink focus:outline-none focus:ring-2 focus:ring-wise-primary"
           >
             <option value="all">All products</option>
             {categories.map((c) => (
               <option key={c.id} value={c.id}>{c.name}</option>
             ))}
           </select>
-          <div className="flex items-center gap-2 rounded-lg bg-surface-muted px-3 py-1.5 text-zinc-600">
-            <Clock className="h-4 w-4 text-brand-500" />
+          <div className="flex items-center gap-2 rounded-lg bg-wise-canvas-soft px-3 py-1.5 text-wise-body">
+            <Clock className="h-4 w-4 text-wise-primary" />
             <span className="font-mono text-sm font-medium">{time}</span>
           </div>
           {loggedIn && (
             <button
               onClick={() => void handleLogout()}
-              className="flex items-center gap-1.5 rounded-lg border border-surface-border px-3 py-1.5 text-sm font-medium text-zinc-600 transition-colors hover:bg-surface-muted hover:text-zinc-900"
+              className="flex items-center gap-1.5 rounded-lg border border-wise-border px-3 py-1.5 text-sm font-medium text-wise-body transition-colors hover:bg-wise-canvas-soft hover:text-wise-ink"
             >
               <LogOut className="h-4 w-4" />
               Logout
@@ -341,7 +341,7 @@ export default function KdsPage(): React.ReactElement {
       <div className="flex-1 overflow-hidden p-4">
         {loading ? (
           <div className="flex h-full items-center justify-center">
-            <div className="h-8 w-8 animate-spin rounded-full border-2 border-brand-500 border-t-transparent" />
+            <div className="h-8 w-8 animate-spin rounded-full border-2 border-wise-primary border-t-transparent" />
           </div>
         ) : (
           <div className="grid h-full grid-cols-1 gap-4 md:grid-cols-3">
@@ -358,7 +358,7 @@ export default function KdsPage(): React.ReactElement {
         )}
       </div>
 
-      <footer className="border-t border-surface-border bg-white px-6 py-2 text-center text-xs text-zinc-400">
+      <footer className="border-t border-wise-border bg-white px-6 py-2 text-center text-xs text-wise-mute">
         Tap a ticket to advance · Tap an item to mark it complete · Completed tickets clear after 5 min
       </footer>
     </div>
