@@ -15,6 +15,7 @@ import { FloorService } from "@/services/FloorService";
 import { formatCurrency } from "@/lib/utils/formatCurrency";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import { TableOccupancyGrid } from "@/components/dashboard/TableOccupancyGrid";
 import type { SessionWithUser, FloorWithTables } from "@/types/domain.types";
 import type { DailyRevenueRow } from "@/services/ReportService";
 
@@ -64,38 +65,6 @@ function KpiCard({
         {sub && <p className="mt-0.5 text-xs text-zinc-400">{sub}</p>}
       </CardContent>
     </Card>
-  );
-}
-
-function TableOccupancyGrid({ floors }: { floors: FloorWithTables[] }): React.ReactElement {
-  return (
-    <div className="space-y-4">
-      {floors.map((floor) => (
-        <div key={floor.id}>
-          <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-zinc-400">
-            {floor.name}
-          </p>
-          <div className="flex flex-wrap gap-2">
-            {floor.tables
-              .filter((t) => t.is_active)
-              .map((table) => (
-                <div
-                  key={table.id}
-                  title={`Table ${table.table_number} — ${table.status}`}
-                  className={cn(
-                    "flex h-9 w-9 items-center justify-center rounded-md text-xs font-semibold",
-                    table.status === "occupied"
-                      ? "bg-brand-500 text-white"
-                      : "bg-surface-muted text-zinc-400 border border-surface-border"
-                  )}
-                >
-                  {table.table_number}
-                </div>
-              ))}
-          </div>
-        </div>
-      ))}
-    </div>
   );
 }
 
@@ -296,16 +265,6 @@ export default async function DashboardPage(): Promise<React.ReactElement> {
             ) : (
               <TableOccupancyGrid floors={floors} />
             )}
-            <div className="mt-4 flex items-center gap-4 text-xs text-zinc-500">
-              <span className="flex items-center gap-1">
-                <span className="inline-block h-3 w-3 rounded-sm bg-brand-500" />
-                Occupied
-              </span>
-              <span className="flex items-center gap-1">
-                <span className="inline-block h-3 w-3 rounded-sm border border-surface-border bg-surface-muted" />
-                Available
-              </span>
-            </div>
           </CardContent>
         </Card>
 
