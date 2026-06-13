@@ -10,38 +10,62 @@ Project root: `/Users/dhruvalbhinsara/NexaBrew`
 
 ---
 
-## Progress: Phases 0–16 COMPLETE. Phase 17 (P3 optional) or live verification next.
+## Progress: full app COMPLETE (backend + all UI + 4 roles). Phase 17 (P3 export) optional.
 
-| Phase | Status |
+Core phases 0–16 done. Since then, several feature rounds shipped on top
+(roles, Razorpay, Preline UI overhaul, order-flow fixes). All verified with
+`tsc` + `next build` green and live service tests against the hosted DB.
+
+| Area | Status |
 |---|---|
-| 0 — Project Setup | ✅ done, `tsc` + `next build` green |
-| 1 — Database (schema/RLS/seed/types) | ✅ done, applied to live project, seeded |
-| 2 — Auth & Middleware (login/signup) | ✅ done, redirects verified live |
-| 3 — Core Config APIs (products/categories/floors/tables/payment-methods) | ✅ done, RLS verified |
-| 4 — Sessions | ✅ done, lifecycle verified |
-| 5 — Orders | ✅ done, `tsc` + `next build` + live service flow verified |
-| 6 — Discounts | ✅ done, `tsc` + `next build` + live discount service flow verified |
-| 7 — Kitchen APIs | ✅ done, routes + service methods implemented |
-| 8 — Payments | ✅ done, `tsc` + `next build` green; live verification pending env |
-| 9 — Realtime hooks | ✅ done, `tsc` green |
-| 10 — Users (Admin API) | ✅ done, `tsc` + lint clean |
-| 11 — Reports | ✅ done, `tsc` + lint + build green |
-| 12 — Customers | ✅ done, `tsc` + lint + build green |
-| 13 — Dashboard UI (overview + sidebar) | ✅ done |
-| 13b — Dashboard CRUD pages (8) | ✅ done — sessions/products/categories/floors/payment-methods/coupons/users/reports |
-| 14 — POS Terminal UI | ✅ done |
-| 14b — POS sub-pages (orders + customers) | ✅ done, incl. order detail sheet + cancel |
-| 15 — KDS UI | ✅ done |
-| 16 — Polish (EmptyState/ErrorState) | ✅ done |
-| Payments | ✅ Razorpay gateway integrated (checkout + signature verify) |
-| 17 — P3 Optional (PDF/XLS export) | not started (P3 only if time) |
+| 0–7 Setup / DB / Auth / Config APIs / Sessions / Orders / Discounts / Kitchen | ✅ |
+| 8 Payments → **Razorpay gateway** (create order + HMAC signature verify) | ✅ live test-mode order verified |
+| 9 Realtime hooks · 10 Users · 11 Reports · 12 Customers | ✅ |
+| 13 Dashboard (sidebar + overview + Dashboard nav link) | ✅ |
+| 13b 8 dashboard CRUD pages | ✅ products/categories/floors/payment-methods/coupons/users/sessions/reports |
+| 14 POS Terminal + 14b /pos/orders (+detail sheet, cancel, **process payment**) + /pos/customers | ✅ |
+| 15 KDS (light coffee theme, search + category filter) | ✅ |
+| 16 Polish (EmptyState/ErrorState) | ✅ |
+| UI overhaul — **Preline 2.7.0** wired app-wide; gradient brand chrome everywhere | ✅ visual layer (Radix kept) |
+| 17 — P3 Optional (PDF/XLS export) | not started (only if time) |
 
-### Known remaining gaps (2026-06-13)
+### Roles (4) — all working, demo accounts seeded
 
-- **Reports**: period presets (Today/Week/Month) only — no custom date-range picker or employee/session filter yet.
-- **Coupons/promotions**: create + active-toggle + delete done; no full value-edit dialog.
-- **Live click-through**: every page compiles + routes resolve, but the new dashboard/POS UI wiring has not been manually driven against the live DB with a logged-in admin. Recommend one demo pass.
-- Razorpay live payment verified only at signature-logic level; not yet run through a real test-mode checkout end to end.
+| Role | Demo login (pw `Password@123`) | Home | Notes |
+|---|---|---|---|
+| admin | admin@nexabrew.com | /dashboard | full dashboard |
+| employee | alice@nexabrew.com / bob@nexabrew.com | /pos/terminal | POS |
+| customer | customer@nexabrew.com | /menu | read-only menu + live "My Orders" tracking; CRM-linked via `customers.user_id` |
+| kitchen | kitchen@nexabrew.com | /kds | locked to KDS; KDS still public too |
+
+### Feature rounds shipped after core (all live-verified)
+
+1. **Razorpay** (migration 002 adds `razorpay` payment type) — `lib/razorpay.ts`, `POST /api/orders/[id]/razorpay`, signature verify in `PaymentService.process`. Test keys in `.env.local`.
+2. **Customer role** (migration 003): public signup → customer; `customers.user_id` link; `GET /api/orders/mine`; `/menu` surface.
+3. **Kitchen role** (migration 004): dedicated login locked to `/kds`; KDS logout button (only when a session exists).
+4. **Process Payment dialog** (`components/pos/PaymentDialog.tsx`) — pay any payment_pending order from `/pos/orders`, not just the live POS session.
+5. **Interactive Table Occupancy** on dashboard — click table → confirm → toggle occupied/available.
+6. **Table occupies on send-to-kitchen** (not on draft) — `OrderService.create` no longer occupies; `KitchenService.sendToKitchen` does; freed on pay/cancel.
+7. **Order cancel route** `POST /api/orders/[id]/cancel`.
+8. **Customer order tracking**: POS "Assign Customer" (`CustomerDialog`) sets `customer_id`; `/menu` My Orders is realtime; status reflects the **kitchen ticket** (queued → preparing → ready), not just order status.
+9. **Cart shows real server totals** (incl. coupon discount) once an order exists — fixed the POS/My-Orders bill mismatch.
+10. **Add items to an existing unpaid bill** — `OrderService.addItems` + `POST /api/orders/[id]/add-items`; POS cart becomes a staging area ("Add to Bill & Send to Kitchen"); appends items (upsert, never deletes), recomputes bill, sends additions as a new kitchen ticket, returns order to sent_to_kitchen.
+
+### Migrations applied to live DB
+
+- `001_initial_schema.sql` — base schema/RLS/triggers
+- `002_razorpay_payment_type.sql` — `payments.payment_method_type` allows `razorpay`
+- `003_customer_role.sql` — `customer` role + `customers.user_id` + signup-default trigger
+- `004_kitchen_role.sql` — `kitchen` role
+
+### Known remaining gaps
+
+- **Reports**: period presets (Today/Week/Month) only — no custom date-range picker or employee/session filter.
+- **Coupons/promotions**: create + active-toggle + delete; no full value-edit dialog.
+- **Promotion re-eval on add-items**: adding items recomputes the coupon over the new total but does not re-run product promotions on existing rows (acceptable for demo).
+- **UI overhaul is a visual layer**: Preline wired + brand chrome applied; the interactive Radix dialogs/selects were intentionally kept (not rip-and-replaced) so verified flows stay intact.
+- **Razorpay payment recording** (signature callback → paid) not driven through a real browser checkout; order-creation half + cash path verified live.
+- `.next` dev/build collision: never run `npm run build` while `npm run dev` is live (shared `.next`). If you see `Cannot find module './XXXX.js'` or `PageNotFoundError`, kill all `next` procs → `rm -rf .next` → rebuild.
 
 ### Device-switch handoff — 2026-06-13
 
@@ -74,11 +98,12 @@ Project root: `/Users/dhruvalbhinsara/NexaBrew`
 ## Environment / Infra (already provisioned)
 
 - **Supabase project**: name `NexaBrew`, region Mumbai (ap-south-1), Vercel org. CLI is **linked** locally (ref in gitignored `supabase/.temp`).
-- **`.env.local`** (gitignored) has REAL keys: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` (legacy JWT keys). `RESEND_API_KEY` is still a placeholder (P1, Phase 8). DB password saved in `.supabase-db-password.local` (gitignored).
-- **Migration applied**: `supabase/migrations/001_initial_schema.sql` (15 tables + trigger + sequence + RLS + indexes + realtime). Apply more via `SUPABASE_DB_PASSWORD="$(cat .supabase-db-password.local)" supabase db push`.
-- **Seeded** (`npm run seed`): 6 categories, 12 products, 3 payment methods, 3 floors + 18 tables, 3 coupons (SAVE10/FLAT50/WELCOME20), 2 promotions, 3 users.
-- **Demo accounts**: `admin@nexabrew.com` (admin), `alice@nexabrew.com` + `bob@nexabrew.com` (employee). Password is configured locally and is not stored in git.
+- **`.env.local`** (gitignored) has REAL keys: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, plus **Razorpay test keys** `NEXT_PUBLIC_RAZORPAY_KEY_ID` + `RAZORPAY_KEY_SECRET`. `RESEND_API_KEY` still a placeholder (receipt email only). DB password in `.supabase-db-password.local` (gitignored). `.env.example` documents all of them.
+- **Migrations applied** (004 latest): apply more via `SUPABASE_DB_PASSWORD="$(cat .supabase-db-password.local)" supabase db push`.
+- **Seeded** (`npm run seed`, pass `SEED_DEMO_PASSWORD=Password@123`): 6 categories, 12 products, 3 payment methods, 3 floors + 18 tables, 3 coupons (SAVE10/FLAT50/WELCOME20), 2 promotions, **4 users (admin/employee/customer/kitchen)**.
+- **Demo accounts** (all pw `Password@123`): admin@ / alice@ / bob@ / customer@ / kitchen@ nexabrew.com.
 - Regenerate types after any schema change: `supabase gen types typescript --linked > types/database.types.ts`
+- **Verification scripts** (live, self-cleaning): `node --env-file=.env.local --import tsx scripts/demo-flow.mts` (full POS flow) and `scripts/roles-check.mts` (4 roles + customer order visibility).
 
 ---
 
