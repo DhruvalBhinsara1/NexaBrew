@@ -10,7 +10,7 @@ Project root: `/Users/dhruvalbhinsara/NexaBrew`
 
 ---
 
-## Progress: Phases 0–7 COMPLETE. Phase 8 NOT STARTED (next).
+## Progress: Phases 0–12 COMPLETE (backend). Phase 13 next (Dashboard UI).
 
 | Phase | Status |
 |---|---|
@@ -22,7 +22,12 @@ Project root: `/Users/dhruvalbhinsara/NexaBrew`
 | 5 — Orders | ✅ done, `tsc` + `next build` + live service flow verified |
 | 6 — Discounts | ✅ done, `tsc` + `next build` + live discount service flow verified |
 | 7 — Kitchen APIs | ✅ done, routes + service methods implemented |
-| 8–17 | not started |
+| 8 — Payments | ✅ done, `tsc` + `next build` green; live verification pending env |
+| 9 — Realtime hooks | ✅ done, `tsc` green |
+| 10 — Users (Admin API) | ✅ done, `tsc` + lint clean |
+| 11 — Reports | ✅ done, `tsc` + lint + build green |
+| 12 — Customers | ✅ done, `tsc` + lint + build green |
+| 13–17 | not started |
 
 ### Device-switch handoff — 2026-06-13
 
@@ -284,3 +289,51 @@ open a session (admin) → create order on a table (snapshot + totals + table→
 8 Payments (+ Resend receipt, generateQR) · 9 Realtime hooks · 10 Users (Admin API) · 11 Reports · 12 Customers · 13 Dashboard UI · 14 POS UI · 15 KDS UI · 16 polish · 17 (P3) export.
 
 P0 remaining: Payments(8). Do P0 before P1.
+
+---
+
+## Phase 10 -- Users Admin API (completed 2026-06-13)
+
+Implemented:
+- schemas/user.schema.ts
+- services/UserService.ts
+- app/api/users/route.ts (GET list + POST create -- admin only)
+- app/api/users/[id]/route.ts (GET + PATCH + DELETE/archive -- admin only)
+
+Notes:
+- All mutations use supabaseAdmin (service-role) so Auth Admin API is available.
+- Archive sets is_archived=true in profile + ban_duration=876000h in Auth.
+- Self-archive and self-demotion are guarded by comparing actorId to target id.
+
+## Phase 11 -- Reports (completed 2026-06-13)
+
+Implemented:
+- schemas/report.schema.ts (DateRangeSchema, TopProductsQuerySchema)
+- services/ReportService.ts (all aggregation done in-app over raw Supabase rows)
+- app/api/reports/daily/route.ts -- revenue per calendar day
+- app/api/reports/top-products/route.ts -- ranked by qty_sold, optional limit (max 50)
+- app/api/reports/employees/route.ts -- revenue + order count per employee
+- app/api/reports/payments/route.ts -- totals per payment_method_type (all 3 always returned)
+- app/api/reports/sessions/[id]/route.ts -- full aggregate for a single session
+
+All routes: admin-only, use supabaseAdmin.
+Verified: npx tsc --noEmit + npm run lint + npm run build all green.
+
+## Phase 12 -- Customers (completed 2026-06-13)
+
+Implemented:
+- schemas/customer.schema.ts (CreateCustomerSchema, UpdateCustomerSchema)
+- services/CustomerService.ts (list/getById/create/update/remove)
+- app/api/customers/route.ts (GET + POST -- all authenticated)
+- app/api/customers/[id]/route.ts (GET + PATCH + DELETE -- all authenticated)
+
+Notes:
+- Uses createServerClient() (anon key + cookies) so RLS customers_all_auth applies.
+- Duplicate email -> 409 CUSTOMER_DUPLICATE_EMAIL.
+- Delete blocked if customer has orders -> 409 CUSTOMER_HAS_ORDERS.
+Verified: npx tsc --noEmit + npm run lint + npm run build all green.
+
+## NEXT: Phase 13 -- Dashboard UI
+
+Replace app/dashboard/page.tsx placeholder with the full admin Dashboard UI.
+Key widgets: open session card, revenue KPIs, table occupancy grid, recent orders table, quick-links to POS/KDS/Reports.

@@ -78,7 +78,7 @@ export default function LoginPage(): React.ReactElement {
         <CardDescription>Cafe Management System</CardDescription>
       </CardHeader>
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)}>
+        <form method="post" onSubmit={form.handleSubmit(onSubmit)}>
           <CardContent className="space-y-4">
             <FormField
               control={form.control}

@@ -86,7 +86,7 @@ export default function SignupPage(): React.ReactElement {
         <CardDescription>NexaBrew — Cafe Management System</CardDescription>
       </CardHeader>
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)}>
+        <form method="post" onSubmit={form.handleSubmit(onSubmit)}>
           <CardContent className="space-y-4">
             <FormField
               control={form.control}

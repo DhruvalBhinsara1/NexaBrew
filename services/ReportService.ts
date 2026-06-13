@@ -1,0 +1,290 @@
+import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "@/types/database.types";
+import { AppError } from "@/lib/utils/app-error";
+import type { DateRangeInput } from "@/schemas/report.schema";
+
+type Supa = SupabaseClient<Database>;
+
+function round2(n: number): number {
+  return Math.round((n + Number.EPSILON) * 100) / 100;
+}
+
+function toTimestampRange(from: string, to: string): { from: string; to: string } {
+  return { from: `${from}T00:00:00.000Z`, to: `${to}T23:59:59.999Z` };
+}
+
+// ─── Shape definitions ────────────────────────────────────────────────────────
+
+export interface DailyRevenueRow {
+  date: string; // YYYY-MM-DD
+  order_count: number;
+  subtotal: number;
+  discount_amount: number;
+  tax_amount: number;
+  total_revenue: number;
+}
+
+export interface TopProductRow {
+  product_id: string;
+  product_name: string;
+  quantity_sold: number;
+  revenue: number;
+}
+
+export interface EmployeeSalesRow {
+  employee_id: string;
+  employee_name: string;
+  order_count: number;
+  total_revenue: number;
+}
+
+export interface PaymentBreakdownRow {
+  payment_method_type: string;
+  order_count: number;
+  total_amount: number;
+}
+
+export interface SessionSummary {
+  session_id: string;
+  total_orders: number;
+  paid_orders: number;
+  total_revenue: number;
+  cash_collected: number;
+  card_collected: number;
+  upi_collected: number;
+  total_discount: number;
+  total_tax: number;
+}
+
+// ─── Service ─────────────────────────────────────────────────────────────────
+
+export const ReportService = {
+  /**
+   * Per-day revenue breakdown for paid orders in [from, to] (inclusive).
+   */
+  async dailySummary(supabase: Supa, range: DateRangeInput): Promise<DailyRevenueRow[]> {
+    const ts = toTimestampRange(range.from, range.to);
+
+    const { data, error } = await supabase
+      .from("orders")
+      .select("created_at,subtotal,discount_amount,tax_amount,total_amount")
+      .eq("status", "paid")
+      .gte("created_at", ts.from)
+      .lte("created_at", ts.to)
+      .order("created_at", { ascending: true });
+
+    if (error) throw new AppError(error.message, "REPORT_DAILY_FAILED", 500);
+
+    // Group in-application by calendar date
+    const map = new Map<string, DailyRevenueRow>();
+    for (const row of data ?? []) {
+      const date = row.created_at.slice(0, 10);
+      const existing = map.get(date) ?? {
+        date,
+        order_count: 0,
+        subtotal: 0,
+        discount_amount: 0,
+        tax_amount: 0,
+        total_revenue: 0,
+      };
+      existing.order_count += 1;
+      existing.subtotal = round2(existing.subtotal + Number(row.subtotal));
+      existing.discount_amount = round2(existing.discount_amount + Number(row.discount_amount));
+      existing.tax_amount = round2(existing.tax_amount + Number(row.tax_amount));
+      existing.total_revenue = round2(existing.total_revenue + Number(row.total_amount));
+      map.set(date, existing);
+    }
+
+    return Array.from(map.values()).sort((a, b) => a.date.localeCompare(b.date));
+  },
+
+  /**
+   * Top products by quantity sold in paid orders within the date range.
+   */
+  async topProducts(
+    supabase: Supa,
+    range: DateRangeInput,
+    limit = 10
+  ): Promise<TopProductRow[]> {
+    const ts = toTimestampRange(range.from, range.to);
+
+    // Fetch paid order IDs in range first
+    const { data: orders, error: ordErr } = await supabase
+      .from("orders")
+      .select("id")
+      .eq("status", "paid")
+      .gte("created_at", ts.from)
+      .lte("created_at", ts.to);
+
+    if (ordErr) throw new AppError(ordErr.message, "REPORT_TOP_PRODUCTS_FAILED", 500);
+    if (!orders || orders.length === 0) return [];
+
+    const orderIds = orders.map((o) => o.id);
+
+    const { data: items, error: itemErr } = await supabase
+      .from("order_items")
+      .select("product_id,product_name,quantity,line_total")
+      .in("order_id", orderIds);
+
+    if (itemErr) throw new AppError(itemErr.message, "REPORT_TOP_PRODUCTS_FAILED", 500);
+
+    // Aggregate in-app
+    const map = new Map<string, TopProductRow>();
+    for (const item of items ?? []) {
+      const existing = map.get(item.product_id) ?? {
+        product_id: item.product_id,
+        product_name: item.product_name,
+        quantity_sold: 0,
+        revenue: 0,
+      };
+      existing.quantity_sold += item.quantity;
+      existing.revenue = round2(existing.revenue + Number(item.line_total));
+      map.set(item.product_id, existing);
+    }
+
+    return Array.from(map.values())
+      .sort((a, b) => b.quantity_sold - a.quantity_sold)
+      .slice(0, limit);
+  },
+
+  /**
+   * Sales aggregated by employee for paid orders in [from, to].
+   */
+  async salesByEmployee(supabase: Supa, range: DateRangeInput): Promise<EmployeeSalesRow[]> {
+    const ts = toTimestampRange(range.from, range.to);
+
+    const { data, error } = await supabase
+      .from("orders")
+      .select("employee_id,total_amount,employee:users!orders_employee_id_fkey(id,name)")
+      .eq("status", "paid")
+      .gte("created_at", ts.from)
+      .lte("created_at", ts.to);
+
+    if (error) throw new AppError(error.message, "REPORT_EMPLOYEES_FAILED", 500);
+
+    const map = new Map<string, EmployeeSalesRow>();
+    for (const row of data ?? []) {
+      const empId = row.employee_id;
+      const empName =
+        row.employee && !Array.isArray(row.employee) && "name" in row.employee
+          ? (row.employee as { name: string }).name
+          : empId;
+      const existing = map.get(empId) ?? {
+        employee_id: empId,
+        employee_name: empName,
+        order_count: 0,
+        total_revenue: 0,
+      };
+      existing.order_count += 1;
+      existing.total_revenue = round2(existing.total_revenue + Number(row.total_amount));
+      map.set(empId, existing);
+    }
+
+    return Array.from(map.values()).sort((a, b) => b.total_revenue - a.total_revenue);
+  },
+
+  /**
+   * Payment method breakdown for completed payments in [from, to].
+   */
+  async paymentBreakdown(supabase: Supa, range: DateRangeInput): Promise<PaymentBreakdownRow[]> {
+    const ts = toTimestampRange(range.from, range.to);
+
+    const { data, error } = await supabase
+      .from("payments")
+      .select("payment_method_type,amount_paid")
+      .eq("status", "completed")
+      .gte("created_at", ts.from)
+      .lte("created_at", ts.to);
+
+    if (error) throw new AppError(error.message, "REPORT_PAYMENTS_FAILED", 500);
+
+    const map = new Map<string, PaymentBreakdownRow>();
+    for (const row of data ?? []) {
+      const type = row.payment_method_type;
+      const existing = map.get(type) ?? {
+        payment_method_type: type,
+        order_count: 0,
+        total_amount: 0,
+      };
+      existing.order_count += 1;
+      existing.total_amount = round2(existing.total_amount + Number(row.amount_paid));
+      map.set(type, existing);
+    }
+
+    // Ensure all three types appear (even if zero)
+    for (const type of ["cash", "card", "upi"]) {
+      if (!map.has(type)) {
+        map.set(type, { payment_method_type: type, order_count: 0, total_amount: 0 });
+      }
+    }
+
+    return Array.from(map.values());
+  },
+
+  /**
+   * Aggregated summary for a single session.
+   */
+  async sessionSummary(supabase: Supa, sessionId: string): Promise<SessionSummary> {
+    // Verify session exists
+    const { data: session, error: sessErr } = await supabase
+      .from("sessions")
+      .select("id")
+      .eq("id", sessionId)
+      .maybeSingle();
+
+    if (sessErr) throw new AppError(sessErr.message, "REPORT_SESSION_FAILED", 500);
+    if (!session) throw new AppError("Session not found", "SESSION_NOT_FOUND", 404);
+
+    const { data: orders, error: ordErr } = await supabase
+      .from("orders")
+      .select("id,status,total_amount,discount_amount,tax_amount")
+      .eq("session_id", sessionId);
+
+    if (ordErr) throw new AppError(ordErr.message, "REPORT_SESSION_FAILED", 500);
+
+    const paidOrderIds = (orders ?? [])
+      .filter((o) => o.status === "paid")
+      .map((o) => o.id);
+
+    let cashCollected = 0;
+    let cardCollected = 0;
+    let upiCollected = 0;
+
+    if (paidOrderIds.length > 0) {
+      const { data: payments, error: payErr } = await supabase
+        .from("payments")
+        .select("payment_method_type,amount_paid")
+        .in("order_id", paidOrderIds)
+        .eq("status", "completed");
+
+      if (payErr) throw new AppError(payErr.message, "REPORT_SESSION_FAILED", 500);
+
+      for (const p of payments ?? []) {
+        const amt = Number(p.amount_paid);
+        if (p.payment_method_type === "cash") cashCollected = round2(cashCollected + amt);
+        else if (p.payment_method_type === "card") cardCollected = round2(cardCollected + amt);
+        else if (p.payment_method_type === "upi") upiCollected = round2(upiCollected + amt);
+      }
+    }
+
+    const paidOrders = (orders ?? []).filter((o) => o.status === "paid");
+    const totalRevenue = paidOrders.reduce((sum, o) => round2(sum + Number(o.total_amount)), 0);
+    const totalDiscount = paidOrders.reduce(
+      (sum, o) => round2(sum + Number(o.discount_amount)),
+      0
+    );
+    const totalTax = paidOrders.reduce((sum, o) => round2(sum + Number(o.tax_amount)), 0);
+
+    return {
+      session_id: sessionId,
+      total_orders: (orders ?? []).length,
+      paid_orders: paidOrders.length,
+      total_revenue: totalRevenue,
+      cash_collected: cashCollected,
+      card_collected: cardCollected,
+      upi_collected: upiCollected,
+      total_discount: totalDiscount,
+      total_tax: totalTax,
+    };
+  },
+};

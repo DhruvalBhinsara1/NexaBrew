@@ -70,11 +70,17 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
   // Authenticated: resolve role from public.users (source of truth).
   const { data: profile } = await supabase
     .from("users")
-    .select("role")
+    .select("role, is_archived")
     .eq("id", user.id)
     .maybeSingle();
 
-  const role: UserRole = (profile as { role: UserRole } | null)?.role ?? "employee";
+  const typedProfile = profile as { role: UserRole; is_archived: boolean } | null;
+
+  if (!typedProfile || typedProfile.is_archived) {
+    return isAuthPath ? response : redirectTo("/login");
+  }
+
+  const role: UserRole = typedProfile.role;
 
   if (isAuthPath || path === "/") {
     return redirectTo(homeForRole(role));
