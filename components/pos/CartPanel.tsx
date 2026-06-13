@@ -1,11 +1,19 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { Minus, Plus, Ticket, Trash2, User, UtensilsCrossed } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { usePosStore } from "@/store/usePosStore";
 import { formatCurrency } from "@/lib/utils/formatCurrency";
 import { SlideTextButton } from "@/components/kokonutui";
+
+interface ServerTotals {
+  subtotal: number;
+  discount: number;
+  tax: number;
+  total: number;
+}
 
 interface Props {
   onTableSelect: () => void;
@@ -26,19 +34,44 @@ export function CartPanel({
   onSendToKitchen,
   sending,
 }: Props): React.ReactElement {
-  const { cartItems, tableNumber, orderNumber, orderStatus, couponCode, customerName, setQty, removeItem } =
+  const { cartItems, tableNumber, orderId, orderNumber, orderStatus, couponCode, customerName, setQty, removeItem } =
     usePosStore();
 
   const isLocked = !!orderStatus && orderStatus !== "draft";
 
-  // Client-side total preview (no order-level discount — applied server-side)
-  const subtotal = round2(
-    cartItems.reduce((s, c) => s + c.unitPrice * c.quantity, 0)
-  );
-  const tax = round2(
-    cartItems.reduce((s, c) => s + c.unitPrice * c.quantity * (c.taxRate / 100), 0)
-  );
-  const total = round2(subtotal + tax);
+  // Once an order exists, the server is the source of truth (it includes the
+  // coupon/promotion discount and the discount-aware tax). Fetch and show those
+  // real totals instead of the local estimate.
+  const [server, setServer] = useState<ServerTotals | null>(null);
+  useEffect(() => {
+    if (!orderId) {
+      setServer(null);
+      return;
+    }
+    void fetch(`/api/orders/${orderId}`)
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.data) {
+          setServer({
+            subtotal: Number(d.data.subtotal),
+            discount: Number(d.data.discount_amount),
+            tax: Number(d.data.tax_amount),
+            total: Number(d.data.total_amount),
+          });
+        }
+      })
+      .catch(() => null);
+  }, [orderId, orderStatus]);
+
+  // Client-side estimate (used only while building the cart, before the order
+  // is created — no discount yet).
+  const estSubtotal = round2(cartItems.reduce((s, c) => s + c.unitPrice * c.quantity, 0));
+  const estTax = round2(cartItems.reduce((s, c) => s + c.unitPrice * c.quantity * (c.taxRate / 100), 0));
+
+  const subtotal = server ? server.subtotal : estSubtotal;
+  const tax = server ? server.tax : estTax;
+  const discount = server ? server.discount : 0;
+  const total = server ? server.total : round2(estSubtotal + estTax);
 
   return (
     <div className="flex h-full flex-col border-l border-surface-border bg-white">
@@ -129,14 +162,25 @@ export function CartPanel({
             <span>Tax</span>
             <span>{formatCurrency(tax)}</span>
           </div>
-          {couponCode && (
+          {/* Real discount once the order exists; otherwise a pending note */}
+          {discount > 0 ? (
             <div className="flex items-center justify-between text-green-600">
               <span className="flex items-center gap-1 text-xs">
                 <Ticket className="h-3 w-3" />
-                {couponCode}
+                {couponCode || "Discount"}
               </span>
-              <span className="text-xs">Applied on checkout</span>
+              <span>−{formatCurrency(discount)}</span>
             </div>
+          ) : (
+            couponCode && (
+              <div className="flex items-center justify-between text-green-600">
+                <span className="flex items-center gap-1 text-xs">
+                  <Ticket className="h-3 w-3" />
+                  {couponCode}
+                </span>
+                <span className="text-xs">{server ? "not applicable" : "applied on send"}</span>
+              </div>
+            )
           )}
           <Separator className="my-2" />
           <div className="flex justify-between text-base font-bold text-zinc-900">
