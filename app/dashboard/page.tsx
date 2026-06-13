@@ -197,7 +197,7 @@ export default async function DashboardPage(): Promise<React.ReactElement> {
     <div className="p-6 space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-wise-ink">Dashboard</h1>
+        <h1 className="font-display text-2xl font-extrabold tracking-tight text-wise-ink">Dashboard</h1>
         <p className="text-sm text-wise-mute mt-0.5">
           {new Date().toLocaleDateString("en-IN", {
             weekday: "long",

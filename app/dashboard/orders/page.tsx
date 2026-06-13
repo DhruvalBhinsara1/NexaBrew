@@ -89,7 +89,7 @@ export default function OrdersPage(): React.ReactElement {
 
             {/* Summary */}
             {!loading && (
-                <Card className="border-wise-border bg-gradient-to-br from-wise-primary to-wise-primary/50">
+                <Card className="border-wise-primary-pale bg-wise-primary-pale">
                     <CardContent className="py-4">
                         <div className="flex items-center justify-between">
                             <div>

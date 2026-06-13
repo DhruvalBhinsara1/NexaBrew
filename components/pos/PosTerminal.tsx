@@ -337,7 +337,7 @@ export function PosTerminal(): React.ReactElement {
       <header className="flex items-center justify-between border-b border-wise-border bg-white px-4 py-2.5 shadow-sm">
         <div className="flex items-center gap-3">
           <span className="flex items-center gap-2">
-            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-wise-primary to-wise-primary text-white">
+            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-wise-primary text-wise-ink">
               <Coffee className="h-4 w-4" />
             </span>
             <span className="text-base font-bold text-wise-ink">NexaBrew <span className="text-wise-ink-deep">POS</span></span>

@@ -163,7 +163,7 @@ export function KpiTrendCard({
             />
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-bold text-wise-ink">{value}</p>
+            <p className="font-display text-2xl font-extrabold tracking-tight text-wise-ink">{value}</p>
             {sub && <p className="mt-0.5 text-xs text-wise-mute">{sub}</p>}
           </CardContent>
         </Card>

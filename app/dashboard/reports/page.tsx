@@ -182,7 +182,7 @@ export default function ReportsPage(): React.ReactElement {
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <StatCard
           title="Total Orders" value={String(totalOrders)} sub={`in ${chartData.length} days`}
-          icon={ShoppingCart} accent="#2ead4b" tint="from-wise-primary" spark={ordersSpark} loading={loading} delay={0}
+          icon={ShoppingCart} accent="#2ead4b" tint="from-wise-primary-pale" spark={ordersSpark} loading={loading} delay={0}
         />
         <StatCard
           title="Total Revenue" value={formatCurrency(totalRevenue)} sub="after discounts + tax"
@@ -448,7 +448,7 @@ function StatCard({
         {loading ? (
           <div className="h-7 w-20 animate-pulse rounded bg-wise-canvas-soft" />
         ) : (
-          <p className="truncate text-xl font-bold text-wise-ink">{value}</p>
+          <p className="truncate font-display text-xl font-extrabold text-wise-ink">{value}</p>
         )}
         <div className="mt-1 flex items-end justify-between gap-2">
           {sub && <p className="text-xs text-wise-mute">{sub}</p>}

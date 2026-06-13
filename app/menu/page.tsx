@@ -119,7 +119,7 @@ export default function MenuPage(): React.ReactElement {
       {/* Header */}
       <header className="sticky top-0 z-10 flex items-center justify-between border-b border-wise-border bg-white/90 px-4 py-3 backdrop-blur">
         <div className="flex items-center gap-2.5">
-          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-wise-primary to-wise-primary text-white">
+          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-wise-primary text-wise-ink">
             <Coffee className="h-4 w-4" />
           </span>
           <div className="leading-tight">

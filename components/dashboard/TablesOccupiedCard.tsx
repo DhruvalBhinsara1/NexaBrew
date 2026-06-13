@@ -50,7 +50,7 @@ export function TablesOccupiedCard({
             />
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-bold text-wise-ink">
+            <p className="font-display text-2xl font-extrabold tracking-tight text-wise-ink">
               {occupiedCount} <span className="text-wise-mute">/</span> {totalTables}
             </p>
             <p className="mt-0.5 text-xs text-wise-mute">{available} available</p>
@@ -124,7 +124,7 @@ export function TablesOccupiedCard({
                               isLocked
                                 ? "bg-amber-100 text-amber-700 ring-1 ring-amber-300"
                                 : isOccupied
-                                  ? "bg-gradient-to-br from-wise-primary to-wise-primary text-white shadow-sm hover:shadow-md"
+                                  ? "bg-wise-primary text-wise-ink shadow-sm hover:shadow-md"
                                   : "border border-dashed border-wise-border bg-wise-canvas-soft/60 text-wise-mute hover:border-wise-border"
                             )}
                           >
