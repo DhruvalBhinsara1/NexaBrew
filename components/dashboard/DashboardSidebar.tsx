@@ -10,6 +10,7 @@ import {
   LayoutDashboard,
   LayoutGrid,
   Package,
+  ShoppingCart,
   Tag,
   Ticket,
   Users,
@@ -29,6 +30,7 @@ const NAV_ITEMS = [
   { label: "Coupons & Promos", href: "/dashboard/coupons", icon: Ticket },
   { label: "Users", href: "/dashboard/users", icon: Users },
   { label: "Customers", href: "/pos/customers", icon: Contact },
+  { label: "Orders", href: "/dashboard/orders", icon: ShoppingCart },
   { label: "Sessions", href: "/dashboard/sessions", icon: Clock },
   { label: "Reports", href: "/dashboard/reports", icon: BarChart3 },
 ];
@@ -37,21 +39,21 @@ export function DashboardSidebar(): React.ReactElement {
   const pathname = usePathname();
 
   return (
-    <aside className="sticky top-0 flex h-screen w-60 shrink-0 flex-col border-r border-surface-border bg-white">
+    <aside className="sticky top-0 flex h-screen w-60 shrink-0 flex-col border-r border-white/10 bg-wise-ink">
       {/* Brand */}
-      <div className="flex items-center gap-2.5 border-b border-surface-border px-5 py-4">
-        <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-brand-500 to-brand-700 text-white">
-          <Coffee className="h-4 w-4" />
+      <div className="flex items-center gap-2.5 border-b border-white/10 px-5 py-4">
+        <span className="flex h-9 w-9 items-center justify-center rounded-wise bg-wise-primary text-wise-ink">
+          <Coffee className="h-5 w-5" />
         </span>
         <div className="leading-tight">
-          <span className="block text-sm font-bold text-zinc-900">NexaBrew</span>
-          <span className="block text-[11px] text-zinc-400">Management</span>
+          <span className="block font-display text-base font-extrabold tracking-tight text-white">NexaBrew</span>
+          <span className="block text-[11px] text-white/40">Management</span>
         </div>
       </div>
 
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto px-3 py-4">
-        <p className="px-3 pb-2 text-[11px] font-semibold uppercase tracking-wider text-zinc-400">
+        <p className="px-3 pb-2 text-[11px] font-semibold uppercase tracking-wider text-white/40">
           Manage
         </p>
         <ul className="space-y-1">
@@ -63,14 +65,15 @@ export function DashboardSidebar(): React.ReactElement {
               <li key={href}>
                 <Link
                   href={href}
+                  aria-current={active ? "page" : undefined}
                   className={cn(
-                    "group flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                    "group flex items-center gap-3 rounded-wise px-3 py-2 text-sm font-medium transition-colors duration-150",
                     active
-                      ? "bg-brand-500 text-white shadow-sm"
-                      : "text-zinc-600 hover:bg-brand-50 hover:text-brand-700"
+                      ? "bg-wise-primary text-wise-ink"
+                      : "text-white/70 hover:bg-white/10 hover:text-white"
                   )}
                 >
-                  <Icon className={cn("h-4 w-4 shrink-0", active ? "text-white" : "text-zinc-400 group-hover:text-brand-600")} />
+                  <Icon className={cn("h-4 w-4 shrink-0 transition-colors", active ? "text-wise-ink" : "text-white/50 group-hover:text-wise-primary")} />
                   {label}
                 </Link>
               </li>
@@ -78,16 +81,16 @@ export function DashboardSidebar(): React.ReactElement {
           })}
         </ul>
 
-        <p className="px-3 pb-2 pt-5 text-[11px] font-semibold uppercase tracking-wider text-zinc-400">
+        <p className="px-3 pb-2 pt-5 text-[11px] font-semibold uppercase tracking-wider text-white/40">
           Operations
         </p>
         <ul className="space-y-1">
           <li>
             <Link
               href="/pos/terminal"
-              className="group flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-zinc-600 transition-colors hover:bg-brand-50 hover:text-brand-700"
+              className="group flex items-center gap-3 rounded-wise px-3 py-2 text-sm font-medium text-white/70 transition-colors duration-150 hover:bg-white/10 hover:text-white"
             >
-              <ExternalLink className="h-4 w-4 shrink-0 text-zinc-400 group-hover:text-brand-600" />
+              <ExternalLink className="h-4 w-4 shrink-0 text-white/50 transition-colors group-hover:text-wise-primary" />
               Open POS Terminal
             </Link>
           </li>
@@ -96,9 +99,9 @@ export function DashboardSidebar(): React.ReactElement {
               href="/kds"
               target="_blank"
               rel="noopener noreferrer"
-              className="group flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-zinc-600 transition-colors hover:bg-brand-50 hover:text-brand-700"
+              className="group flex items-center gap-3 rounded-wise px-3 py-2 text-sm font-medium text-white/70 transition-colors duration-150 hover:bg-white/10 hover:text-white"
             >
-              <ChefHat className="h-4 w-4 shrink-0 text-zinc-400 group-hover:text-brand-600" />
+              <ChefHat className="h-4 w-4 shrink-0 text-white/50 transition-colors group-hover:text-wise-primary" />
               Kitchen Display
             </a>
           </li>
@@ -106,7 +109,7 @@ export function DashboardSidebar(): React.ReactElement {
       </nav>
 
       {/* Logout */}
-      <div className="border-t border-surface-border p-3">
+      <div className="border-t border-white/10 p-3">
         <LogoutButton />
       </div>
     </aside>

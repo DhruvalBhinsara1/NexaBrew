@@ -19,7 +19,13 @@ export function LogoutButton(): React.ReactElement {
   }
 
   return (
-    <Button variant="outline" size="sm" onClick={handleLogout} disabled={busy}>
+    <Button
+      variant="ghost"
+      size="sm"
+      onClick={handleLogout}
+      disabled={busy}
+      className="w-full justify-start rounded-wise border border-white/10 bg-white/5 text-white/80 hover:bg-white/10 hover:text-white"
+    >
       <LogOut className="mr-2 h-4 w-4" />
       {busy ? "Signing out..." : "Logout"}
     </Button>
