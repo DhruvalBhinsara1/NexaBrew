@@ -96,7 +96,7 @@ export function ReceiptDialog({ orderId, open, onClose, toast }: Props): React.R
         <div className="flex min-h-[360px] items-center justify-center rounded-lg bg-wise-canvas-soft p-4">
           {loading ? (
             <span className="flex items-center gap-2 text-sm text-wise-mute">
-              <Loader2 className="h-4 w-4 animate-spin" /> Building receipt…
+              <Loader2 className="h-4 w-4 animate-spin" /> Brewing your receipt…
             </span>
           ) : error ? (
             <span className="text-sm text-red-500">{error}</span>

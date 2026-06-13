@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Script from "next/script";
-import { Banknote, CheckCircle2, CreditCard, Loader2, Printer } from "lucide-react";
+import { Banknote, CheckCircle2, CreditCard, Loader2, Printer, Ticket } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -64,14 +64,32 @@ export function PaymentDialog({
   const [paid, setPaid] = useState(false);
   const [scriptReady, setScriptReady] = useState(false);
   const [showReceipt, setShowReceipt] = useState(false);
+  const [bd, setBd] = useState<{ subtotal: number; discount: number; tax: number; total: number; coupon: string | null } | null>(null);
 
   useEffect(() => {
     if (open) {
       setPaid(false);
       setTendered("");
       setMethod("razorpay");
+      // Fetch the live price breakdown so checkout shows discount + coupon.
+      void fetch(`/api/orders/${orderId}`)
+        .then((r) => r.json())
+        .then((d) => {
+          if (d.data) {
+            setBd({
+              subtotal: Number(d.data.subtotal),
+              discount: Number(d.data.discount_amount),
+              tax: Number(d.data.tax_amount),
+              total: Number(d.data.total_amount),
+              coupon: d.data.coupon?.code ?? null,
+            });
+          }
+        })
+        .catch(() => setBd(null));
     }
-  }, [open]);
+  }, [open, orderId]);
+
+  const payTotal = bd?.total ?? total;
 
   async function payRazorpay(): Promise<void> {
     if (!scriptReady) {
@@ -96,7 +114,7 @@ export function PaymentDialog({
         description: `Order #${d.order_number}`,
         order_id: d.razorpay_order_id,
         prefill: { email: d.customer_email ?? undefined, name: d.customer_name ?? undefined },
-        theme: { color: "#d4791f" },
+        theme: { color: "#163300" },
         modal: { ondismiss: () => setLoading(false) },
         handler: async (r) => {
           const pay = await fetch(`/api/orders/${orderId}/payment`, {
@@ -152,7 +170,7 @@ export function PaymentDialog({
   }
 
   const change =
-    method === "cash" && Number(tendered) > 0 ? Math.max(0, Number(tendered) - total) : null;
+    method === "cash" && Number(tendered) > 0 ? Math.max(0, Number(tendered) - payTotal) : null;
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
@@ -173,6 +191,7 @@ export function PaymentDialog({
             <CheckCircle2 className="h-12 w-12 text-green-500" />
             <div>
               <p className="text-sm font-semibold text-wise-ink">Order {orderNumber} is settled.</p>
+              <p className="mt-0.5 text-xs text-wise-mute">That hit the spot — thanks a latte! ☕</p>
               {customerName && (
                 <p className="mt-1 text-xs text-green-700 font-medium">Customer: {customerName}</p>
               )}
@@ -186,7 +205,32 @@ export function PaymentDialog({
           </div>
         ) : (
           <div className="space-y-4">
-            <p className="text-2xl font-bold text-wise-ink-deep">{formatCurrency(total)}</p>
+            {/* Price breakdown */}
+            <div className="rounded-wise border border-wise-border bg-wise-canvas-soft/50 p-3 text-sm">
+              <div className="flex justify-between text-wise-body">
+                <span>Original</span>
+                <span>{formatCurrency(bd?.subtotal ?? total)}</span>
+              </div>
+              {bd && bd.discount > 0 && (
+                <div className="mt-1 flex justify-between font-medium text-wise-positive-deep">
+                  <span className="flex items-center gap-1.5">
+                    <Ticket className="h-3.5 w-3.5" />
+                    {bd.coupon ?? "Discount"}
+                  </span>
+                  <span>−{formatCurrency(bd.discount)}</span>
+                </div>
+              )}
+              {bd && (
+                <div className="mt-1 flex justify-between text-wise-body">
+                  <span>Tax</span>
+                  <span>{formatCurrency(bd.tax)}</span>
+                </div>
+              )}
+              <div className="mt-2 flex items-baseline justify-between border-t border-wise-border pt-2">
+                <span className="text-sm font-medium text-wise-ink">Total payable</span>
+                <span className="font-display text-2xl font-extrabold text-wise-ink">{formatCurrency(payTotal)}</span>
+              </div>
+            </div>
 
             <RadioGroup value={method} onValueChange={(v) => setMethod(v as Method)} className="space-y-2">
               <label className={`flex cursor-pointer items-center gap-3 rounded-lg border p-3 ${method === "razorpay" ? "border-wise-primary bg-wise-primary-pale" : "border-wise-border hover:bg-wise-canvas-soft"}`}>
@@ -218,7 +262,7 @@ export function PaymentDialog({
 
             {method === "razorpay" ? (
               <SlideTextButton onClick={() => void payRazorpay()} loading={loading} disabled={loading || !scriptReady}>
-                {loading ? "Opening…" : `Pay ${formatCurrency(total)}`}
+                {loading ? "Opening…" : `Pay ${formatCurrency(payTotal)}`}
               </SlideTextButton>
             ) : (
               <SlideTextButton tone="green" onClick={() => void payCash()} loading={loading} disabled={loading || !tendered || Number(tendered) <= 0}>

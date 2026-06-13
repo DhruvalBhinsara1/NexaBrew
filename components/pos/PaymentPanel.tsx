@@ -203,8 +203,9 @@ export function PaymentPanel({
           <ChefHat className="h-8 w-8 text-wise-mute" />
         </div>
         <p className="text-sm font-medium text-wise-body">
-          Add items and send to kitchen to proceed
+          Your order is roasting to perfection
         </p>
+        <p className="-mt-2 text-xs text-wise-mute">Payment unlocks once the kitchen marks it ready.</p>
       </div>
     );
   }

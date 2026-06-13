@@ -21,12 +21,6 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 
-const DEMO_ACCOUNTS = [
-  { label: "Admin", email: "admin@nexabrew.com" },
-  { label: "Cashier", email: "alice@nexabrew.com" },
-  { label: "Kitchen", email: "kitchen@nexabrew.com" },
-];
-
 export default function LoginPage(): React.ReactElement {
   const router = useRouter();
   const { toast } = useToast();
@@ -126,26 +120,6 @@ export default function LoginPage(): React.ReactElement {
           </SlideTextButton>
         </form>
       </Form>
-
-      {/* Demo quick-fill */}
-      <div className="mt-7">
-        <p className="text-xs font-medium uppercase tracking-wider text-wise-mute">Try a demo account</p>
-        <div className="mt-2.5 flex flex-wrap gap-2">
-          {DEMO_ACCOUNTS.map((acc) => (
-            <button
-              key={acc.email}
-              type="button"
-              onClick={() => {
-                form.setValue("email", acc.email, { shouldValidate: true });
-                form.setValue("password", "Password@123", { shouldValidate: true });
-              }}
-              className="rounded-wisePill border border-wise-border bg-white px-3.5 py-1.5 text-sm font-medium text-wise-body transition-colors hover:border-wise-primary hover:bg-wise-primary-pale hover:text-wise-ink-deep"
-            >
-              {acc.label}
-            </button>
-          ))}
-        </div>
-      </div>
 
       <p className="mt-8 text-sm text-wise-body">
         No account?{" "}

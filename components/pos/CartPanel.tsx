@@ -190,8 +190,8 @@ export function CartPanel({
         {cartItems.length === 0 && !isActiveOrder ? (
           <div className="flex h-full flex-col items-center justify-center gap-2 py-12 text-center">
             <UtensilsCrossed className="h-10 w-10 text-wise-mute" />
-            <p className="text-sm text-wise-mute">Cart is empty</p>
-            <p className="text-xs text-wise-mute">Click a product to add it</p>
+            <p className="text-sm font-medium text-wise-body">A latte nothing here yet</p>
+            <p className="text-xs text-wise-mute">Tap a product to start the order</p>
           </div>
         ) : cartItems.length === 0 && isActiveOrder ? (
           <div className="flex flex-col items-center justify-center gap-1 py-6 text-center">
