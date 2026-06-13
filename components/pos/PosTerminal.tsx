@@ -11,6 +11,7 @@ import { CartPanel } from "@/components/pos/CartPanel";
 import { PaymentPanel } from "@/components/pos/PaymentPanel";
 import { TableSelectorDialog } from "@/components/pos/TableSelectorDialog";
 import { CouponDialog } from "@/components/pos/CouponDialog";
+import { CustomerDialog } from "@/components/pos/CustomerDialog";
 import { useToast } from "@/hooks/use-toast";
 import type { Category, FloorWithTables, ProductWithCategory, Table } from "@/types/domain.types";
 
@@ -34,6 +35,7 @@ export function PosTerminal(): React.ReactElement {
   // UI state
   const [tableSelectorOpen, setTableSelectorOpen] = useState(false);
   const [couponDialogOpen, setCouponDialogOpen] = useState(false);
+  const [customerDialogOpen, setCustomerDialogOpen] = useState(false);
   const [sending, setSending] = useState(false);
 
   // Store
@@ -41,6 +43,7 @@ export function PosTerminal(): React.ReactElement {
     setSession: setStoreSession,
     tableId, tableNumber, setTable,
     cartItems, couponCode, clearCart,
+    customerId,
     orderId,
     setOrder, updateStatus,
   } = usePosStore();
@@ -142,6 +145,7 @@ export function PosTerminal(): React.ReactElement {
         body: JSON.stringify({
           session_id: session.id,
           table_id: tableId ?? undefined,
+          customer_id: customerId ?? undefined,
           items: cartItems.map((c) => ({ product_id: c.productId, quantity: c.quantity })),
         }),
       });
@@ -278,6 +282,7 @@ export function PosTerminal(): React.ReactElement {
           <CartPanel
             onTableSelect={() => setTableSelectorOpen(true)}
             onApplyCoupon={() => setCouponDialogOpen(true)}
+            onAssignCustomer={() => setCustomerDialogOpen(true)}
             onSendToKitchen={() => void handleSendToKitchen()}
             sending={sending}
           />
@@ -304,6 +309,7 @@ export function PosTerminal(): React.ReactElement {
         selectedTableId={tableId}
       />
       <CouponDialog open={couponDialogOpen} onClose={() => setCouponDialogOpen(false)} />
+      <CustomerDialog open={customerDialogOpen} onClose={() => setCustomerDialogOpen(false)} />
     </div>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { Minus, Plus, Ticket, Trash2, UtensilsCrossed } from "lucide-react";
+import { Minus, Plus, Ticket, Trash2, User, UtensilsCrossed } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { usePosStore } from "@/store/usePosStore";
@@ -10,6 +10,7 @@ import { SlideTextButton } from "@/components/kokonutui";
 interface Props {
   onTableSelect: () => void;
   onApplyCoupon: () => void;
+  onAssignCustomer: () => void;
   onSendToKitchen: () => void;
   sending: boolean;
 }
@@ -21,10 +22,11 @@ function round2(n: number): number {
 export function CartPanel({
   onTableSelect,
   onApplyCoupon,
+  onAssignCustomer,
   onSendToKitchen,
   sending,
 }: Props): React.ReactElement {
-  const { cartItems, tableNumber, orderNumber, orderStatus, couponCode, setQty, removeItem } =
+  const { cartItems, tableNumber, orderNumber, orderStatus, couponCode, customerName, setQty, removeItem } =
     usePosStore();
 
   const isLocked = !!orderStatus && orderStatus !== "draft";
@@ -145,15 +147,16 @@ export function CartPanel({
 
         {!isLocked && (
           <div className="mt-3 space-y-2">
-            <Button
-              variant="outline"
-              size="sm"
-              className="w-full"
-              onClick={onApplyCoupon}
-            >
-              <Ticket className="mr-2 h-3.5 w-3.5" />
-              {couponCode ? `Coupon: ${couponCode}` : "Apply Coupon"}
-            </Button>
+            <div className="grid grid-cols-2 gap-2">
+              <Button variant="outline" size="sm" onClick={onAssignCustomer}>
+                <User className="mr-2 h-3.5 w-3.5" />
+                {customerName ? customerName.split(" ")[0] : "Customer"}
+              </Button>
+              <Button variant="outline" size="sm" onClick={onApplyCoupon}>
+                <Ticket className="mr-2 h-3.5 w-3.5" />
+                {couponCode ? couponCode : "Coupon"}
+              </Button>
+            </div>
             <SlideTextButton
               onClick={onSendToKitchen}
               disabled={cartItems.length === 0 || sending}

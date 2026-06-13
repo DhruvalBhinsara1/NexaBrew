@@ -28,6 +28,11 @@ interface PosStore {
   setQty: (productId: string, qty: number) => void;
   clearCart: () => void;
 
+  // Customer (optional — links the order so it shows in the customer's My Orders)
+  customerId: string | null;
+  customerName: string | null;
+  setCustomer: (id: string | null, name: string | null) => void;
+
   // Coupon
   couponCode: string;
   setCouponCode: (code: string) => void;
@@ -76,6 +81,10 @@ export const usePosStore = create<PosStore>((set) => ({
     })),
   clearCart: () => set({ cartItems: [] }),
 
+  customerId: null,
+  customerName: null,
+  setCustomer: (id, name) => set({ customerId: id, customerName: name }),
+
   couponCode: "",
   setCouponCode: (code) => set({ couponCode: code }),
 
@@ -89,6 +98,8 @@ export const usePosStore = create<PosStore>((set) => ({
     set({
       cartItems: [],
       couponCode: "",
+      customerId: null,
+      customerName: null,
       orderId: null,
       orderNumber: null,
       orderStatus: null,

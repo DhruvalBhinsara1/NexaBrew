@@ -64,6 +64,19 @@ export default function MenuPage(): React.ReactElement {
     void Promise.all([loadMenu(), loadOrders()]).finally(() => setLoading(false));
   }, [loadMenu, loadOrders]);
 
+  // Live updates: refetch my orders whenever any order changes (cheap; the API
+  // scopes to this customer). Gives the "is it being prepared?" status live.
+  useEffect(() => {
+    const supabase = createBrowserClient();
+    const channel = supabase
+      .channel("menu:my-orders")
+      .on("postgres_changes", { event: "*", schema: "public", table: "orders" }, () => void loadOrders())
+      .subscribe();
+    return () => {
+      void supabase.removeChannel(channel);
+    };
+  }, [loadOrders]);
+
   const filtered = useMemo(
     () => (activeCat ? products.filter((p) => p.category_id === activeCat) : products),
     [products, activeCat]
