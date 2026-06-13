@@ -1,10 +1,17 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { CheckCircle2, Clock } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { CheckCircle2, Clock, Search } from "lucide-react";
 import { useRealtimeKitchenTickets } from "@/hooks/useRealtimeKitchenTickets";
+import { createBrowserClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 import type { KitchenTicketItem, KitchenTicketWithItems } from "@/types/domain.types";
+
+interface ProductMeta {
+  name: string;
+  category_id: string | null;
+  category_name: string | null;
+}
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -146,6 +153,10 @@ function KdsColumn({
 export default function KdsPage(): React.ReactElement {
   const { data: tickets, loading } = useRealtimeKitchenTickets();
   const [time, setTime] = useState(liveTime());
+  const [search, setSearch] = useState("");
+  const [categoryId, setCategoryId] = useState<string>("all");
+  const [categories, setCategories] = useState<{ id: string; name: string }[]>([]);
+  const [productMeta, setProductMeta] = useState<Map<string, ProductMeta>>(new Map());
 
   // Tick clock every 30s
   useEffect(() => {
@@ -153,11 +164,49 @@ export default function KdsPage(): React.ReactElement {
     return () => clearInterval(interval);
   }, []);
 
-  // Group by status
-  const toCook = tickets.filter((t) => t.status === "to_cook");
-  const preparing = tickets.filter((t) => t.status === "preparing");
+  // Load product → category map for filtering (anon key; products are public-read)
+  useEffect(() => {
+    const supabase = createBrowserClient();
+    void (async () => {
+      const { data } = await supabase
+        .from("products")
+        .select("id, name, category_id, category:categories(id, name)");
+      if (!data) return;
+      const map = new Map<string, ProductMeta>();
+      const cats = new Map<string, string>();
+      for (const p of data) {
+        const cat = (p as { category: { id: string; name: string } | null }).category;
+        map.set(p.name, { name: p.name, category_id: p.category_id, category_name: cat?.name ?? null });
+        if (cat) cats.set(cat.id, cat.name);
+      }
+      setProductMeta(map);
+      setCategories(Array.from(cats, ([id, name]) => ({ id, name })));
+    })();
+  }, []);
+
+  // Apply search + category filter to a ticket's items
+  const matches = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return (t: KitchenTicketWithItems): boolean => {
+      const items = t.items.filter((it) => {
+        const meta = productMeta.get(it.product_name);
+        const okCat = categoryId === "all" || meta?.category_id === categoryId;
+        const okSearch =
+          !q ||
+          it.product_name.toLowerCase().includes(q) ||
+          t.ticket_number.toLowerCase().includes(q);
+        return okCat && okSearch;
+      });
+      return items.length > 0;
+    };
+  }, [search, categoryId, productMeta]);
+
+  // Group by status (filtered)
+  const visible = tickets.filter(matches);
+  const toCook = visible.filter((t) => t.status === "to_cook");
+  const preparing = visible.filter((t) => t.status === "preparing");
   // Show completed only from the last 5 minutes
-  const completed = tickets.filter((t) => {
+  const completed = visible.filter((t) => {
     if (t.status !== "completed") return false;
     if (!t.completed_at) return true;
     return Date.now() - new Date(t.completed_at).getTime() < 5 * 60 * 1000;
@@ -187,9 +236,33 @@ export default function KdsPage(): React.ReactElement {
           <span className="text-base font-bold text-white">NexaBrew</span>
           <span className="text-xs text-white/40">Kitchen Display</span>
         </div>
-        <div className="flex items-center gap-2 text-white/60">
-          <Clock className="h-4 w-4" />
-          <span className="font-mono text-sm">{time}</span>
+
+        <div className="flex items-center gap-3">
+          {/* Search */}
+          <div className="relative">
+            <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-white/40" />
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search item or ticket…"
+              className="w-44 rounded-md border border-kds-border bg-kds-card py-1.5 pl-8 pr-2 text-sm text-white placeholder:text-white/30 focus:outline-none focus:ring-1 focus:ring-kds-preparing"
+            />
+          </div>
+          {/* Category filter */}
+          <select
+            value={categoryId}
+            onChange={(e) => setCategoryId(e.target.value)}
+            className="rounded-md border border-kds-border bg-kds-card px-2 py-1.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-kds-preparing"
+          >
+            <option value="all">All products</option>
+            {categories.map((c) => (
+              <option key={c.id} value={c.id}>{c.name}</option>
+            ))}
+          </select>
+          <div className="flex items-center gap-2 text-white/60">
+            <Clock className="h-4 w-4" />
+            <span className="font-mono text-sm">{time}</span>
+          </div>
         </div>
       </header>
 

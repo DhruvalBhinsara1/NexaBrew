@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { AlertCircle, LogOut, LayoutGrid } from "lucide-react";
+import { AlertCircle, ChefHat, LogOut, LayoutGrid, Receipt } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createBrowserClient } from "@/lib/supabase/client";
@@ -220,6 +220,22 @@ export function PosTerminal(): React.ReactElement {
         </div>
 
         <nav className="flex items-center gap-3">
+          <Link
+            href="/pos/orders"
+            className="flex items-center gap-1 rounded-md px-2 py-1 text-xs text-zinc-500 hover:text-zinc-800"
+          >
+            <Receipt className="h-3.5 w-3.5" />
+            Orders
+          </Link>
+          <a
+            href="/kds"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1 rounded-md px-2 py-1 text-xs text-zinc-500 hover:text-zinc-800"
+          >
+            <ChefHat className="h-3.5 w-3.5" />
+            Kitchen Display
+          </a>
           <Link
             href="/dashboard"
             className="flex items-center gap-1 rounded-md px-2 py-1 text-xs text-zinc-500 hover:text-zinc-800"

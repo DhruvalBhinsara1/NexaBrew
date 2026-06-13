@@ -12,6 +12,7 @@ import {
   Tag,
   Ticket,
   Users,
+  ChefHat,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { LogoutButton } from "@/components/shared/LogoutButton";
@@ -70,6 +71,16 @@ export function DashboardSidebar(): React.ReactElement {
           <ExternalLink className="h-4 w-4 shrink-0" />
           Open POS Terminal
         </Link>
+
+        <a
+          href="/kds"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-zinc-600 transition-colors hover:bg-surface-muted hover:text-zinc-900"
+        >
+          <ChefHat className="h-4 w-4 shrink-0" />
+          Kitchen Display
+        </a>
       </nav>
 
       {/* Logout */}
