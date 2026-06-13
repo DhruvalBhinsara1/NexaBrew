@@ -72,22 +72,22 @@ export default function PaymentMethodsPage(): React.ReactElement {
       <PageHeader title="Payment Methods" subtitle="Enable and configure how customers pay" />
 
       {loading ? (
-        <p className="text-sm text-zinc-400">Loading…</p>
+        <p className="text-sm text-wise-mute">Loading…</p>
       ) : (
         <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
           {methods.map((m) => {
             const Icon = ICONS[m.type] ?? CreditCard;
             return (
-              <Card key={m.id} className="border-surface-border">
+              <Card key={m.id} className="border-wise-border">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0">
                   <CardTitle className="flex items-center gap-2 text-base">
-                    <Icon className="h-4 w-4 text-brand-500" />
+                    <Icon className="h-4 w-4 text-wise-ink-deep" />
                     {LABELS[m.type] ?? m.type}
                   </CardTitle>
                   <Switch checked={m.is_enabled} onCheckedChange={() => void toggle(m)} />
                 </CardHeader>
                 <CardContent>
-                  <p className="text-sm text-zinc-400">
+                  <p className="text-sm text-wise-mute">
                     {m.is_enabled ? "Accepting payments" : "Disabled"}
                   </p>
                   {m.type === "upi" && m.is_enabled && (
@@ -99,7 +99,7 @@ export default function PaymentMethodsPage(): React.ReactElement {
                           value={upiDraft[m.id] ?? ""}
                           onChange={(e) => setUpiDraft({ ...upiDraft, [m.id]: e.target.value })}
                         />
-                        <Button size="sm" onClick={() => void saveUpi(m)} className="bg-brand-500 hover:bg-brand-600">
+                        <Button size="sm" onClick={() => void saveUpi(m)} className="bg-wise-primary hover:bg-wise-primary">
                           Save
                         </Button>
                       </div>
@@ -112,7 +112,7 @@ export default function PaymentMethodsPage(): React.ReactElement {
         </div>
       )}
 
-      <p className="text-xs text-zinc-400">
+      <p className="text-xs text-wise-mute">
         Note: live customer payments go through Razorpay (configured via environment keys).
         These toggles control which tender types the POS records.
       </p>

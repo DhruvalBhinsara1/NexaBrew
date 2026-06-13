@@ -172,7 +172,7 @@ export function PaymentDialog({
           <div className="flex flex-col items-center gap-3 py-6 text-center">
             <CheckCircle2 className="h-12 w-12 text-green-500" />
             <div>
-              <p className="text-sm font-semibold text-zinc-800">Order {orderNumber} is settled.</p>
+              <p className="text-sm font-semibold text-wise-ink">Order {orderNumber} is settled.</p>
               {customerName && (
                 <p className="mt-1 text-xs text-green-700 font-medium">Customer: {customerName}</p>
               )}
@@ -186,27 +186,27 @@ export function PaymentDialog({
           </div>
         ) : (
           <div className="space-y-4">
-            <p className="text-2xl font-bold text-brand-600">{formatCurrency(total)}</p>
+            <p className="text-2xl font-bold text-wise-ink-deep">{formatCurrency(total)}</p>
 
             <RadioGroup value={method} onValueChange={(v) => setMethod(v as Method)} className="space-y-2">
-              <label className={`flex cursor-pointer items-center gap-3 rounded-lg border p-3 ${method === "razorpay" ? "border-brand-400 bg-brand-50" : "border-surface-border hover:bg-surface-muted"}`}>
+              <label className={`flex cursor-pointer items-center gap-3 rounded-lg border p-3 ${method === "razorpay" ? "border-wise-primary bg-wise-primary-pale" : "border-wise-border hover:bg-wise-canvas-soft"}`}>
                 <RadioGroupItem value="razorpay" className="sr-only" />
-                <CreditCard className={`h-4 w-4 ${method === "razorpay" ? "text-brand-600" : "text-zinc-400"}`} />
+                <CreditCard className={`h-4 w-4 ${method === "razorpay" ? "text-wise-ink-deep" : "text-wise-mute"}`} />
                 <div>
-                  <p className={`text-sm font-medium ${method === "razorpay" ? "text-brand-700" : "text-zinc-600"}`}>Razorpay</p>
-                  <p className="text-xs text-zinc-400">Card · UPI · Netbanking</p>
+                  <p className={`text-sm font-medium ${method === "razorpay" ? "text-wise-ink-deep" : "text-wise-body"}`}>Razorpay</p>
+                  <p className="text-xs text-wise-mute">Card · UPI · Netbanking</p>
                 </div>
               </label>
-              <label className={`flex cursor-pointer items-center gap-3 rounded-lg border p-3 ${method === "cash" ? "border-brand-400 bg-brand-50" : "border-surface-border hover:bg-surface-muted"}`}>
+              <label className={`flex cursor-pointer items-center gap-3 rounded-lg border p-3 ${method === "cash" ? "border-wise-primary bg-wise-primary-pale" : "border-wise-border hover:bg-wise-canvas-soft"}`}>
                 <RadioGroupItem value="cash" className="sr-only" />
-                <Banknote className={`h-4 w-4 ${method === "cash" ? "text-brand-600" : "text-zinc-400"}`} />
-                <span className={`text-sm font-medium ${method === "cash" ? "text-brand-700" : "text-zinc-600"}`}>Cash</span>
+                <Banknote className={`h-4 w-4 ${method === "cash" ? "text-wise-ink-deep" : "text-wise-mute"}`} />
+                <span className={`text-sm font-medium ${method === "cash" ? "text-wise-ink-deep" : "text-wise-body"}`}>Cash</span>
               </label>
             </RadioGroup>
 
             {method === "cash" && (
               <div className="space-y-2">
-                <Label className="text-xs text-zinc-500">Amount tendered (₹)</Label>
+                <Label className="text-xs text-wise-body">Amount tendered (₹)</Label>
                 <Input type="number" min={0} value={tendered} onChange={(e) => setTendered(e.target.value)} autoFocus />
                 {change !== null && (
                   <div className="rounded-md bg-green-50 px-3 py-2 text-sm font-medium text-green-700">
@@ -227,7 +227,7 @@ export function PaymentDialog({
             )}
 
             {loading && method === "razorpay" && (
-              <p className="flex items-center justify-center gap-1 text-xs text-zinc-400">
+              <p className="flex items-center justify-center gap-1 text-xs text-wise-mute">
                 <Loader2 className="h-3 w-3 animate-spin" /> waiting for Razorpay…
               </p>
             )}

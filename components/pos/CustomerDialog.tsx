@@ -70,42 +70,42 @@ export function CustomerDialog({ open, onClose }: Props): React.ReactElement {
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <User className="h-4 w-4 text-brand-500" /> Assign Customer
+            <User className="h-4 w-4 text-wise-ink-deep" /> Assign Customer
           </DialogTitle>
         </DialogHeader>
 
         {!adding ? (
           <div className="space-y-3">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-wise-mute" />
               <Input className="pl-9" placeholder="Search name, email, phone…" value={search} onChange={(e) => setSearch(e.target.value)} autoFocus />
             </div>
 
             <div className="max-h-64 space-y-1 overflow-y-auto">
               {customers.length === 0 ? (
-                <p className="py-6 text-center text-sm text-zinc-400">No customers found.</p>
+                <p className="py-6 text-center text-sm text-wise-mute">No customers found.</p>
               ) : (
                 customers.map((c) => (
                   <button
                     key={c.id}
                     onClick={() => pick(c)}
-                    className={`flex w-full items-center justify-between rounded-lg border px-3 py-2 text-left transition-colors hover:bg-brand-50 ${
-                      c.id === customerId ? "border-brand-400 bg-brand-50" : "border-surface-border"
+                    className={`flex w-full items-center justify-between rounded-lg border px-3 py-2 text-left transition-colors hover:bg-wise-primary-pale ${
+                      c.id === customerId ? "border-wise-primary bg-wise-primary-pale" : "border-wise-border"
                     }`}
                   >
                     <span>
-                      <span className="block text-sm font-medium text-zinc-800">{c.name}</span>
-                      <span className="block text-xs text-zinc-400">{c.email ?? c.phone ?? "—"}</span>
+                      <span className="block text-sm font-medium text-wise-ink">{c.name}</span>
+                      <span className="block text-xs text-wise-mute">{c.email ?? c.phone ?? "—"}</span>
                     </span>
-                    {c.id === customerId && <span className="text-xs font-medium text-brand-600">selected</span>}
+                    {c.id === customerId && <span className="text-xs font-medium text-wise-ink-deep">selected</span>}
                   </button>
                 ))
               )}
             </div>
 
-            <div className="flex items-center justify-between border-t border-surface-border pt-3">
+            <div className="flex items-center justify-between border-t border-wise-border pt-3">
               {customerId && (
-                <Button variant="ghost" size="sm" className="text-zinc-500" onClick={() => { setCustomer(null, null); onClose(); }}>
+                <Button variant="ghost" size="sm" className="text-wise-body" onClick={() => { setCustomer(null, null); onClose(); }}>
                   Clear customer
                 </Button>
               )}
@@ -120,7 +120,7 @@ export function CustomerDialog({ open, onClose }: Props): React.ReactElement {
             <Input type="email" placeholder="Email (optional)" value={newEmail} onChange={(e) => setNewEmail(e.target.value)} />
             <div className="flex gap-2">
               <Button variant="outline" className="flex-1" onClick={() => setAdding(false)}>Back</Button>
-              <Button className="flex-1 bg-brand-500 hover:bg-brand-600" onClick={() => void createAndPick()} disabled={busy || !newName}>
+              <Button className="flex-1 bg-wise-primary hover:bg-wise-primary" onClick={() => void createAndPick()} disabled={busy || !newName}>
                 <UserPlus className="mr-1 h-4 w-4" /> {busy ? "Saving…" : "Add & select"}
               </Button>
             </div>

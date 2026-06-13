@@ -79,9 +79,9 @@ export default function SignupPage(): React.ReactElement {
   }
 
   return (
-    <Card className="border-surface-border shadow-sm">
+    <Card className="border-wise-border shadow-sm">
       <CardHeader className="space-y-1">
-        <CardTitle className="text-2xl font-bold tracking-tight text-zinc-900">
+        <CardTitle className="text-2xl font-bold tracking-tight text-wise-ink">
           Create your account
         </CardTitle>
         <CardDescription>Browse the menu and track your orders</CardDescription>
@@ -147,7 +147,7 @@ export default function SignupPage(): React.ReactElement {
               Already have an account?{" "}
               <Link
                 href="/login"
-                className="font-medium text-brand-600 hover:underline"
+                className="font-medium text-wise-ink-deep hover:underline"
               >
                 Sign in
               </Link>

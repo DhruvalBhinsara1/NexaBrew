@@ -121,7 +121,7 @@ export default function CategoriesPage(): React.ReactElement {
         title="Categories"
         subtitle="Organize products into colored groups"
         action={
-          <Button onClick={openCreate} className="bg-brand-500 hover:bg-brand-600">
+          <Button onClick={openCreate} className="bg-wise-primary hover:bg-wise-primary">
             <Plus className="mr-2 h-4 w-4" /> Add Category
           </Button>
         }
@@ -133,12 +133,12 @@ export default function CategoriesPage(): React.ReactElement {
         <>
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
             {items.map((cat) => (
-              <Card key={cat.id} className="group relative overflow-hidden border-surface-border p-4">
+              <Card key={cat.id} className="group relative overflow-hidden border-wise-border p-4">
                 <div className="h-2 w-full rounded-full" style={{ backgroundColor: cat.color ?? "#ccc" }} />
-                <p className="mt-3 font-semibold text-zinc-800">{cat.name}</p>
-                <p className="text-xs text-zinc-400">{cat.color}</p>
+                <p className="mt-3 font-semibold text-wise-ink">{cat.name}</p>
+                <p className="text-xs text-wise-mute">{cat.color}</p>
                 <div className="absolute right-2 top-2 flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
-                  <button onClick={() => openEdit(cat)} className="rounded p-1.5 text-zinc-400 hover:bg-surface-muted hover:text-zinc-700">
+                  <button onClick={() => openEdit(cat)} className="rounded p-1.5 text-wise-mute hover:bg-wise-canvas-soft hover:text-wise-body">
                     <Pencil className="h-3.5 w-3.5" />
                   </button>
                   <button onClick={() => void handleDelete(cat)} className="rounded p-1.5 text-red-400 hover:bg-red-50">
@@ -179,7 +179,7 @@ export default function CategoriesPage(): React.ReactElement {
                   <button
                     key={c}
                     onClick={() => setColor(c)}
-                    className={`h-8 w-8 rounded-md transition-transform ${color === c ? "ring-2 ring-offset-2 ring-brand-500 scale-110" : ""}`}
+                    className={`h-8 w-8 rounded-md transition-transform ${color === c ? "ring-2 ring-offset-2 ring-wise-primary scale-110" : ""}`}
                     style={{ backgroundColor: c }}
                   />
                 ))}
@@ -188,7 +188,7 @@ export default function CategoriesPage(): React.ReactElement {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button>
-            <Button onClick={() => void handleSave()} disabled={busy || !name} className="bg-brand-500 hover:bg-brand-600">
+            <Button onClick={() => void handleSave()} disabled={busy || !name} className="bg-wise-primary hover:bg-wise-primary">
               {busy ? "Saving…" : "Save"}
             </Button>
           </DialogFooter>

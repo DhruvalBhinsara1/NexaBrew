@@ -92,11 +92,11 @@ export function CartPanel({
   const total = server ? server.total : round2(estSubtotal + estTax);
 
   return (
-    <div className="flex h-full flex-col border-l border-surface-border bg-white">
+    <div className="flex h-full flex-col border-l border-wise-border bg-white">
       {/* Header */}
-      <div className="border-b border-surface-border px-4 py-3">
+      <div className="border-b border-wise-border px-4 py-3">
         <div className="flex items-center justify-between">
-          <h2 className="font-semibold text-zinc-800">
+          <h2 className="font-semibold text-wise-ink">
             {orderNumber
               ? `Order #${orderNumber}`
               : tableNumber
@@ -107,7 +107,7 @@ export function CartPanel({
             <button
               type="button"
               onClick={onOpenBills}
-              className="relative rounded-md bg-surface-muted px-2 py-1 text-xs font-medium text-zinc-600 hover:bg-brand-50 hover:text-brand-700"
+              className="relative rounded-md bg-wise-canvas-soft px-2 py-1 text-xs font-medium text-wise-body hover:bg-wise-primary-pale hover:text-wise-ink-deep"
             >
               <Receipt className="h-3.5 w-3.5" />
               {openBillCount > 0 && (
@@ -123,7 +123,7 @@ export function CartPanel({
               // (bill sent to kitchen before a table was chosen). Once a table
               // is assigned, lock it.
               disabled={isActiveOrder && !!tableNumber}
-              className="rounded-md bg-surface-muted px-2 py-1 text-xs font-medium text-zinc-600 hover:bg-brand-50 hover:text-brand-700 disabled:opacity-50"
+              className="rounded-md bg-wise-canvas-soft px-2 py-1 text-xs font-medium text-wise-body hover:bg-wise-primary-pale hover:text-wise-ink-deep disabled:opacity-50"
             >
               {tableNumber
                 ? `T${tableNumber} ✓`
@@ -134,14 +134,14 @@ export function CartPanel({
           </div>
         </div>
         {customerName && (
-          <p className="mt-1 text-xs text-zinc-500">
-            Customer: <span className="font-medium text-zinc-700">{customerName}</span>
+          <p className="mt-1 text-xs text-wise-body">
+            Customer: <span className="font-medium text-wise-body">{customerName}</span>
           </p>
         )}
         {orderStatus && (
-          <p className="mt-1 text-xs text-zinc-400">
+          <p className="mt-1 text-xs text-wise-mute">
             Status:{" "}
-            <span className="font-medium text-brand-600">{orderStatus.replace(/_/g, " ")}</span>
+            <span className="font-medium text-wise-ink-deep">{orderStatus.replace(/_/g, " ")}</span>
           </p>
         )}
         {isActiveOrder && (
@@ -162,17 +162,17 @@ export function CartPanel({
         {isActiveOrder && billItems.length > 0 && (
           <>
             {/* Committed items already on the bill */}
-            <p className="sticky top-0 z-10 bg-surface-muted/90 px-4 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-zinc-400">
+            <p className="sticky top-0 z-10 bg-wise-canvas-soft/90 px-4 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-wise-mute">
               On this bill
             </p>
-            <ul className="divide-y divide-surface-border">
+            <ul className="divide-y divide-wise-border">
               {billItems.map((item) => (
                 <li key={item.id} className="flex items-center justify-between px-4 py-2.5">
-                  <span className="text-sm text-zinc-700">
+                  <span className="text-sm text-wise-body">
                     {item.product_name}
-                    <span className="ml-1 text-zinc-400">× {item.quantity}</span>
+                    <span className="ml-1 text-wise-mute">× {item.quantity}</span>
                   </span>
-                  <span className="text-sm font-medium text-zinc-600">
+                  <span className="text-sm font-medium text-wise-body">
                     {formatCurrency(Number(item.line_total))}
                   </span>
                 </li>
@@ -182,45 +182,45 @@ export function CartPanel({
         )}
 
         {isActiveOrder && cartItems.length > 0 && (
-          <p className="sticky top-0 z-10 bg-brand-50/90 px-4 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-brand-600">
+          <p className="sticky top-0 z-10 bg-wise-primary-pale/90 px-4 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-wise-ink-deep">
             Adding now
           </p>
         )}
 
         {cartItems.length === 0 && !isActiveOrder ? (
           <div className="flex h-full flex-col items-center justify-center gap-2 py-12 text-center">
-            <UtensilsCrossed className="h-10 w-10 text-zinc-200" />
-            <p className="text-sm text-zinc-400">Cart is empty</p>
-            <p className="text-xs text-zinc-300">Click a product to add it</p>
+            <UtensilsCrossed className="h-10 w-10 text-wise-mute" />
+            <p className="text-sm text-wise-mute">Cart is empty</p>
+            <p className="text-xs text-wise-mute">Click a product to add it</p>
           </div>
         ) : cartItems.length === 0 && isActiveOrder ? (
           <div className="flex flex-col items-center justify-center gap-1 py-6 text-center">
-            <p className="text-xs text-zinc-400">Click a product to add more items</p>
+            <p className="text-xs text-wise-mute">Click a product to add more items</p>
           </div>
         ) : (
-          <ul className="divide-y divide-surface-border">
+          <ul className="divide-y divide-wise-border">
             {cartItems.map((item) => (
               <li key={item.productId} className="flex items-center gap-3 px-4 py-3">
                 <div className="flex-1 min-w-0">
-                  <p className="truncate text-sm font-medium text-zinc-800">{item.name}</p>
-                  <p className="text-xs text-zinc-400">
+                  <p className="truncate text-sm font-medium text-wise-ink">{item.name}</p>
+                  <p className="text-xs text-wise-mute">
                     {formatCurrency(item.unitPrice)} × {item.quantity}
                   </p>
                 </div>
-                <p className="shrink-0 text-sm font-semibold text-zinc-800">
+                <p className="shrink-0 text-sm font-semibold text-wise-ink">
                   {formatCurrency(item.unitPrice * item.quantity)}
                 </p>
                 <div className="flex items-center gap-1">
                   <button
                     onClick={() => setQty(item.productId, item.quantity - 1)}
-                    className="flex h-6 w-6 items-center justify-center rounded-full border border-surface-border text-zinc-500 hover:bg-surface-muted"
+                    className="flex h-6 w-6 items-center justify-center rounded-full border border-wise-border text-wise-body hover:bg-wise-canvas-soft"
                   >
                     <Minus className="h-3 w-3" />
                   </button>
                   <span className="w-5 text-center text-sm font-medium">{item.quantity}</span>
                   <button
                     onClick={() => setQty(item.productId, item.quantity + 1)}
-                    className="flex h-6 w-6 items-center justify-center rounded-full border border-surface-border text-zinc-500 hover:bg-surface-muted"
+                    className="flex h-6 w-6 items-center justify-center rounded-full border border-wise-border text-wise-body hover:bg-wise-canvas-soft"
                   >
                     <Plus className="h-3 w-3" />
                   </button>
@@ -238,11 +238,11 @@ export function CartPanel({
       </div>
 
       {/* Order summary */}
-      <div className="border-t border-surface-border px-4 pb-4 pt-3">
+      <div className="border-t border-wise-border px-4 pb-4 pt-3">
         {isActiveOrder ? (
           // Active order: show the confirmed bill, plus any staged additions.
           <div className="space-y-1.5 text-sm">
-            <div className="flex justify-between text-zinc-500">
+            <div className="flex justify-between text-wise-body">
               <span>Bill so far</span>
               <span>{formatCurrency(total)}</span>
             </div>
@@ -256,7 +256,7 @@ export function CartPanel({
               </div>
             )}
             {cartItems.length > 0 && (
-              <div className="flex justify-between font-medium text-brand-600">
+              <div className="flex justify-between font-medium text-wise-ink-deep">
                 <span>Adding (est.)</span>
                 <span>+{formatCurrency(round2(estSubtotal + estTax))}</span>
               </div>
@@ -265,11 +265,11 @@ export function CartPanel({
         ) : (
           // New order: client-side estimate.
           <div className="space-y-1.5 text-sm">
-            <div className="flex justify-between text-zinc-500">
+            <div className="flex justify-between text-wise-body">
               <span>Subtotal</span>
               <span>{formatCurrency(subtotal)}</span>
             </div>
-            <div className="flex justify-between text-zinc-500">
+            <div className="flex justify-between text-wise-body">
               <span>Tax</span>
               <span>{formatCurrency(tax)}</span>
             </div>
@@ -283,7 +283,7 @@ export function CartPanel({
               </div>
             )}
             <Separator className="my-2" />
-            <div className="flex justify-between text-base font-bold text-zinc-900">
+            <div className="flex justify-between text-base font-bold text-wise-ink">
               <span>Total</span>
               <span>{formatCurrency(total)}</span>
             </div>

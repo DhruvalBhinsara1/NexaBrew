@@ -83,7 +83,7 @@ const PAY_META: Record<string, { label: string; color: string; icon: React.Eleme
   cash: { label: "Cash", color: "#16a34a", icon: Banknote },
   card: { label: "Card", color: "#2563eb", icon: CreditCard },
   upi: { label: "UPI", color: "#7c3aed", icon: Smartphone },
-  razorpay: { label: "Razorpay", color: "#d4791f", icon: CreditCard },
+  razorpay: { label: "Razorpay", color: "#163300", icon: CreditCard },
 };
 
 export default function ReportsPage(): React.ReactElement {
@@ -159,7 +159,7 @@ export default function ReportsPage(): React.ReactElement {
         title="Reports"
         subtitle={`${range.from} → ${range.to}`}
         action={
-          <div className="flex rounded-lg border border-surface-border bg-white p-0.5 shadow-sm">
+          <div className="flex rounded-lg border border-wise-border bg-white p-0.5 shadow-sm">
             {(["today", "week", "month"] as Period[]).map((p) => (
               <button
                 key={p}
@@ -167,8 +167,8 @@ export default function ReportsPage(): React.ReactElement {
                 className={cn(
                   "cursor-pointer rounded-md px-3 py-1.5 text-sm font-medium capitalize transition-all duration-200",
                   period === p
-                    ? "bg-brand-500 text-white shadow-sm"
-                    : "text-zinc-500 hover:bg-surface-muted hover:text-zinc-800"
+                    ? "bg-wise-primary text-wise-ink shadow-sm"
+                    : "text-wise-body hover:bg-wise-canvas-soft hover:text-wise-ink"
                 )}
               >
                 {p === "today" ? "Today" : p === "week" ? "This Week" : "This Month"}
@@ -182,7 +182,7 @@ export default function ReportsPage(): React.ReactElement {
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <StatCard
           title="Total Orders" value={String(totalOrders)} sub={`in ${chartData.length} days`}
-          icon={ShoppingCart} accent="#d4791f" tint="from-brand-50" spark={ordersSpark} loading={loading} delay={0}
+          icon={ShoppingCart} accent="#2ead4b" tint="from-wise-primary" spark={ordersSpark} loading={loading} delay={0}
         />
         <StatCard
           title="Total Revenue" value={formatCurrency(totalRevenue)} sub="after discounts + tax"
@@ -199,24 +199,24 @@ export default function ReportsPage(): React.ReactElement {
       </div>
 
       {/* Revenue chart */}
-      <Card className="overflow-hidden border-surface-border shadow-sm">
+      <Card className="overflow-hidden border-wise-border shadow-sm">
         <CardHeader className="flex flex-row items-center justify-between pb-2">
           <div>
             <CardTitle className="text-base">Revenue Trend</CardTitle>
-            <p className="mt-0.5 text-xs text-zinc-400">Daily revenue & order volume</p>
+            <p className="mt-0.5 text-xs text-wise-mute">Daily revenue & order volume</p>
           </div>
           <div className="flex items-center gap-4 text-xs">
-            <span className="flex items-center gap-1.5 text-zinc-500">
-              <span className="h-2.5 w-2.5 rounded-full bg-brand-500" /> Revenue
+            <span className="flex items-center gap-1.5 text-wise-body">
+              <span className="h-2.5 w-2.5 rounded-full bg-wise-primary" /> Revenue
             </span>
-            <span className="flex items-center gap-1.5 text-zinc-500">
-              <span className="h-2.5 w-2.5 rounded-sm bg-brand-200" /> Orders
+            <span className="flex items-center gap-1.5 text-wise-body">
+              <span className="h-2.5 w-2.5 rounded-sm bg-wise-primary-pale" /> Orders
             </span>
           </div>
         </CardHeader>
         <CardContent>
           {loading ? (
-            <div className="h-[260px] w-full animate-pulse rounded-lg bg-surface-muted" />
+            <div className="h-[260px] w-full animate-pulse rounded-lg bg-wise-canvas-soft" />
           ) : totalOrders === 0 ? (
             <EmptyState icon={BarChart3} text="No paid orders in this period." />
           ) : (
@@ -224,17 +224,17 @@ export default function ReportsPage(): React.ReactElement {
               <ComposedChart data={chartData} margin={{ top: 10, right: 8, bottom: 0, left: -8 }}>
                 <defs>
                   <linearGradient id="revFill" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#d4791f" stopOpacity={0.35} />
-                    <stop offset="100%" stopColor="#d4791f" stopOpacity={0} />
+                    <stop offset="0%" stopColor="#2ead4b" stopOpacity={0.35} />
+                    <stop offset="100%" stopColor="#2ead4b" stopOpacity={0} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid vertical={false} stroke="#eee7dd" strokeDasharray="3 3" />
-                <XAxis dataKey="date" stroke="#a1a1aa" fontSize={11} tickLine={false} axisLine={false} />
-                <YAxis stroke="#a1a1aa" fontSize={11} tickLine={false} axisLine={false} tickFormatter={compactCurrency} width={48} />
-                <Tooltip content={<ChartTooltip />} cursor={{ fill: "#f8f7f5" }} />
-                <Bar dataKey="orders" fill="#f2ce99" radius={[3, 3, 0, 0]} barSize={18} />
+                <CartesianGrid vertical={false} stroke="#d7ddd2" strokeDasharray="3 3" />
+                <XAxis dataKey="date" stroke="#868685" fontSize={11} tickLine={false} axisLine={false} />
+                <YAxis stroke="#868685" fontSize={11} tickLine={false} axisLine={false} tickFormatter={compactCurrency} width={48} />
+                <Tooltip content={<ChartTooltip />} cursor={{ fill: "#e8ebe6" }} />
+                <Bar dataKey="orders" fill="#c5edab" radius={[3, 3, 0, 0]} barSize={18} />
                 <Area
-                  type="monotone" dataKey="revenue" stroke="#d4791f" strokeWidth={2.5}
+                  type="monotone" dataKey="revenue" stroke="#2ead4b" strokeWidth={2.5}
                   fill="url(#revFill)" dot={false} activeDot={{ r: 4, strokeWidth: 2, stroke: "#fff" }}
                   animationDuration={700}
                 />
@@ -246,7 +246,7 @@ export default function ReportsPage(): React.ReactElement {
 
       {/* Top products + employees */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <Card className="border-surface-border shadow-sm">
+        <Card className="border-wise-border shadow-sm">
           <CardHeader className="pb-2"><CardTitle className="text-base">Top Products</CardTitle></CardHeader>
           <CardContent className="space-y-1 pt-2">
             {loading ? (
@@ -257,23 +257,23 @@ export default function ReportsPage(): React.ReactElement {
               topProducts.map((p, i) => (
                 <div
                   key={p.product_id}
-                  className="group flex items-center gap-3 rounded-lg px-2 py-2 transition-colors hover:bg-surface-muted motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-1"
+                  className="group flex items-center gap-3 rounded-lg px-2 py-2 transition-colors hover:bg-wise-canvas-soft motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-1"
                   style={{ animationDelay: `${i * 40}ms`, animationFillMode: "both" }}
                 >
                   <RankBadge rank={i + 1} />
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center justify-between gap-2">
-                      <span className="truncate text-sm font-medium text-zinc-800">{p.product_name}</span>
-                      <span className="shrink-0 text-sm font-semibold text-zinc-700">{formatCurrency(p.revenue)}</span>
+                      <span className="truncate text-sm font-medium text-wise-ink">{p.product_name}</span>
+                      <span className="shrink-0 text-sm font-semibold text-wise-body">{formatCurrency(p.revenue)}</span>
                     </div>
                     <div className="mt-1 flex items-center gap-2">
-                      <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-surface-muted">
+                      <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-wise-canvas-soft">
                         <div
-                          className="h-full rounded-full bg-gradient-to-r from-brand-400 to-brand-600 transition-[width] duration-700 ease-out"
+                          className="h-full rounded-full bg-gradient-to-r from-wise-primary to-wise-primary transition-[width] duration-700 ease-out"
                           style={{ width: `${(p.revenue / maxProductRev) * 100}%` }}
                         />
                       </div>
-                      <span className="w-10 shrink-0 text-right text-xs text-zinc-400">{p.quantity_sold}×</span>
+                      <span className="w-10 shrink-0 text-right text-xs text-wise-mute">{p.quantity_sold}×</span>
                     </div>
                   </div>
                 </div>
@@ -282,7 +282,7 @@ export default function ReportsPage(): React.ReactElement {
           </CardContent>
         </Card>
 
-        <Card className="border-surface-border shadow-sm">
+        <Card className="border-wise-border shadow-sm">
           <CardHeader className="pb-2"><CardTitle className="text-base">Sales by Employee</CardTitle></CardHeader>
           <CardContent className="space-y-1 pt-2">
             {loading ? (
@@ -293,23 +293,23 @@ export default function ReportsPage(): React.ReactElement {
               employees.map((e, i) => (
                 <div
                   key={e.employee_id}
-                  className="flex items-center gap-3 rounded-lg px-2 py-2 transition-colors hover:bg-surface-muted motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-1"
+                  className="flex items-center gap-3 rounded-lg px-2 py-2 transition-colors hover:bg-wise-canvas-soft motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-1"
                   style={{ animationDelay: `${i * 40}ms`, animationFillMode: "both" }}
                 >
                   <Avatar name={e.employee_name} />
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center justify-between gap-2">
-                      <span className="truncate text-sm font-medium text-zinc-800">{e.employee_name}</span>
-                      <span className="shrink-0 text-sm font-semibold text-zinc-700">{formatCurrency(e.total_revenue)}</span>
+                      <span className="truncate text-sm font-medium text-wise-ink">{e.employee_name}</span>
+                      <span className="shrink-0 text-sm font-semibold text-wise-body">{formatCurrency(e.total_revenue)}</span>
                     </div>
                     <div className="mt-1 flex items-center gap-2">
-                      <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-surface-muted">
+                      <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-wise-canvas-soft">
                         <div
                           className="h-full rounded-full bg-gradient-to-r from-violet-400 to-violet-600 transition-[width] duration-700 ease-out"
                           style={{ width: `${(e.total_revenue / maxEmpRev) * 100}%` }}
                         />
                       </div>
-                      <span className="w-12 shrink-0 text-right text-xs text-zinc-400">{e.order_count} ord</span>
+                      <span className="w-12 shrink-0 text-right text-xs text-wise-mute">{e.order_count} ord</span>
                     </div>
                   </div>
                 </div>
@@ -321,11 +321,11 @@ export default function ReportsPage(): React.ReactElement {
 
       {/* Payment breakdown (donut) + Order history */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        <Card className="border-surface-border shadow-sm">
+        <Card className="border-wise-border shadow-sm">
           <CardHeader className="pb-2"><CardTitle className="text-base">Payment Mix</CardTitle></CardHeader>
           <CardContent>
             {loading ? (
-              <div className="mx-auto h-40 w-40 animate-pulse rounded-full bg-surface-muted" />
+              <div className="mx-auto h-40 w-40 animate-pulse rounded-full bg-wise-canvas-soft" />
             ) : payments.length === 0 ? (
               <EmptyState icon={CreditCard} text="No payments yet." compact />
             ) : (
@@ -338,20 +338,20 @@ export default function ReportsPage(): React.ReactElement {
                         innerRadius={50} outerRadius={75} paddingAngle={2} stroke="none" animationDuration={600}
                       >
                         {payments.map((p) => (
-                          <Cell key={p.payment_method_type} fill={PAY_META[p.payment_method_type]?.color ?? "#a1a1aa"} />
+                          <Cell key={p.payment_method_type} fill={PAY_META[p.payment_method_type]?.color ?? "#868685"} />
                         ))}
                       </Pie>
                       <Tooltip content={<PayTooltip />} />
                     </PieChart>
                   </ResponsiveContainer>
                   <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
-                    <span className="text-[10px] uppercase tracking-wide text-zinc-400">Total</span>
-                    <span className="text-sm font-bold text-zinc-800">{compactCurrency(payTotal)}</span>
+                    <span className="text-[10px] uppercase tracking-wide text-wise-mute">Total</span>
+                    <span className="text-sm font-bold text-wise-ink">{compactCurrency(payTotal)}</span>
                   </div>
                 </div>
                 <div className="mt-3 space-y-1.5">
                   {payments.map((p) => {
-                    const meta = PAY_META[p.payment_method_type] ?? { label: p.payment_method_type, color: "#a1a1aa", icon: CreditCard };
+                    const meta = PAY_META[p.payment_method_type] ?? { label: p.payment_method_type, color: "#868685", icon: CreditCard };
                     const Icon = meta.icon;
                     const pctShare = payTotal > 0 ? Math.round((p.total_amount / payTotal) * 100) : 0;
                     return (
@@ -359,9 +359,9 @@ export default function ReportsPage(): React.ReactElement {
                         <span className="flex h-6 w-6 items-center justify-center rounded-md" style={{ backgroundColor: `${meta.color}1a`, color: meta.color }}>
                           <Icon className="h-3.5 w-3.5" />
                         </span>
-                        <span className="flex-1 text-zinc-600">{meta.label}</span>
-                        <span className="text-xs text-zinc-400">{pctShare}%</span>
-                        <span className="w-20 text-right font-medium text-zinc-700">{formatCurrency(p.total_amount)}</span>
+                        <span className="flex-1 text-wise-body">{meta.label}</span>
+                        <span className="text-xs text-wise-mute">{pctShare}%</span>
+                        <span className="w-20 text-right font-medium text-wise-body">{formatCurrency(p.total_amount)}</span>
                       </div>
                     );
                   })}
@@ -372,10 +372,10 @@ export default function ReportsPage(): React.ReactElement {
         </Card>
 
         {/* Order history */}
-        <Card className="border-surface-border shadow-sm lg:col-span-2">
+        <Card className="border-wise-border shadow-sm lg:col-span-2">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-base">Order History</CardTitle>
-            <span className="flex items-center gap-1 text-xs text-zinc-400">
+            <span className="flex items-center gap-1 text-xs text-wise-mute">
               <Receipt className="h-3.5 w-3.5" /> {history.length} paid
             </span>
           </CardHeader>
@@ -388,7 +388,7 @@ export default function ReportsPage(): React.ReactElement {
               <div className="max-h-[340px] overflow-y-auto">
                 <table className="w-full text-sm">
                   <thead className="sticky top-0 z-10 bg-white">
-                    <tr className="border-b border-surface-border text-xs uppercase tracking-wider text-zinc-400">
+                    <tr className="border-b border-wise-border text-xs uppercase tracking-wider text-wise-mute">
                       <th className="px-4 py-2.5 text-left">Order</th>
                       <th className="px-4 py-2.5 text-left">When</th>
                       <th className="px-4 py-2.5 text-left">Customer</th>
@@ -398,15 +398,15 @@ export default function ReportsPage(): React.ReactElement {
                   </thead>
                   <tbody>
                     {history.map((o) => (
-                      <tr key={o.id} className="border-b border-surface-border transition-colors last:border-0 hover:bg-surface-muted">
-                        <td className="px-4 py-2.5 font-medium text-zinc-800">
+                      <tr key={o.id} className="border-b border-wise-border transition-colors last:border-0 hover:bg-wise-canvas-soft">
+                        <td className="px-4 py-2.5 font-medium text-wise-ink">
                           {o.order_number}
-                          {o.table && <span className="ml-1.5 text-xs text-zinc-400">T{o.table.table_number}</span>}
+                          {o.table && <span className="ml-1.5 text-xs text-wise-mute">T{o.table.table_number}</span>}
                         </td>
-                        <td className="px-4 py-2.5 text-zinc-500">{fmtTime(o.created_at)}</td>
-                        <td className="px-4 py-2.5 text-zinc-500">{o.customer?.name ?? "Walk-in"}</td>
-                        <td className="px-4 py-2.5 text-center text-zinc-500">{o.items.length}</td>
-                        <td className="px-4 py-2.5 text-right font-semibold text-zinc-800">{formatCurrency(Number(o.total_amount))}</td>
+                        <td className="px-4 py-2.5 text-wise-body">{fmtTime(o.created_at)}</td>
+                        <td className="px-4 py-2.5 text-wise-body">{o.customer?.name ?? "Walk-in"}</td>
+                        <td className="px-4 py-2.5 text-center text-wise-body">{o.items.length}</td>
+                        <td className="px-4 py-2.5 text-right font-semibold text-wise-ink">{formatCurrency(Number(o.total_amount))}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -431,7 +431,7 @@ function StatCard({
   return (
     <Card
       className={cn(
-        "relative overflow-hidden border-surface-border bg-gradient-to-br to-white shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md",
+        "relative overflow-hidden border-wise-border bg-gradient-to-br to-white shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md",
         tint,
         "motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-2"
       )}
@@ -439,19 +439,19 @@ function StatCard({
     >
       <span className="absolute inset-x-0 top-0 h-1" style={{ backgroundColor: accent }} />
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-sm font-medium text-zinc-500">{title}</CardTitle>
+        <CardTitle className="text-sm font-medium text-wise-body">{title}</CardTitle>
         <span className="flex h-7 w-7 items-center justify-center rounded-lg" style={{ backgroundColor: `${accent}1a`, color: accent }}>
           <Icon className="h-4 w-4" />
         </span>
       </CardHeader>
       <CardContent>
         {loading ? (
-          <div className="h-7 w-20 animate-pulse rounded bg-surface-muted" />
+          <div className="h-7 w-20 animate-pulse rounded bg-wise-canvas-soft" />
         ) : (
-          <p className="truncate text-xl font-bold text-zinc-900">{value}</p>
+          <p className="truncate text-xl font-bold text-wise-ink">{value}</p>
         )}
         <div className="mt-1 flex items-end justify-between gap-2">
-          {sub && <p className="text-xs text-zinc-400">{sub}</p>}
+          {sub && <p className="text-xs text-wise-mute">{sub}</p>}
           {!loading && spark && spark.some((v) => v > 0) && (
             <Sparkline data={spark} color={accent} />
           )}
@@ -480,9 +480,9 @@ function Sparkline({ data, color }: { data: number[]; color: string }): React.Re
 function RankBadge({ rank }: { rank: number }): React.ReactElement {
   const medal =
     rank === 1 ? "bg-amber-100 text-amber-700 ring-amber-200"
-    : rank === 2 ? "bg-zinc-100 text-zinc-600 ring-zinc-200"
+    : rank === 2 ? "bg-wise-canvas-soft text-wise-body ring-wise-border"
     : rank === 3 ? "bg-orange-100 text-orange-700 ring-orange-200"
-    : "bg-surface-muted text-zinc-400 ring-surface-border";
+    : "bg-wise-canvas-soft text-wise-mute ring-wise-border";
   return (
     <span className={cn("flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold ring-1", medal)}>
       {rank}
@@ -502,8 +502,8 @@ function Avatar({ name }: { name: string }): React.ReactElement {
 function EmptyState({ icon: Icon, text, compact }: { icon: React.ElementType; text: string; compact?: boolean }): React.ReactElement {
   return (
     <div className={cn("flex flex-col items-center justify-center gap-2 text-center", compact ? "py-8" : "py-12")}>
-      <Icon className="h-8 w-8 text-zinc-200" />
-      <p className="text-sm text-zinc-400">{text}</p>
+      <Icon className="h-8 w-8 text-wise-mute" />
+      <p className="text-sm text-wise-mute">{text}</p>
     </div>
   );
 }
@@ -513,10 +513,10 @@ function SkeletonRows(): React.ReactElement {
     <div className="space-y-2">
       {Array.from({ length: 5 }).map((_, i) => (
         <div key={i} className="flex items-center gap-3 px-2 py-2">
-          <div className="h-7 w-7 shrink-0 animate-pulse rounded-full bg-surface-muted" />
+          <div className="h-7 w-7 shrink-0 animate-pulse rounded-full bg-wise-canvas-soft" />
           <div className="flex-1 space-y-1.5">
-            <div className="h-3 w-1/2 animate-pulse rounded bg-surface-muted" />
-            <div className="h-1.5 w-full animate-pulse rounded bg-surface-muted" />
+            <div className="h-3 w-1/2 animate-pulse rounded bg-wise-canvas-soft" />
+            <div className="h-1.5 w-full animate-pulse rounded bg-wise-canvas-soft" />
           </div>
         </div>
       ))}
@@ -532,12 +532,12 @@ function ChartTooltip({ active, payload }: TooltipPayload): React.ReactElement |
   if (!active || !payload?.length) return null;
   const d = payload[0].payload;
   return (
-    <div className="rounded-lg border border-surface-border bg-white px-3 py-2 text-xs shadow-lg">
-      <p className="mb-1 font-semibold text-zinc-700">{d.date}</p>
-      <p className="flex items-center justify-between gap-4 text-brand-600">
+    <div className="rounded-lg border border-wise-border bg-white px-3 py-2 text-xs shadow-lg">
+      <p className="mb-1 font-semibold text-wise-body">{d.date}</p>
+      <p className="flex items-center justify-between gap-4 text-wise-ink-deep">
         <span>Revenue</span><span className="font-semibold">{formatCurrency(d.revenue)}</span>
       </p>
-      <p className="flex items-center justify-between gap-4 text-zinc-500">
+      <p className="flex items-center justify-between gap-4 text-wise-body">
         <span>Orders</span><span className="font-semibold">{d.orders}</span>
       </p>
     </div>
@@ -553,9 +553,9 @@ function PayTooltip({ active, payload }: PayTooltipProps): React.ReactElement | 
   const p = payload[0].payload;
   const meta = PAY_META[p.payment_method_type];
   return (
-    <div className="rounded-lg border border-surface-border bg-white px-3 py-2 text-xs shadow-lg">
-      <p className="font-semibold text-zinc-700">{meta?.label ?? p.payment_method_type}</p>
-      <p className="text-zinc-500">{formatCurrency(p.total_amount)} · {p.order_count} orders</p>
+    <div className="rounded-lg border border-wise-border bg-white px-3 py-2 text-xs shadow-lg">
+      <p className="font-semibold text-wise-body">{meta?.label ?? p.payment_method_type}</p>
+      <p className="text-wise-body">{formatCurrency(p.total_amount)} · {p.order_count} orders</p>
     </div>
   );
 }

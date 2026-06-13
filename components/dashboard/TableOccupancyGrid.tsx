@@ -67,7 +67,7 @@ export function TableOccupancyGrid({
       <div className="space-y-4">
         {floors.map((floor) => (
           <div key={floor.id}>
-            <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-zinc-400">
+            <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-wise-mute">
               {floor.name}
             </p>
             <div className="flex flex-wrap gap-2">
@@ -81,15 +81,15 @@ export function TableOccupancyGrid({
                       onClick={() => setTarget(table)}
                       title={`Table ${table.table_number} — ${table.status}${locked ? " (active order)" : ""}`}
                       className={cn(
-                        "relative flex h-9 w-9 items-center justify-center rounded-md text-xs font-semibold transition-all hover:ring-2 hover:ring-brand-300 cursor-pointer",
+                        "relative flex h-9 w-9 items-center justify-center rounded-md text-xs font-semibold transition-all hover:ring-2 hover:ring-wise-primary cursor-pointer",
                         table.status === "occupied"
-                          ? "bg-brand-500 text-white"
-                          : "border border-surface-border bg-surface-muted text-zinc-500"
+                          ? "bg-wise-primary text-wise-ink"
+                          : "border border-wise-border bg-wise-canvas-soft text-wise-body"
                       )}
                     >
                       {table.table_number}
                       {locked && (
-                        <Lock className="absolute -right-1 -top-1 h-3 w-3 rounded-full bg-white p-0.5 text-brand-600 shadow-sm" />
+                        <Lock className="absolute -right-1 -top-1 h-3 w-3 rounded-full bg-white p-0.5 text-wise-ink-deep shadow-sm" />
                       )}
                     </button>
                   );
@@ -100,17 +100,17 @@ export function TableOccupancyGrid({
       </div>
 
       {/* Legend */}
-      <div className="mt-4 flex flex-wrap items-center gap-4 text-xs text-zinc-500">
+      <div className="mt-4 flex flex-wrap items-center gap-4 text-xs text-wise-body">
         <span className="flex items-center gap-1">
-          <span className="inline-block h-3 w-3 rounded-sm bg-brand-500" />
+          <span className="inline-block h-3 w-3 rounded-sm bg-wise-primary" />
           Occupied
         </span>
         <span className="flex items-center gap-1">
-          <span className="inline-block h-3 w-3 rounded-sm border border-surface-border bg-surface-muted" />
+          <span className="inline-block h-3 w-3 rounded-sm border border-wise-border bg-wise-canvas-soft" />
           Available
         </span>
         <span className="flex items-center gap-1">
-          <Lock className="h-3 w-3 text-brand-600" /> active order
+          <Lock className="h-3 w-3 text-wise-ink-deep" /> active order
         </span>
       </div>
 
@@ -121,12 +121,12 @@ export function TableOccupancyGrid({
             <>
               <DialogHeader>
                 <DialogTitle className="flex items-center gap-2">
-                  <Lock className="h-4 w-4 text-brand-600" />
+                  <Lock className="h-4 w-4 text-wise-ink-deep" />
                   Table {target?.table_number} has an unpaid order
                 </DialogTitle>
               </DialogHeader>
-              <p className="text-sm text-zinc-500">
-                Order <span className="font-medium text-zinc-700">{targetLock?.orderNumber}</span> is{" "}
+              <p className="text-sm text-wise-body">
+                Order <span className="font-medium text-wise-body">{targetLock?.orderNumber}</span> is{" "}
                 <span className="font-medium">{targetLock?.status.replace(/_/g, " ")}</span>. Settle the
                 payment or cancel the order first — the table frees automatically when the bill is closed.
               </p>
@@ -135,7 +135,7 @@ export function TableOccupancyGrid({
                   Close
                 </Button>
                 <Link href="/pos/orders">
-                  <Button className="w-full bg-brand-500 hover:bg-brand-600">
+                  <Button className="w-full bg-wise-primary hover:bg-wise-primary">
                     Go to Orders &amp; Payments <ArrowRight className="ml-2 h-4 w-4" />
                   </Button>
                 </Link>
@@ -148,7 +148,7 @@ export function TableOccupancyGrid({
                   Mark Table {target?.table_number} as {nextStatus}?
                 </DialogTitle>
               </DialogHeader>
-              <p className="text-sm text-zinc-500">
+              <p className="text-sm text-wise-body">
                 {nextStatus === "occupied"
                   ? "Marks the table occupied. Tables also occupy automatically when an order is sent to the kitchen."
                   : "Frees the table for new guests."}
@@ -160,7 +160,7 @@ export function TableOccupancyGrid({
                 <Button
                   onClick={() => void confirmToggle()}
                   disabled={busy}
-                  className={nextStatus === "occupied" ? "bg-brand-500 hover:bg-brand-600" : ""}
+                  className={nextStatus === "occupied" ? "bg-wise-primary hover:bg-wise-primary" : ""}
                 >
                   {busy ? "Saving…" : `Mark ${nextStatus}`}
                 </Button>

@@ -33,7 +33,7 @@ export function CouponDialog({ open, onClose }: Props): React.ReactElement {
       <DialogContent className="max-w-sm">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Ticket className="h-4 w-4 text-brand-500" />
+            <Ticket className="h-4 w-4 text-wise-ink-deep" />
             Apply Coupon
           </DialogTitle>
         </DialogHeader>
@@ -47,7 +47,7 @@ export function CouponDialog({ open, onClose }: Props): React.ReactElement {
             autoFocus
           />
           <div className="flex gap-2">
-            <Button onClick={handleApply} className="flex-1 bg-brand-500 hover:bg-brand-600">
+            <Button onClick={handleApply} className="flex-1 bg-wise-primary hover:bg-wise-primary">
               Apply
             </Button>
             {couponCode && (
@@ -56,7 +56,7 @@ export function CouponDialog({ open, onClose }: Props): React.ReactElement {
               </Button>
             )}
           </div>
-          <p className="text-xs text-zinc-400">
+          <p className="text-xs text-wise-mute">
             Coupon will be validated when the order is sent to kitchen.
           </p>
         </div>

@@ -7,9 +7,10 @@ import { cn } from "@/lib/utils";
 type Tone = "brand" | "green" | "neutral";
 
 const TONE_CLASSES: Record<Tone, string> = {
-  brand: "bg-brand-500 hover:bg-brand-600",
-  green: "bg-kds-completed hover:bg-emerald-600",
-  neutral: "bg-foreground hover:bg-foreground/90",
+  // Wise: lime CTA with ink text (primary), ink-pill with lime text (confirm).
+  brand: "bg-wise-primary text-wise-ink hover:bg-wise-primary-active",
+  green: "bg-wise-ink text-wise-primary hover:bg-wise-ink/90",
+  neutral: "bg-wise-ink text-white hover:bg-wise-ink/90",
 };
 
 export interface SlideTextButtonProps
@@ -38,7 +39,7 @@ export function SlideTextButton({
       type={type}
       disabled={disabled || loading}
       className={cn(
-        "group relative inline-flex h-11 w-full items-center justify-center overflow-hidden rounded-md px-6 text-sm font-medium text-white transition-colors disabled:cursor-not-allowed disabled:opacity-60",
+        "group relative inline-flex h-11 w-full items-center justify-center overflow-hidden rounded-wiseCard px-6 text-sm font-semibold transition-colors duration-150 disabled:cursor-not-allowed disabled:opacity-60",
         TONE_CLASSES[tone],
         className
       )}

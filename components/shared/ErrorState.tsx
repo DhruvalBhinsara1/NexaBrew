@@ -16,8 +16,8 @@ export function ErrorState({
         <AlertTriangle className="h-8 w-8 text-red-400" />
       </div>
       <div>
-        <p className="font-semibold text-zinc-700">Error</p>
-        <p className="mt-1 text-sm text-zinc-400">{message}</p>
+        <p className="font-semibold text-wise-body">Error</p>
+        <p className="mt-1 text-sm text-wise-mute">{message}</p>
       </div>
       {onRetry && (
         <Button size="sm" variant="outline" onClick={onRetry} className="mt-2">

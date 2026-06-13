@@ -107,7 +107,7 @@ export default function FloorsPage(): React.ReactElement {
         title="Floors & Tables"
         subtitle="Manage your seating layout"
         action={
-          <Button onClick={() => setFloorDialog(true)} className="bg-brand-500 hover:bg-brand-600">
+          <Button onClick={() => setFloorDialog(true)} className="bg-wise-primary hover:bg-wise-primary">
             <Plus className="mr-2 h-4 w-4" /> Add Floor
           </Button>
         }
@@ -127,7 +127,7 @@ export default function FloorsPage(): React.ReactElement {
             {floors.map((floor) => (
               <TabsContent key={floor.id} value={floor.id} className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <p className="text-sm text-zinc-400">{floor.tables.length} tables</p>
+                  <p className="text-sm text-wise-mute">{floor.tables.length} tables</p>
                   <div className="flex gap-2">
                     <Button size="sm" variant="outline" onClick={() => setTableDialog(floor.id)}>
                       <Plus className="mr-1 h-3.5 w-3.5" /> Add Table
@@ -140,9 +140,9 @@ export default function FloorsPage(): React.ReactElement {
 
                 <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-6">
                   {floor.tables.map((t) => (
-                    <Card key={t.id} className={`border-surface-border p-3 text-center ${!t.is_active ? "opacity-50" : ""}`}>
-                      <p className="text-lg font-bold text-zinc-800">T{t.table_number}</p>
-                      <p className="text-xs text-zinc-400">{t.seats} seats</p>
+                    <Card key={t.id} className={`border-wise-border p-3 text-center ${!t.is_active ? "opacity-50" : ""}`}>
+                      <p className="text-lg font-bold text-wise-ink">T{t.table_number}</p>
+                      <p className="text-xs text-wise-mute">{t.seats} seats</p>
                       <span className={`mt-1 inline-block rounded-full px-2 py-0.5 text-xs ${t.status === "occupied" ? "bg-amber-100 text-amber-700" : "bg-green-100 text-green-700"}`}>
                         {t.status}
                       </span>
@@ -168,7 +168,7 @@ export default function FloorsPage(): React.ReactElement {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setFloorDialog(false)}>Cancel</Button>
-            <Button onClick={() => void handleAddFloor()} disabled={busy || !floorName} className="bg-brand-500 hover:bg-brand-600">
+            <Button onClick={() => void handleAddFloor()} disabled={busy || !floorName} className="bg-wise-primary hover:bg-wise-primary">
               {busy ? "Adding…" : "Add"}
             </Button>
           </DialogFooter>
@@ -191,7 +191,7 @@ export default function FloorsPage(): React.ReactElement {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setTableDialog(null)}>Cancel</Button>
-            <Button onClick={() => void handleAddTable()} disabled={busy || !tableNumber} className="bg-brand-500 hover:bg-brand-600">
+            <Button onClick={() => void handleAddTable()} disabled={busy || !tableNumber} className="bg-wise-primary hover:bg-wise-primary">
               {busy ? "Adding…" : "Add"}
             </Button>
           </DialogFooter>

@@ -23,7 +23,7 @@ const STATUS_LABEL: Record<string, string> = {
 };
 
 const STATUS_BADGE: Record<string, string> = {
-  draft: "bg-zinc-100 text-zinc-600",
+  draft: "bg-wise-canvas-soft text-wise-body",
   sent_to_kitchen: "bg-blue-100 text-blue-700",
   payment_pending: "bg-amber-100 text-amber-700",
 };
@@ -99,17 +99,17 @@ export function OpenBillsSheet({
       <SheetContent className="flex w-full flex-col sm:max-w-md">
         <SheetHeader>
           <SheetTitle className="flex items-center gap-2">
-            <Receipt className="h-5 w-5 text-brand-600" />
+            <Receipt className="h-5 w-5 text-wise-ink-deep" />
             Open Bills
           </SheetTitle>
         </SheetHeader>
 
-        <p className="mt-1 text-sm text-zinc-500">
+        <p className="mt-1 text-sm text-wise-body">
           Switch between unpaid bills or start a new one for another customer.
         </p>
 
         <Button
-          className="mt-4 w-full bg-brand-500 hover:bg-brand-600"
+          className="mt-4 w-full bg-wise-primary hover:bg-wise-primary"
           onClick={handleNewBill}
         >
           <Plus className="mr-2 h-4 w-4" />
@@ -118,14 +118,14 @@ export function OpenBillsSheet({
 
         <div className="mt-4 flex-1 overflow-y-auto">
           {loading ? (
-            <div className="flex items-center justify-center py-12 text-sm text-zinc-400">
+            <div className="flex items-center justify-center py-12 text-sm text-wise-mute">
               Loading bills…
             </div>
           ) : bills.length === 0 ? (
             <div className="flex flex-col items-center justify-center gap-2 py-12 text-center">
-              <Receipt className="h-10 w-10 text-zinc-200" />
-              <p className="text-sm text-zinc-500">No open bills</p>
-              <p className="text-xs text-zinc-400">Start a new order from the cart</p>
+              <Receipt className="h-10 w-10 text-wise-mute" />
+              <p className="text-sm text-wise-body">No open bills</p>
+              <p className="text-xs text-wise-mute">Start a new order from the cart</p>
             </div>
           ) : (
             <ul className="space-y-2">
@@ -139,36 +139,36 @@ export function OpenBillsSheet({
                       className={cn(
                         "w-full rounded-lg border p-3 text-left transition-colors",
                         isActive
-                          ? "border-brand-400 bg-brand-50 ring-1 ring-brand-200"
-                          : "border-surface-border hover:border-brand-200 hover:bg-surface-muted"
+                          ? "border-wise-primary bg-wise-primary-pale ring-1 ring-wise-primary"
+                          : "border-wise-border hover:border-wise-primary hover:bg-wise-canvas-soft"
                       )}
                     >
                       <div className="flex items-start justify-between gap-2">
                         <div className="min-w-0">
-                          <p className="font-semibold text-zinc-800">
+                          <p className="font-semibold text-wise-ink">
                             #{bill.order_number}
                             {isActive && (
-                              <span className="ml-2 text-xs font-medium text-brand-600">
+                              <span className="ml-2 text-xs font-medium text-wise-ink-deep">
                                 (current)
                               </span>
                             )}
                           </p>
-                          <p className="mt-0.5 flex items-center gap-1 truncate text-sm text-zinc-500">
+                          <p className="mt-0.5 flex items-center gap-1 truncate text-sm text-wise-body">
                             <User className="h-3 w-3 shrink-0" />
                             {bill.customer?.name ?? "Walk-in"}
                             {bill.table && (
-                              <span className="text-zinc-400"> · T{bill.table.table_number}</span>
+                              <span className="text-wise-mute"> · T{bill.table.table_number}</span>
                             )}
                           </p>
                         </div>
                         <div className="shrink-0 text-right">
-                          <p className="font-bold text-zinc-800">
+                          <p className="font-bold text-wise-ink">
                             {formatCurrency(Number(bill.total_amount))}
                           </p>
                           <span
                             className={cn(
                               "mt-1 inline-block rounded-full px-2 py-0.5 text-[10px] font-medium",
-                              STATUS_BADGE[bill.status] ?? "bg-zinc-100"
+                              STATUS_BADGE[bill.status] ?? "bg-wise-canvas-soft"
                             )}
                           >
                             {STATUS_LABEL[bill.status] ?? bill.status}

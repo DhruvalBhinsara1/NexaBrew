@@ -30,7 +30,7 @@ export function TableSelectorDialog({
         </DialogHeader>
 
         {floors.length === 0 ? (
-          <p className="py-6 text-center text-sm text-zinc-400">No floors configured.</p>
+          <p className="py-6 text-center text-sm text-wise-mute">No floors configured.</p>
         ) : (
           <Tabs defaultValue={firstFloor}>
             <TabsList className="mb-4">
@@ -64,14 +64,14 @@ export function TableSelectorDialog({
                           className={cn(
                             "rounded-lg border p-3 text-center transition-all",
                             isSelected
-                              ? "border-brand-500 bg-brand-50 text-brand-700"
+                              ? "border-wise-primary bg-wise-primary-pale text-wise-ink-deep"
                               : disabled
                                 ? "cursor-not-allowed border-amber-200 bg-amber-50/60 text-amber-600 opacity-60"
-                                : "border-surface-border bg-white text-zinc-700 hover:border-brand-300 hover:bg-brand-50"
+                                : "border-wise-border bg-white text-wise-body hover:border-wise-primary hover:bg-wise-primary-pale"
                           )}
                         >
                           <p className="text-lg font-bold">{table.table_number}</p>
-                          <p className="text-xs text-zinc-400">{table.seats} seats</p>
+                          <p className="text-xs text-wise-mute">{table.seats} seats</p>
                           {isOccupied && (
                             <p className="mt-0.5 text-xs font-medium text-amber-600">
                               {isSelected ? "This bill" : "Occupied"}

@@ -154,17 +154,17 @@ export function KpiTrendCard({
       onMouseLeave={() => setOpen(false)}
     >
       <Link href={href} className="block">
-        <Card className="border-surface-border bg-white shadow-sm transition-all duration-300 hover:border-brand-300 hover:shadow-md">
+        <Card className="border-wise-border bg-white shadow-sm transition-all duration-300 hover:border-wise-primary hover:shadow-md">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-zinc-500">{title}</CardTitle>
+            <CardTitle className="text-sm font-medium text-wise-body">{title}</CardTitle>
             <Icon
               className="h-4 w-4 transition-transform duration-300"
               style={{ color, transform: open ? "scale(1.12)" : "scale(1)" }}
             />
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-bold text-zinc-900">{value}</p>
-            {sub && <p className="mt-0.5 text-xs text-zinc-400">{sub}</p>}
+            <p className="text-2xl font-bold text-wise-ink">{value}</p>
+            {sub && <p className="mt-0.5 text-xs text-wise-mute">{sub}</p>}
           </CardContent>
         </Card>
       </Link>
@@ -179,11 +179,11 @@ export function KpiTrendCard({
             : "pointer-events-none -translate-y-2 scale-95 opacity-0"
         )}
       >
-        <div className="overflow-hidden rounded-2xl border border-surface-border bg-white shadow-2xl ring-1 ring-black/5">
-          <div className="flex items-center justify-between border-b border-surface-border bg-gradient-to-r from-surface-muted/80 to-white px-4 py-3">
+        <div className="overflow-hidden rounded-2xl border border-wise-border bg-white shadow-2xl ring-1 ring-black/5">
+          <div className="flex items-center justify-between border-b border-wise-border bg-gradient-to-r from-wise-canvas-soft/80 to-white px-4 py-3">
             <div>
-              <p className="text-sm font-semibold text-zinc-800">{popoverTitle}</p>
-              <p className="mt-0.5 text-xs text-zinc-400">{popoverHint ?? "Last 7 days"}</p>
+              <p className="text-sm font-semibold text-wise-ink">{popoverTitle}</p>
+              <p className="mt-0.5 text-xs text-wise-mute">{popoverHint ?? "Last 7 days"}</p>
             </div>
             <span
               className="rounded-full px-2.5 py-1 text-xs font-semibold ring-1"
@@ -200,22 +200,22 @@ export function KpiTrendCard({
               <AreaChart series={series} color={color} open={open} id={id} />
             )}
             {/* axis labels */}
-            <div className="mt-1 flex justify-between px-1.5 text-[9px] font-medium uppercase text-zinc-300">
+            <div className="mt-1 flex justify-between px-1.5 text-[9px] font-medium uppercase text-wise-mute">
               {series.map((p, i) => (
                 <span key={i}>{p.label}</span>
               ))}
             </div>
           </div>
 
-          <div className="grid grid-cols-3 divide-x divide-surface-border border-t border-surface-border">
+          <div className="grid grid-cols-3 divide-x divide-wise-border border-t border-wise-border">
             {[
               { k: "Today", v: fmt(today) },
               { k: "Peak", v: fmt(peak) },
               { k: chartType === "bar" ? "7-day total" : "7-day avg", v: fmt(chartType === "bar" ? total : avg) },
             ].map((s) => (
               <div key={s.k} className="px-2 py-2.5 text-center">
-                <p className="text-[10px] uppercase tracking-wide text-zinc-400">{s.k}</p>
-                <p className="mt-0.5 text-xs font-semibold text-zinc-700">{s.v}</p>
+                <p className="text-[10px] uppercase tracking-wide text-wise-mute">{s.k}</p>
+                <p className="mt-0.5 text-xs font-semibold text-wise-body">{s.v}</p>
               </div>
             ))}
           </div>

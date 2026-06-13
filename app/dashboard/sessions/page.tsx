@@ -163,7 +163,7 @@ export default function SessionsPage(): React.ReactElement {
         subtitle="Open and close cash-drawer sessions"
         action={
           !active && (
-            <Button onClick={() => setOpenDialog(true)} className="bg-brand-500 hover:bg-brand-600">
+            <Button onClick={() => setOpenDialog(true)} className="bg-wise-primary hover:bg-wise-primary">
               <Play className="mr-2 h-4 w-4" />
               Open Session
             </Button>
@@ -173,8 +173,8 @@ export default function SessionsPage(): React.ReactElement {
 
       {/* Active session banner */}
       {loading ? (
-        <Card className="border-surface-border">
-          <CardContent className="flex items-center gap-2 py-6 text-zinc-400">
+        <Card className="border-wise-border">
+          <CardContent className="flex items-center gap-2 py-6 text-wise-mute">
             <Loader2 className="h-4 w-4 animate-spin" /> Loading…
           </CardContent>
         </Card>
@@ -217,16 +217,16 @@ export default function SessionsPage(): React.ReactElement {
       )}
 
       {/* History */}
-      <Card className="border-surface-border">
+      <Card className="border-wise-border">
         <CardContent className="p-0">
           {/* Filters — always visible so you can clear the filter */}
-          <div className="border-b border-surface-border px-4 py-3">
-            <Label className="text-xs font-medium text-zinc-600">Filter by User</Label>
+          <div className="border-b border-wise-border px-4 py-3">
+            <Label className="text-xs font-medium text-wise-body">Filter by User</Label>
             <select
               value={selectedUser}
               onChange={(e) => setSelectedUser(e.target.value)}
               disabled={loadingUsers}
-              className="mt-1.5 block w-full rounded-md border border-surface-border bg-white px-3 py-2 text-sm text-zinc-900 placeholder-zinc-400 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500 disabled:cursor-not-allowed disabled:bg-zinc-50 disabled:text-zinc-400 sm:max-w-xs"
+              className="mt-1.5 block w-full rounded-md border border-wise-border bg-white px-3 py-2 text-sm text-wise-ink placeholder-zinc-400 focus:border-wise-primary focus:outline-none focus:ring-1 focus:ring-wise-primary disabled:cursor-not-allowed disabled:bg-wise-canvas-soft disabled:text-wise-mute sm:max-w-xs"
             >
               <option value="">All Users</option>
               {users.map((user) => (
@@ -245,7 +245,7 @@ export default function SessionsPage(): React.ReactElement {
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="border-b border-surface-border text-xs uppercase tracking-wider text-zinc-400">
+                    <tr className="border-b border-wise-border text-xs uppercase tracking-wider text-wise-mute">
                       <th className="px-4 py-3 text-left">Opened</th>
                       <th className="px-4 py-3 text-left">By</th>
                       <th className="px-4 py-3 text-left">Closed</th>
@@ -257,22 +257,22 @@ export default function SessionsPage(): React.ReactElement {
                   </thead>
                   <tbody>
                     {sessions.map((s) => (
-                      <tr key={s.id} className="border-b border-surface-border last:border-0">
-                        <td className="px-4 py-3 text-zinc-700">{fmt(s.opened_at)}</td>
-                        <td className="px-4 py-3 text-zinc-500">{s.opened_by_user?.name ?? "—"}</td>
-                        <td className="px-4 py-3 text-zinc-500">{fmt(s.closed_at)}</td>
-                        <td className="px-4 py-3 text-zinc-500">{duration(s.opened_at, s.closed_at)}</td>
-                        <td className="px-4 py-3 text-right text-zinc-700">
+                      <tr key={s.id} className="border-b border-wise-border last:border-0">
+                        <td className="px-4 py-3 text-wise-body">{fmt(s.opened_at)}</td>
+                        <td className="px-4 py-3 text-wise-body">{s.opened_by_user?.name ?? "—"}</td>
+                        <td className="px-4 py-3 text-wise-body">{fmt(s.closed_at)}</td>
+                        <td className="px-4 py-3 text-wise-body">{duration(s.opened_at, s.closed_at)}</td>
+                        <td className="px-4 py-3 text-right text-wise-body">
                           {formatCurrency(Number(s.opening_balance))}
                         </td>
-                        <td className="px-4 py-3 text-right text-zinc-700">
+                        <td className="px-4 py-3 text-right text-wise-body">
                           {s.closing_balance != null ? formatCurrency(Number(s.closing_balance)) : "—"}
                         </td>
                         <td className="px-4 py-3 text-center">
                           <span
                             className={`rounded-full px-2 py-0.5 text-xs font-medium ${s.status === "open"
-                                ? "bg-green-100 text-green-700"
-                                : "bg-zinc-100 text-zinc-500"
+                              ? "bg-green-100 text-green-700"
+                              : "bg-wise-canvas-soft text-wise-body"
                               }`}
                           >
                             {s.status}
@@ -284,7 +284,7 @@ export default function SessionsPage(): React.ReactElement {
                 </table>
               </div>
 
-              <div className="border-t border-surface-border p-4">
+              <div className="border-t border-wise-border p-4">
                 <Pagination
                   page={page}
                   totalPages={totalPages}
@@ -323,7 +323,7 @@ export default function SessionsPage(): React.ReactElement {
             <Button variant="outline" onClick={() => setOpenDialog(false)}>
               Cancel
             </Button>
-            <Button onClick={() => void handleOpen()} disabled={busy} className="bg-brand-500 hover:bg-brand-600">
+            <Button onClick={() => void handleOpen()} disabled={busy} className="bg-wise-primary hover:bg-wise-primary">
               {busy ? "Opening…" : "Open Session"}
             </Button>
           </DialogFooter>

@@ -169,22 +169,22 @@ export default function CouponsPage(): React.ReactElement {
       <PageHeader title="Coupons & Promotions" subtitle="Discount codes and automated offers" />
 
       {/* Coupons */}
-      <Card className="border-surface-border">
+      <Card className="border-wise-border">
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle className="flex items-center gap-2 text-base">
-            <Ticket className="h-4 w-4 text-brand-500" /> Coupon Codes
+            <Ticket className="h-4 w-4 text-wise-ink-deep" /> Coupon Codes
           </CardTitle>
-          <Button size="sm" onClick={() => setCouponDialog(true)} className="bg-brand-500 hover:bg-brand-600">
+          <Button size="sm" onClick={() => setCouponDialog(true)} className="bg-wise-primary hover:bg-wise-primary">
             <Plus className="mr-1 h-3.5 w-3.5" /> Add Coupon
           </Button>
         </CardHeader>
         <CardContent className="p-0">
           {coupons.length === 0 ? (
-            <p className="px-4 pb-4 text-sm text-zinc-400">No coupons yet.</p>
+            <p className="px-4 pb-4 text-sm text-wise-mute">No coupons yet.</p>
           ) : (
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-surface-border text-xs uppercase tracking-wider text-zinc-400">
+                <tr className="border-b border-wise-border text-xs uppercase tracking-wider text-wise-mute">
                   <th className="px-4 py-2 text-left">Code</th>
                   <th className="px-4 py-2 text-left">Discount</th>
                   <th className="px-4 py-2 text-center">Uses</th>
@@ -194,10 +194,10 @@ export default function CouponsPage(): React.ReactElement {
               </thead>
               <tbody>
                 {coupons.map((c) => (
-                  <tr key={c.id} className="border-b border-surface-border last:border-0">
-                    <td className="px-4 py-2 font-mono font-medium text-zinc-800">{c.code}</td>
-                    <td className="px-4 py-2 text-zinc-600">{discountLabel(c.discount_type, Number(c.discount_value))}</td>
-                    <td className="px-4 py-2 text-center text-zinc-500">
+                  <tr key={c.id} className="border-b border-wise-border last:border-0">
+                    <td className="px-4 py-2 font-mono font-medium text-wise-ink">{c.code}</td>
+                    <td className="px-4 py-2 text-wise-body">{discountLabel(c.discount_type, Number(c.discount_value))}</td>
+                    <td className="px-4 py-2 text-center text-wise-body">
                       {c.used_count}{c.max_uses ? ` / ${c.max_uses}` : ""}
                     </td>
                     <td className="px-4 py-2 text-center">
@@ -217,20 +217,20 @@ export default function CouponsPage(): React.ReactElement {
       </Card>
 
       {/* Promotions */}
-      <Card className="border-surface-border">
+      <Card className="border-wise-border">
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle className="text-base">Automated Promotions</CardTitle>
-          <Button size="sm" onClick={() => setPromoDialog(true)} className="bg-brand-500 hover:bg-brand-600">
+          <Button size="sm" onClick={() => setPromoDialog(true)} className="bg-wise-primary hover:bg-wise-primary">
             <Plus className="mr-1 h-3.5 w-3.5" /> Add Promotion
           </Button>
         </CardHeader>
         <CardContent className="p-0">
           {promotions.length === 0 ? (
-            <p className="px-4 pb-4 text-sm text-zinc-400">No promotions yet.</p>
+            <p className="px-4 pb-4 text-sm text-wise-mute">No promotions yet.</p>
           ) : (
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-surface-border text-xs uppercase tracking-wider text-zinc-400">
+                <tr className="border-b border-wise-border text-xs uppercase tracking-wider text-wise-mute">
                   <th className="px-4 py-2 text-left">Name</th>
                   <th className="px-4 py-2 text-left">Applies To</th>
                   <th className="px-4 py-2 text-left">Condition</th>
@@ -241,13 +241,13 @@ export default function CouponsPage(): React.ReactElement {
               </thead>
               <tbody>
                 {promotions.map((p) => (
-                  <tr key={p.id} className="border-b border-surface-border last:border-0">
-                    <td className="px-4 py-2 font-medium text-zinc-800">{p.name}</td>
-                    <td className="px-4 py-2 text-zinc-600">{p.applies_to}</td>
-                    <td className="px-4 py-2 text-zinc-500">
+                  <tr key={p.id} className="border-b border-wise-border last:border-0">
+                    <td className="px-4 py-2 font-medium text-wise-ink">{p.name}</td>
+                    <td className="px-4 py-2 text-wise-body">{p.applies_to}</td>
+                    <td className="px-4 py-2 text-wise-body">
                       {p.applies_to === "product" ? `Min qty ${p.min_quantity}` : `Min order ₹${p.min_order_amount}`}
                     </td>
-                    <td className="px-4 py-2 text-zinc-600">{discountLabel(p.discount_type, Number(p.discount_value))}</td>
+                    <td className="px-4 py-2 text-wise-body">{discountLabel(p.discount_type, Number(p.discount_value))}</td>
                     <td className="px-4 py-2 text-center">
                       <Switch checked={p.is_active} onCheckedChange={() => void togglePromo(p)} />
                     </td>
@@ -296,7 +296,7 @@ export default function CouponsPage(): React.ReactElement {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setCouponDialog(false)}>Cancel</Button>
-            <Button onClick={() => void createCoupon()} disabled={busy || !cCode || !cValue} className="bg-brand-500 hover:bg-brand-600">
+            <Button onClick={() => void createCoupon()} disabled={busy || !cCode || !cValue} className="bg-wise-primary hover:bg-wise-primary">
               {busy ? "Saving…" : "Save"}
             </Button>
           </DialogFooter>
@@ -368,7 +368,7 @@ export default function CouponsPage(): React.ReactElement {
             <Button
               onClick={() => void createPromotion()}
               disabled={busy || !pName || !pValue || (pApplies === "product" ? !pProduct || !pMinQty : !pMinOrder)}
-              className="bg-brand-500 hover:bg-brand-600"
+              className="bg-wise-primary hover:bg-wise-primary"
             >
               {busy ? "Saving…" : "Save"}
             </Button>

@@ -184,7 +184,7 @@ export default function ProductsPage(): React.ReactElement {
         title="Products"
         subtitle="Manage your menu items"
         action={
-          <Button onClick={openCreate} disabled={categories.length === 0} className="bg-brand-500 hover:bg-brand-600">
+          <Button onClick={openCreate} disabled={categories.length === 0} className="bg-wise-primary hover:bg-wise-primary">
             <Plus className="mr-2 h-4 w-4" /> Add Product
           </Button>
         }
@@ -201,7 +201,7 @@ export default function ProductsPage(): React.ReactElement {
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-3">
         <div className="relative flex-1 min-w-[200px]">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-wise-mute" />
           <Input className="pl-9" placeholder="Search products…" value={search} onChange={(e) => setSearch(e.target.value)} />
         </div>
         <Select value={categoryFilter} onValueChange={setCategoryFilter}>
@@ -215,7 +215,7 @@ export default function ProductsPage(): React.ReactElement {
         </Select>
       </div>
 
-      <Card className="border-surface-border">
+      <Card className="border-wise-border">
         <CardContent className="p-0">
           {products.length === 0 && !loading ? (
             <EmptyState icon={Package} title="No products" subtitle="Adjust filters or add a product." />
@@ -223,7 +223,7 @@ export default function ProductsPage(): React.ReactElement {
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-surface-border text-xs uppercase tracking-wider text-zinc-400">
+                  <tr className="border-b border-wise-border text-xs uppercase tracking-wider text-wise-mute">
                     <th className="px-4 py-3 text-left">Name</th>
                     <th className="px-4 py-3 text-left">Category</th>
                     <th className="px-4 py-3 text-right">Price</th>
@@ -235,8 +235,8 @@ export default function ProductsPage(): React.ReactElement {
                 </thead>
                 <tbody>
                   {products.map((p) => (
-                    <tr key={p.id} className="border-b border-surface-border last:border-0">
-                      <td className="px-4 py-3 font-medium text-zinc-800">{p.name}</td>
+                    <tr key={p.id} className="border-b border-wise-border last:border-0">
+                      <td className="px-4 py-3 font-medium text-wise-ink">{p.name}</td>
                       <td className="px-4 py-3">
                         {p.category ? (
                           <span
@@ -246,20 +246,20 @@ export default function ProductsPage(): React.ReactElement {
                             {p.category.name}
                           </span>
                         ) : (
-                          <span className="text-zinc-400">—</span>
+                          <span className="text-wise-mute">—</span>
                         )}
                       </td>
-                      <td className="px-4 py-3 text-right text-zinc-700">{formatCurrency(Number(p.price))}</td>
-                      <td className="px-4 py-3 text-right text-zinc-500">{Number(p.tax_rate)}%</td>
+                      <td className="px-4 py-3 text-right text-wise-body">{formatCurrency(Number(p.price))}</td>
+                      <td className="px-4 py-3 text-right text-wise-body">{Number(p.tax_rate)}%</td>
                       <td className="px-4 py-3 text-center">{p.is_kitchen_display ? "✓" : "—"}</td>
                       <td className="px-4 py-3 text-center">
-                        <span className={`rounded-full px-2 py-0.5 text-xs ${p.is_active ? "bg-green-100 text-green-700" : "bg-zinc-100 text-zinc-400"}`}>
+                        <span className={`rounded-full px-2 py-0.5 text-xs ${p.is_active ? "bg-green-100 text-green-700" : "bg-wise-canvas-soft text-wise-mute"}`}>
                           {p.is_active ? "active" : "inactive"}
                         </span>
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex justify-end gap-1">
-                          <button onClick={() => openEdit(p)} className="rounded p-1.5 text-zinc-400 hover:bg-surface-muted hover:text-zinc-700">
+                          <button onClick={() => openEdit(p)} className="rounded p-1.5 text-wise-mute hover:bg-wise-canvas-soft hover:text-wise-body">
                             <Pencil className="h-3.5 w-3.5" />
                           </button>
                           <button onClick={() => void handleDelete(p)} className="rounded p-1.5 text-red-400 hover:bg-red-50">
@@ -342,7 +342,7 @@ export default function ProductsPage(): React.ReactElement {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button>
-            <Button onClick={() => void handleSave()} disabled={busy || !form.name || !form.category_id || !form.price} className="bg-brand-500 hover:bg-brand-600">
+            <Button onClick={() => void handleSave()} disabled={busy || !form.name || !form.category_id || !form.price} className="bg-wise-primary hover:bg-wise-primary">
               {busy ? "Saving…" : "Save"}
             </Button>
           </DialogFooter>

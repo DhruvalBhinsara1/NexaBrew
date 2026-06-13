@@ -34,7 +34,7 @@ const STATUSES: { value: OrderStatus | "all"; label: string }[] = [
 ];
 
 const BADGE: Record<string, string> = {
-  draft: "bg-zinc-100 text-zinc-600",
+  draft: "bg-wise-canvas-soft text-wise-body",
   sent_to_kitchen: "bg-blue-100 text-blue-700",
   payment_pending: "bg-amber-100 text-amber-700",
   paid: "bg-green-100 text-green-700",
@@ -124,21 +124,21 @@ export default function PosOrdersPage(): React.ReactElement {
 
   return (
     <div className="min-h-screen">
-      <header className="flex items-center justify-between border-b border-surface-border bg-white px-4 py-3">
+      <header className="flex items-center justify-between border-b border-wise-border bg-white px-4 py-3">
         <div className="flex items-center gap-3">
-          <Link href="/pos/terminal" className="flex items-center gap-1 text-sm text-zinc-500 hover:text-zinc-800">
+          <Link href="/pos/terminal" className="flex items-center gap-1 text-sm text-wise-body hover:text-wise-ink">
             <ArrowLeft className="h-4 w-4" /> Terminal
           </Link>
-          <span className="font-semibold text-zinc-800">Orders</span>
+          <span className="font-semibold text-wise-ink">Orders</span>
         </div>
-        <Link href="/pos/customers" className="text-sm text-brand-600 hover:underline">Customers</Link>
+        <Link href="/pos/customers" className="text-sm text-wise-ink-deep hover:underline">Customers</Link>
       </header>
 
       <div className="space-y-4 p-6">
         {/* Filters */}
         <div className="flex flex-wrap items-center gap-3">
           <div className="relative flex-1 min-w-[200px]">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-wise-mute" />
             <Input className="pl-9" placeholder="Search order # or customer…" value={search} onChange={(e) => setSearch(e.target.value)} />
           </div>
         </div>
@@ -149,7 +149,7 @@ export default function PosOrdersPage(): React.ReactElement {
               onClick={() => setFilter(s.value)}
               className={cn(
                 "rounded-full px-3 py-1.5 text-sm font-medium transition-colors",
-                filter === s.value ? "bg-brand-500 text-white" : "bg-white border border-surface-border text-zinc-600 hover:bg-surface-muted"
+                filter === s.value ? "bg-wise-primary text-wise-ink" : "bg-white border border-wise-border text-wise-body hover:bg-wise-canvas-soft"
               )}
             >
               {s.label}
@@ -157,7 +157,7 @@ export default function PosOrdersPage(): React.ReactElement {
           ))}
         </div>
 
-        <Card className="border-surface-border">
+        <Card className="border-wise-border">
           <CardContent className="p-0">
             {filtered.length === 0 && !loading ? (
               <EmptyState icon={Receipt} title="No orders" subtitle="Orders will appear here once created." />
@@ -165,7 +165,7 @@ export default function PosOrdersPage(): React.ReactElement {
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="border-b border-surface-border text-xs uppercase tracking-wider text-zinc-400">
+                    <tr className="border-b border-wise-border text-xs uppercase tracking-wider text-wise-mute">
                       <th className="px-4 py-3 text-left">Order #</th>
                       <th className="px-4 py-3 text-left">Customer</th>
                       <th className="px-4 py-3 text-center">Items</th>
@@ -180,19 +180,19 @@ export default function PosOrdersPage(): React.ReactElement {
                       <tr
                         key={o.id}
                         onClick={() => setSelected(o)}
-                        className="cursor-pointer border-b border-surface-border last:border-0 hover:bg-surface-muted"
+                        className="cursor-pointer border-b border-wise-border last:border-0 hover:bg-wise-canvas-soft"
                       >
-                        <td className="px-4 py-3 font-medium text-zinc-800">{o.order_number}</td>
-                        <td className="px-4 py-3 text-zinc-500">{o.customer?.name ?? "—"}</td>
-                        <td className="px-4 py-3 text-center text-zinc-500">{o.items.length}</td>
-                        <td className="px-4 py-3 text-zinc-500">{o.table ? `T${o.table.table_number}` : "—"}</td>
+                        <td className="px-4 py-3 font-medium text-wise-ink">{o.order_number}</td>
+                        <td className="px-4 py-3 text-wise-body">{o.customer?.name ?? "—"}</td>
+                        <td className="px-4 py-3 text-center text-wise-body">{o.items.length}</td>
+                        <td className="px-4 py-3 text-wise-body">{o.table ? `T${o.table.table_number}` : "—"}</td>
                         <td className="px-4 py-3 text-center">
-                          <span className={cn("rounded-full px-2 py-0.5 text-xs font-medium", BADGE[o.status] ?? "bg-zinc-100")}>
+                          <span className={cn("rounded-full px-2 py-0.5 text-xs font-medium", BADGE[o.status] ?? "bg-wise-canvas-soft")}>
                             {o.status.replace(/_/g, " ")}
                           </span>
                         </td>
-                        <td className="px-4 py-3 text-zinc-500">{fmt(o.created_at)}</td>
-                        <td className="px-4 py-3 text-right font-medium text-zinc-800">{formatCurrency(Number(o.total_amount))}</td>
+                        <td className="px-4 py-3 text-wise-body">{fmt(o.created_at)}</td>
+                        <td className="px-4 py-3 text-right font-medium text-wise-ink">{formatCurrency(Number(o.total_amount))}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -221,13 +221,13 @@ export default function PosOrdersPage(): React.ReactElement {
               <SheetHeader>
                 <SheetTitle className="flex items-center gap-2">
                   Order {selected.order_number}
-                  <span className={cn("rounded-full px-2 py-0.5 text-xs font-medium", BADGE[selected.status] ?? "bg-zinc-100")}>
+                  <span className={cn("rounded-full px-2 py-0.5 text-xs font-medium", BADGE[selected.status] ?? "bg-wise-canvas-soft")}>
                     {selected.status.replace(/_/g, " ")}
                   </span>
                 </SheetTitle>
               </SheetHeader>
 
-              <div className="mt-4 space-y-1 text-sm text-zinc-500">
+              <div className="mt-4 space-y-1 text-sm text-wise-body">
                 <p>Table: {selected.table ? `T${selected.table.table_number}` : "—"}</p>
                 <p>Customer: {selected.customer?.name ?? "Walk-in"}</p>
                 <p>Created: {fmt(selected.created_at)}</p>
@@ -238,8 +238,8 @@ export default function PosOrdersPage(): React.ReactElement {
               <ul className="space-y-2">
                 {selected.items.map((it) => (
                   <li key={it.id} className="flex justify-between text-sm">
-                    <span className="text-zinc-700">{it.product_name} × {it.quantity}</span>
-                    <span className="font-medium text-zinc-800">{formatCurrency(Number(it.line_total))}</span>
+                    <span className="text-wise-body">{it.product_name} × {it.quantity}</span>
+                    <span className="font-medium text-wise-ink">{formatCurrency(Number(it.line_total))}</span>
                   </li>
                 ))}
               </ul>
@@ -247,16 +247,16 @@ export default function PosOrdersPage(): React.ReactElement {
               <Separator className="my-4" />
 
               <div className="space-y-1 text-sm">
-                <div className="flex justify-between text-zinc-500"><span>Subtotal</span><span>{formatCurrency(Number(selected.subtotal))}</span></div>
-                <div className="flex justify-between text-zinc-500"><span>Discount</span><span>−{formatCurrency(Number(selected.discount_amount))}</span></div>
-                <div className="flex justify-between text-zinc-500"><span>Tax</span><span>{formatCurrency(Number(selected.tax_amount))}</span></div>
-                <div className="flex justify-between text-base font-bold text-zinc-900"><span>Total</span><span>{formatCurrency(Number(selected.total_amount))}</span></div>
+                <div className="flex justify-between text-wise-body"><span>Subtotal</span><span>{formatCurrency(Number(selected.subtotal))}</span></div>
+                <div className="flex justify-between text-wise-body"><span>Discount</span><span>−{formatCurrency(Number(selected.discount_amount))}</span></div>
+                <div className="flex justify-between text-wise-body"><span>Tax</span><span>{formatCurrency(Number(selected.tax_amount))}</span></div>
+                <div className="flex justify-between text-base font-bold text-wise-ink"><span>Total</span><span>{formatCurrency(Number(selected.total_amount))}</span></div>
               </div>
 
               {selected.status === "payment_pending" && (
                 <SheetFooter className="mt-6">
                   <Button
-                    className="w-full bg-brand-500 hover:bg-brand-600"
+                    className="w-full bg-wise-primary hover:bg-wise-primary"
                     onClick={() => setPayingOrder(selected)}
                   >
                     <CreditCard className="mr-2 h-4 w-4" /> Process Payment

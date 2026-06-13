@@ -93,9 +93,9 @@ export function ReceiptDialog({ orderId, open, onClose, toast }: Props): React.R
           <DialogTitle>Receipt {orderNumber ? `· ${orderNumber}` : ""}</DialogTitle>
         </DialogHeader>
 
-        <div className="flex min-h-[360px] items-center justify-center rounded-lg bg-zinc-100 p-4">
+        <div className="flex min-h-[360px] items-center justify-center rounded-lg bg-wise-canvas-soft p-4">
           {loading ? (
-            <span className="flex items-center gap-2 text-sm text-zinc-400">
+            <span className="flex items-center gap-2 text-sm text-wise-mute">
               <Loader2 className="h-4 w-4 animate-spin" /> Building receipt…
             </span>
           ) : error ? (
@@ -105,7 +105,7 @@ export function ReceiptDialog({ orderId, open, onClose, toast }: Props): React.R
               ref={iframeRef}
               title="Receipt preview"
               srcDoc={html}
-              className="h-[440px] w-[300px] rounded-md border border-zinc-200 bg-white shadow-sm"
+              className="h-[440px] w-[300px] rounded-md border border-wise-border bg-white shadow-sm"
             />
           )}
         </div>
@@ -114,7 +114,7 @@ export function ReceiptDialog({ orderId, open, onClose, toast }: Props): React.R
           <Button variant="outline" onClick={handleDownload} disabled={!html || loading}>
             <Download className="mr-2 h-4 w-4" /> Download
           </Button>
-          <Button onClick={handlePrint} disabled={!html || loading} className="bg-brand-500 hover:bg-brand-600">
+          <Button onClick={handlePrint} disabled={!html || loading} className="bg-wise-primary hover:bg-wise-primary">
             <Printer className="mr-2 h-4 w-4" /> Print
           </Button>
         </DialogFooter>

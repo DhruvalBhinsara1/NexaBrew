@@ -322,25 +322,25 @@ export function PosTerminal(): React.ReactElement {
 
   if (loading) {
     return (
-      <div className="flex h-screen items-center justify-center bg-surface-muted">
+      <div className="flex h-screen items-center justify-center bg-wise-canvas-soft">
         <div className="text-center">
-          <div className="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-brand-500 border-t-transparent" />
-          <p className="mt-3 text-sm text-zinc-400">Loading POS…</p>
+          <div className="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-wise-primary border-t-transparent" />
+          <p className="mt-3 text-sm text-wise-mute">Loading POS…</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="flex h-screen flex-col overflow-hidden bg-surface-muted">
+    <div className="flex h-screen flex-col overflow-hidden bg-wise-canvas-soft">
       {/* Top bar */}
-      <header className="flex items-center justify-between border-b border-surface-border bg-white px-4 py-2.5 shadow-sm">
+      <header className="flex items-center justify-between border-b border-wise-border bg-white px-4 py-2.5 shadow-sm">
         <div className="flex items-center gap-3">
           <span className="flex items-center gap-2">
-            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-brand-500 to-brand-700 text-white">
+            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-wise-primary to-wise-primary text-white">
               <Coffee className="h-4 w-4" />
             </span>
-            <span className="text-base font-bold text-zinc-900">NexaBrew <span className="text-brand-600">POS</span></span>
+            <span className="text-base font-bold text-wise-ink">NexaBrew <span className="text-wise-ink-deep">POS</span></span>
           </span>
           {session ? (
             <span className="flex items-center gap-1.5">
@@ -359,13 +359,13 @@ export function PosTerminal(): React.ReactElement {
             <button
               onClick={() => void openSession()}
               disabled={sessionBusy}
-              className="rounded-full bg-brand-500 px-3 py-0.5 text-xs font-semibold text-white hover:bg-brand-600 disabled:opacity-50"
+              className="rounded-full bg-wise-primary px-3 py-0.5 text-xs font-semibold text-wise-ink hover:bg-wise-primary-active disabled:opacity-50"
             >
               {sessionBusy ? "Opening…" : "Open Session"}
             </button>
           )}
           {tableNumber && (
-            <span className="rounded-full bg-brand-100 px-2 py-0.5 text-xs font-medium text-brand-700">
+            <span className="rounded-full bg-wise-primary-pale px-2 py-0.5 text-xs font-medium text-wise-ink-deep">
               Table {tableNumber}
             </span>
           )}
@@ -375,7 +375,7 @@ export function PosTerminal(): React.ReactElement {
           <button
             type="button"
             onClick={() => setOpenBillsOpen(true)}
-            className="relative flex items-center gap-1 rounded-md px-2 py-1 text-xs text-zinc-500 hover:text-zinc-800"
+            className="relative flex items-center gap-1 rounded-md px-2 py-1 text-xs text-wise-body hover:text-wise-ink"
           >
             <Receipt className="h-3.5 w-3.5" />
             Open Bills
@@ -387,7 +387,7 @@ export function PosTerminal(): React.ReactElement {
           </button>
           <Link
             href="/pos/orders"
-            className="flex items-center gap-1 rounded-md px-2 py-1 text-xs text-zinc-500 hover:text-zinc-800"
+            className="flex items-center gap-1 rounded-md px-2 py-1 text-xs text-wise-body hover:text-wise-ink"
           >
             <Receipt className="h-3.5 w-3.5" />
             Orders
@@ -396,21 +396,21 @@ export function PosTerminal(): React.ReactElement {
             href="/kds"
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-1 rounded-md px-2 py-1 text-xs text-zinc-500 hover:text-zinc-800"
+            className="flex items-center gap-1 rounded-md px-2 py-1 text-xs text-wise-body hover:text-wise-ink"
           >
             <ChefHat className="h-3.5 w-3.5" />
             Kitchen Display
           </a>
           <Link
             href="/dashboard"
-            className="flex items-center gap-1 rounded-md px-2 py-1 text-xs text-zinc-500 hover:text-zinc-800"
+            className="flex items-center gap-1 rounded-md px-2 py-1 text-xs text-wise-body hover:text-wise-ink"
           >
             <LayoutGrid className="h-3.5 w-3.5" />
             Dashboard
           </Link>
           <button
             onClick={() => void handleLogout()}
-            className="flex items-center gap-1 rounded-md px-2 py-1 text-xs text-zinc-500 hover:text-zinc-800"
+            className="flex items-center gap-1 rounded-md px-2 py-1 text-xs text-wise-body hover:text-wise-ink"
           >
             <LogOut className="h-3.5 w-3.5" />
             Logout
@@ -429,7 +429,7 @@ export function PosTerminal(): React.ReactElement {
             <button
               onClick={() => void openSession()}
               disabled={sessionBusy}
-              className="shrink-0 rounded-md bg-brand-500 px-3 py-1 text-xs font-semibold text-white hover:bg-brand-600 disabled:opacity-50"
+              className="shrink-0 rounded-md bg-wise-primary px-3 py-1 text-xs font-semibold text-wise-ink hover:bg-wise-primary-active disabled:opacity-50"
             >
               {sessionBusy ? "Opening…" : "Open Session"}
             </button>
@@ -440,7 +440,7 @@ export function PosTerminal(): React.ReactElement {
       {/* 3-panel layout */}
       <div className="flex flex-1 overflow-hidden">
         {/* Products panel — flex 2 */}
-        <div className="flex-[2] overflow-hidden border-r border-surface-border bg-surface-muted">
+        <div className="flex-[2] overflow-hidden border-r border-wise-border bg-wise-canvas-soft">
           <ProductsPanel products={products} categories={categories} />
         </div>
 

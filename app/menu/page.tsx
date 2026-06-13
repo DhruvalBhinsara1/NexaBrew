@@ -29,7 +29,7 @@ const STAGE_LABEL: Record<Stage, string> = {
   cancelled: "Cancelled",
 };
 const STAGE_BADGE: Record<Stage, string> = {
-  placed: "bg-zinc-100 text-zinc-600",
+  placed: "bg-wise-canvas-soft text-wise-body",
   queued: "bg-blue-100 text-blue-700",
   preparing: "bg-indigo-100 text-indigo-700",
   ready: "bg-amber-100 text-amber-700",
@@ -117,30 +117,30 @@ export default function MenuPage(): React.ReactElement {
   return (
     <div className="flex min-h-screen flex-col">
       {/* Header */}
-      <header className="sticky top-0 z-10 flex items-center justify-between border-b border-surface-border bg-white/90 px-4 py-3 backdrop-blur">
+      <header className="sticky top-0 z-10 flex items-center justify-between border-b border-wise-border bg-white/90 px-4 py-3 backdrop-blur">
         <div className="flex items-center gap-2.5">
-          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-brand-500 to-brand-700 text-white">
+          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-wise-primary to-wise-primary text-white">
             <Coffee className="h-4 w-4" />
           </span>
           <div className="leading-tight">
-            <span className="block text-sm font-bold text-zinc-900">NexaBrew</span>
-            <span className="block text-[11px] text-zinc-400">Menu &amp; Orders</span>
+            <span className="block text-sm font-bold text-wise-ink">NexaBrew</span>
+            <span className="block text-[11px] text-wise-mute">Menu &amp; Orders</span>
           </div>
         </div>
-        <button onClick={() => void logout()} className="flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-sm text-zinc-500 transition-colors hover:bg-surface-muted hover:text-zinc-800">
+        <button onClick={() => void logout()} className="flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-sm text-wise-body transition-colors hover:bg-wise-canvas-soft hover:text-wise-ink">
           <LogOut className="h-4 w-4" /> Logout
         </button>
       </header>
 
       {/* Tabs */}
-      <div className="flex gap-2 border-b border-surface-border bg-white px-4">
+      <div className="flex gap-2 border-b border-wise-border bg-white px-4">
         {([["menu", "Menu", UtensilsCrossed], ["orders", "My Orders", Receipt]] as const).map(([key, label, Icon]) => (
           <button
             key={key}
             onClick={() => setTab(key)}
             className={cn(
               "flex items-center gap-2 border-b-2 px-3 py-3 text-sm font-medium transition-colors",
-              tab === key ? "border-brand-500 text-brand-700" : "border-transparent text-zinc-500 hover:text-zinc-800"
+              tab === key ? "border-wise-primary text-wise-ink-deep" : "border-transparent text-wise-body hover:text-wise-ink"
             )}
           >
             <Icon className="h-4 w-4" /> {label}
@@ -155,7 +155,7 @@ export default function MenuPage(): React.ReactElement {
             <div className="mb-4 flex flex-wrap gap-2">
               <button
                 onClick={() => setActiveCat(null)}
-                className={cn("rounded-full px-3 py-1.5 text-sm font-medium", activeCat === null ? "bg-brand-500 text-white" : "bg-white border border-surface-border text-zinc-600")}
+                className={cn("rounded-full px-3 py-1.5 text-sm font-medium", activeCat === null ? "bg-wise-primary text-wise-ink" : "bg-white border border-wise-border text-wise-body")}
               >
                 All
               </button>
@@ -163,7 +163,7 @@ export default function MenuPage(): React.ReactElement {
                 <button
                   key={c.id}
                   onClick={() => setActiveCat(c.id)}
-                  className={cn("flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium", activeCat === c.id ? "bg-brand-500 text-white" : "bg-white border border-surface-border text-zinc-600")}
+                  className={cn("flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium", activeCat === c.id ? "bg-wise-primary text-wise-ink" : "bg-white border border-wise-border text-wise-body")}
                 >
                   <span className="h-2 w-2 rounded-full" style={{ backgroundColor: c.color ?? "#aaa" }} />
                   {c.name}
@@ -176,25 +176,25 @@ export default function MenuPage(): React.ReactElement {
             ) : (
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
                 {filtered.map((p) => (
-                  <Card key={p.id} className="overflow-hidden border-surface-border">
+                  <Card key={p.id} className="overflow-hidden border-wise-border">
                     <div className="h-1.5 w-full" style={{ backgroundColor: p.category?.color ?? "#e2e8f0" }} />
                     <CardContent className="p-3">
-                      <p className="font-semibold text-zinc-800">{p.name}</p>
-                      {p.category && <p className="text-xs text-zinc-400">{p.category.name}</p>}
-                      <p className="mt-2 text-lg font-bold text-brand-600">{formatCurrency(Number(p.price))}</p>
+                      <p className="font-semibold text-wise-ink">{p.name}</p>
+                      {p.category && <p className="text-xs text-wise-mute">{p.category.name}</p>}
+                      <p className="mt-2 text-lg font-bold text-wise-ink-deep">{formatCurrency(Number(p.price))}</p>
                     </CardContent>
                   </Card>
                 ))}
               </div>
             )}
-            <p className="mt-6 text-center text-xs text-zinc-400">
+            <p className="mt-6 text-center text-xs text-wise-mute">
               Browse the menu and order with our staff. Track your order status under “My Orders”.
             </p>
           </>
         ) : (
           <>
             <div className="mb-3 flex items-center justify-between">
-              <h2 className="font-semibold text-zinc-800">My Orders</h2>
+              <h2 className="font-semibold text-wise-ink">My Orders</h2>
               <Button size="sm" variant="outline" onClick={() => void loadOrders()}>
                 <RefreshCw className="mr-1 h-3.5 w-3.5" /> Refresh
               </Button>
@@ -212,10 +212,10 @@ export default function MenuPage(): React.ReactElement {
                   const stage = stageOf(o);
                   const stepIdx = STAGE_STEPS.indexOf(stage);
                   return (
-                    <Card key={o.id} className="border-surface-border">
+                    <Card key={o.id} className="border-wise-border">
                       <CardContent className="py-4">
                         <div className="flex items-center justify-between">
-                          <p className="font-semibold text-zinc-800">Order {o.order_number}</p>
+                          <p className="font-semibold text-wise-ink">Order {o.order_number}</p>
                           <span className={cn("rounded-full px-2 py-0.5 text-xs font-medium", STAGE_BADGE[stage])}>
                             {STAGE_LABEL[stage]}
                           </span>
@@ -225,12 +225,12 @@ export default function MenuPage(): React.ReactElement {
                         {stage !== "cancelled" && (
                           <div className="mt-3 flex gap-1">
                             {STAGE_STEPS.map((s, i) => (
-                              <div key={s} className={cn("h-1.5 flex-1 rounded-full", i <= stepIdx ? "bg-brand-500" : "bg-surface-border")} />
+                              <div key={s} className={cn("h-1.5 flex-1 rounded-full", i <= stepIdx ? "bg-wise-primary" : "bg-wise-canvas-border")} />
                             ))}
                           </div>
                         )}
 
-                        <ul className="mt-3 space-y-1 text-sm text-zinc-600">
+                        <ul className="mt-3 space-y-1 text-sm text-wise-body">
                           {o.items.map((it) => (
                             <li key={it.id} className="flex justify-between">
                               <span>{it.product_name} × {it.quantity}</span>
@@ -238,7 +238,7 @@ export default function MenuPage(): React.ReactElement {
                             </li>
                           ))}
                         </ul>
-                        <div className="mt-2 flex justify-between border-t border-surface-border pt-2 text-sm font-semibold text-zinc-800">
+                        <div className="mt-2 flex justify-between border-t border-wise-border pt-2 text-sm font-semibold text-wise-ink">
                           <span>Total</span>
                           <span>{formatCurrency(Number(o.total_amount))}</span>
                         </div>

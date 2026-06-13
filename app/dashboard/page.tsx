@@ -69,7 +69,7 @@ type RecentOrder = {
 };
 
 const STATUS_BADGE: Record<string, string> = {
-  draft: "bg-zinc-100 text-zinc-600",
+  draft: "bg-wise-canvas-soft text-wise-body",
   sent_to_kitchen: "bg-blue-100 text-blue-700",
   payment_pending: "bg-amber-100 text-amber-700",
   paid: "bg-green-100 text-green-700",
@@ -78,14 +78,14 @@ const STATUS_BADGE: Record<string, string> = {
 
 function RecentOrdersTable({ orders }: { orders: RecentOrder[] }): React.ReactElement {
   if (orders.length === 0) {
-    return <p className="py-8 text-center text-sm text-zinc-400">No orders yet today.</p>;
+    return <p className="py-8 text-center text-sm text-wise-mute">No orders yet today.</p>;
   }
 
   return (
     <div className="overflow-x-auto">
       <table className="w-full text-sm">
         <thead>
-          <tr className="border-b border-surface-border text-xs font-medium uppercase tracking-wider text-zinc-400">
+          <tr className="border-b border-wise-border text-xs font-medium uppercase tracking-wider text-wise-mute">
             <th className="pb-2 pr-4 text-left">Order #</th>
             <th className="pb-2 pr-4 text-left">Status</th>
             <th className="pb-2 pr-4 text-left">Time</th>
@@ -94,20 +94,20 @@ function RecentOrdersTable({ orders }: { orders: RecentOrder[] }): React.ReactEl
         </thead>
         <tbody>
           {orders.map((o) => (
-            <tr key={o.id} className="border-b border-surface-border last:border-0">
-              <td className="py-3 pr-4 font-medium text-zinc-800">{o.order_number}</td>
+            <tr key={o.id} className="border-b border-wise-border last:border-0">
+              <td className="py-3 pr-4 font-medium text-wise-ink">{o.order_number}</td>
               <td className="py-3 pr-4">
                 <span
                   className={cn(
                     "rounded-full px-2 py-0.5 text-xs font-medium",
-                    STATUS_BADGE[o.status] ?? "bg-zinc-100 text-zinc-600"
+                    STATUS_BADGE[o.status] ?? "bg-wise-canvas-soft text-wise-body"
                   )}
                 >
                   {o.status.replace(/_/g, " ")}
                 </span>
               </td>
-              <td className="py-3 pr-4 text-zinc-500">{formatTime(o.created_at)}</td>
-              <td className="py-3 text-right font-medium text-zinc-800">
+              <td className="py-3 pr-4 text-wise-body">{formatTime(o.created_at)}</td>
+              <td className="py-3 text-right font-medium text-wise-ink">
                 {formatCurrency(Number(o.total_amount))}
               </td>
             </tr>
@@ -197,8 +197,8 @@ export default async function DashboardPage(): Promise<React.ReactElement> {
     <div className="p-6 space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-zinc-900">Dashboard</h1>
-        <p className="text-sm text-zinc-400 mt-0.5">
+        <h1 className="text-2xl font-bold text-wise-ink">Dashboard</h1>
+        <p className="text-sm text-wise-mute mt-0.5">
           {new Date().toLocaleDateString("en-IN", {
             weekday: "long",
             day: "2-digit",
@@ -240,7 +240,7 @@ export default async function DashboardPage(): Promise<React.ReactElement> {
           </div>
           <Link
             href="/dashboard/sessions"
-            className="flex items-center gap-1 rounded-md bg-white px-3 py-1.5 text-sm font-medium text-zinc-700 shadow-sm border border-zinc-200 hover:bg-zinc-50 transition-colors"
+            className="flex items-center gap-1 rounded-md bg-white px-3 py-1.5 text-sm font-medium text-wise-body shadow-sm border border-wise-border hover:bg-wise-canvas-soft transition-colors"
           >
             Manage sessions <ArrowRight className="h-3 w-3" />
           </Link>
@@ -255,7 +255,7 @@ export default async function DashboardPage(): Promise<React.ReactElement> {
           sub="paid orders"
           icon="cart"
           href="/pos/orders"
-          color="#d4791f"
+          color="#2ead4b"
           chartType="bar"
           series={ordersSeries}
           format="int"
@@ -297,21 +297,21 @@ export default async function DashboardPage(): Promise<React.ReactElement> {
       {/* Occupancy + Recent orders */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         {/* Table occupancy */}
-        <Card className="border-surface-border bg-white shadow-sm">
+        <Card className="border-wise-border bg-white shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between pb-3">
-            <CardTitle className="text-base font-semibold text-zinc-800">
+            <CardTitle className="text-base font-semibold text-wise-ink">
               Table Occupancy
             </CardTitle>
             <Link
               href="/dashboard/floors"
-              className="text-xs text-brand-600 hover:underline"
+              className="text-xs text-wise-ink-deep hover:underline"
             >
               Manage
             </Link>
           </CardHeader>
           <CardContent>
             {floors.length === 0 ? (
-              <p className="text-sm text-zinc-400">No floors configured.</p>
+              <p className="text-sm text-wise-mute">No floors configured.</p>
             ) : (
               <TableOccupancyGrid floors={floors} lockedTables={lockedTables} />
             )}
@@ -319,19 +319,19 @@ export default async function DashboardPage(): Promise<React.ReactElement> {
         </Card>
 
         {/* Recent orders */}
-        <Card className="border-surface-border bg-white shadow-sm lg:col-span-2">
+        <Card className="border-wise-border bg-white shadow-sm lg:col-span-2">
           <CardHeader className="flex flex-row items-center justify-between pb-3">
-            <CardTitle className="text-base font-semibold text-zinc-800">
+            <CardTitle className="text-base font-semibold text-wise-ink">
               Recent Orders
             </CardTitle>
             <div className="flex items-center gap-3">
               <Link
                 href="/pos/orders"
-                className="flex items-center gap-1 text-xs font-medium text-brand-600 hover:underline"
+                className="flex items-center gap-1 text-xs font-medium text-wise-ink-deep hover:underline"
               >
                 All Orders &amp; Payments <ArrowRight className="h-3 w-3" />
               </Link>
-              <Link href="/kds" className="text-xs text-zinc-500 hover:underline">
+              <Link href="/kds" className="text-xs text-wise-body hover:underline">
                 Kitchen Display
               </Link>
             </div>
@@ -353,10 +353,10 @@ export default async function DashboardPage(): Promise<React.ReactElement> {
           <Link
             key={href}
             href={href}
-            className="flex items-center gap-3 rounded-xl border border-surface-border bg-white p-4 shadow-sm hover:bg-surface-muted transition-colors"
+            className="flex items-center gap-3 rounded-xl border border-wise-border bg-white p-4 shadow-sm hover:bg-wise-canvas-soft transition-colors"
           >
             <Icon className={cn("h-5 w-5", color)} />
-            <span className="text-sm font-medium text-zinc-700">{label}</span>
+            <span className="text-sm font-medium text-wise-body">{label}</span>
           </Link>
         ))}
       </div>

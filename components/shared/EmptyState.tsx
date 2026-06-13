@@ -17,12 +17,12 @@ export function EmptyState({
 }: Props): React.ReactElement {
   return (
     <div className="flex flex-col items-center justify-center gap-3 py-16 text-center">
-      <div className="rounded-full bg-surface-muted p-4">
-        <Icon className="h-8 w-8 text-zinc-300" />
+      <div className="rounded-full bg-wise-canvas-soft p-4">
+        <Icon className="h-8 w-8 text-wise-mute" />
       </div>
       <div>
-        <p className="font-semibold text-zinc-700">{title}</p>
-        {subtitle && <p className="mt-1 text-sm text-zinc-400">{subtitle}</p>}
+        <p className="font-semibold text-wise-body">{title}</p>
+        {subtitle && <p className="mt-1 text-sm text-wise-mute">{subtitle}</p>}
       </div>
       {action && (
         <Button size="sm" onClick={action.onClick} className="mt-2">

@@ -4,7 +4,7 @@ export default function AuthLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>): React.ReactElement {
   return (
-    <div className="flex min-h-screen bg-surface-muted">
+    <div className="flex min-h-screen bg-wise-canvas-soft">
       {/* Brand panel (hidden on mobile) */}
       <div className="hidden w-1/2 lg:block">
         <Skiper71Wrapper />

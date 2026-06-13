@@ -39,25 +39,25 @@ export function TablesOccupiedCard({
       onMouseLeave={() => setOpen(false)}
     >
       <Link href={href} className="block">
-        <Card className="border-surface-border bg-white shadow-sm transition-all duration-300 hover:border-brand-300 hover:shadow-md">
+        <Card className="border-wise-border bg-white shadow-sm transition-all duration-300 hover:border-wise-primary hover:shadow-md">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-zinc-500">Tables Occupied</CardTitle>
+            <CardTitle className="text-sm font-medium text-wise-body">Tables Occupied</CardTitle>
             <LayoutGrid
               className={cn(
                 "h-4 w-4 transition-transform duration-300",
-                open ? "scale-110 text-brand-500" : "text-brand-400"
+                open ? "scale-110 text-wise-ink-deep" : "text-wise-ink-deep"
               )}
             />
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-bold text-zinc-900">
-              {occupiedCount} <span className="text-zinc-300">/</span> {totalTables}
+            <p className="text-2xl font-bold text-wise-ink">
+              {occupiedCount} <span className="text-wise-mute">/</span> {totalTables}
             </p>
-            <p className="mt-0.5 text-xs text-zinc-400">{available} available</p>
+            <p className="mt-0.5 text-xs text-wise-mute">{available} available</p>
             {/* Occupancy bar */}
-            <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-zinc-100">
+            <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-wise-canvas-soft">
               <div
-                className="h-full rounded-full bg-gradient-to-r from-brand-400 to-brand-600 transition-[width] duration-500 ease-out"
+                className="h-full rounded-full bg-gradient-to-r from-wise-primary to-wise-primary transition-[width] duration-500 ease-out"
                 style={{ width: `${pct}%` }}
               />
             </div>
@@ -76,17 +76,17 @@ export function TablesOccupiedCard({
             : "pointer-events-none -translate-y-2 scale-95 opacity-0"
         )}
       >
-        <div className="overflow-hidden rounded-2xl border border-surface-border bg-white shadow-2xl ring-1 ring-black/5">
+        <div className="overflow-hidden rounded-2xl border border-wise-border bg-white shadow-2xl ring-1 ring-black/5">
           {/* Header */}
-          <div className="flex items-center justify-between border-b border-surface-border bg-gradient-to-r from-surface-muted/80 to-white px-4 py-3">
+          <div className="flex items-center justify-between border-b border-wise-border bg-gradient-to-r from-wise-canvas-soft/80 to-white px-4 py-3">
             <div>
-              <p className="text-sm font-semibold text-zinc-800">Floor Plan</p>
-              <p className="mt-0.5 flex items-center gap-1.5 text-xs text-zinc-400">
+              <p className="text-sm font-semibold text-wise-ink">Floor Plan</p>
+              <p className="mt-0.5 flex items-center gap-1.5 text-xs text-wise-mute">
                 <span className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-green-500" />
                 {pct}% occupied · live
               </p>
             </div>
-            <span className="rounded-full bg-brand-50 px-2.5 py-1 text-xs font-semibold text-brand-600 ring-1 ring-brand-100">
+            <span className="rounded-full bg-wise-primary-pale px-2.5 py-1 text-xs font-semibold text-wise-ink-deep ring-1 ring-wise-primary">
               {occupiedCount}/{totalTables}
             </span>
           </div>
@@ -94,7 +94,7 @@ export function TablesOccupiedCard({
           {/* Floors */}
           <div className="max-h-[340px] space-y-4 overflow-y-auto p-4">
             {activeTables.length === 0 ? (
-              <p className="py-6 text-center text-sm text-zinc-400">No tables configured.</p>
+              <p className="py-6 text-center text-sm text-wise-mute">No tables configured.</p>
             ) : (
               floors.map((floor) => {
                 const tables = floor.tables.filter((t) => t.is_active);
@@ -102,10 +102,10 @@ export function TablesOccupiedCard({
                 return (
                   <div key={floor.id}>
                     <div className="mb-2 flex items-center justify-between">
-                      <p className="text-[11px] font-semibold uppercase tracking-wider text-zinc-400">
+                      <p className="text-[11px] font-semibold uppercase tracking-wider text-wise-mute">
                         {floor.name}
                       </p>
-                      <span className="text-[10px] font-medium text-zinc-300">
+                      <span className="text-[10px] font-medium text-wise-mute">
                         {tables.filter((t) => t.status === "occupied").length}/{tables.length}
                       </span>
                     </div>
@@ -124,8 +124,8 @@ export function TablesOccupiedCard({
                               isLocked
                                 ? "bg-amber-100 text-amber-700 ring-1 ring-amber-300"
                                 : isOccupied
-                                  ? "bg-gradient-to-br from-brand-500 to-brand-600 text-white shadow-sm hover:shadow-md"
-                                  : "border border-dashed border-surface-border bg-surface-muted/60 text-zinc-400 hover:border-zinc-300"
+                                  ? "bg-gradient-to-br from-wise-primary to-wise-primary text-white shadow-sm hover:shadow-md"
+                                  : "border border-dashed border-wise-border bg-wise-canvas-soft/60 text-wise-mute hover:border-wise-border"
                             )}
                           >
                             {table.table_number}
@@ -134,8 +134,8 @@ export function TablesOccupiedCard({
                             )}
                             {isOccupied && !isLocked && (
                               <span className="absolute -right-0.5 -top-0.5 flex h-2.5 w-2.5">
-                                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-brand-400 opacity-75" />
-                                <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-brand-500 ring-2 ring-white" />
+                                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-wise-primary opacity-75" />
+                                <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-wise-primary ring-2 ring-white" />
                               </span>
                             )}
                           </div>
@@ -149,12 +149,12 @@ export function TablesOccupiedCard({
           </div>
 
           {/* Legend */}
-          <div className="flex items-center gap-4 border-t border-surface-border bg-surface-muted/30 px-4 py-2.5 text-[11px] text-zinc-500">
+          <div className="flex items-center gap-4 border-t border-wise-border bg-wise-canvas-soft/30 px-4 py-2.5 text-[11px] text-wise-body">
             <span className="flex items-center gap-1.5">
-              <span className="h-3 w-3 rounded bg-gradient-to-br from-brand-500 to-brand-600" /> Occupied
+              <span className="h-3 w-3 rounded bg-gradient-to-br from-wise-primary to-wise-primary" /> Occupied
             </span>
             <span className="flex items-center gap-1.5">
-              <span className="h-3 w-3 rounded border border-dashed border-surface-border bg-surface-muted" /> Free
+              <span className="h-3 w-3 rounded border border-dashed border-wise-border bg-wise-canvas-soft" /> Free
             </span>
             <span className="flex items-center gap-1.5">
               <Lock className="h-3 w-3 text-amber-600" /> Unpaid bill

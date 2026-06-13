@@ -89,13 +89,13 @@ export default function UsersPage(): React.ReactElement {
         title="Users"
         subtitle="Manage staff accounts"
         action={
-          <Button onClick={() => setDialog(true)} className="bg-brand-500 hover:bg-brand-600">
+          <Button onClick={() => setDialog(true)} className="bg-wise-primary hover:bg-wise-primary">
             <Plus className="mr-2 h-4 w-4" /> Add Employee
           </Button>
         }
       />
 
-      <Card className="border-surface-border">
+      <Card className="border-wise-border">
         <CardContent className="p-0">
           {users.length === 0 && !loading ? (
             <EmptyState icon={UsersIcon} title="No users" subtitle="Add your first staff member." />
@@ -103,7 +103,7 @@ export default function UsersPage(): React.ReactElement {
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-surface-border text-xs uppercase tracking-wider text-zinc-400">
+                  <tr className="border-b border-wise-border text-xs uppercase tracking-wider text-wise-mute">
                     <th className="px-4 py-3 text-left">Name</th>
                     <th className="px-4 py-3 text-left">Email</th>
                     <th className="px-4 py-3 text-center">Role</th>
@@ -113,16 +113,16 @@ export default function UsersPage(): React.ReactElement {
                 </thead>
                 <tbody>
                   {pagedUsers.map((u) => (
-                    <tr key={u.id} className={`border-b border-surface-border last:border-0 ${u.is_archived ? "opacity-50" : ""}`}>
-                      <td className="px-4 py-3 font-medium text-zinc-800">{u.name}</td>
-                      <td className="px-4 py-3 text-zinc-500">{u.email}</td>
+                    <tr key={u.id} className={`border-b border-wise-border last:border-0 ${u.is_archived ? "opacity-50" : ""}`}>
+                      <td className="px-4 py-3 font-medium text-wise-ink">{u.name}</td>
+                      <td className="px-4 py-3 text-wise-body">{u.email}</td>
                       <td className="px-4 py-3 text-center">
                         <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${u.role === "admin" ? "bg-purple-100 text-purple-700" : "bg-blue-100 text-blue-700"}`}>
                           {u.role}
                         </span>
                       </td>
                       <td className="px-4 py-3 text-center">
-                        <span className={`rounded-full px-2 py-0.5 text-xs ${u.is_archived ? "bg-zinc-100 text-zinc-400" : "bg-green-100 text-green-700"}`}>
+                        <span className={`rounded-full px-2 py-0.5 text-xs ${u.is_archived ? "bg-wise-canvas-soft text-wise-mute" : "bg-green-100 text-green-700"}`}>
                           {u.is_archived ? "archived" : "active"}
                         </span>
                       </td>
@@ -179,7 +179,7 @@ export default function UsersPage(): React.ReactElement {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDialog(false)}>Cancel</Button>
-            <Button onClick={() => void handleCreate()} disabled={busy || !name || !email || password.length < 6} className="bg-brand-500 hover:bg-brand-600">
+            <Button onClick={() => void handleCreate()} disabled={busy || !name || !email || password.length < 6} className="bg-wise-primary hover:bg-wise-primary">
               {busy ? "Adding…" : "Add"}
             </Button>
           </DialogFooter>

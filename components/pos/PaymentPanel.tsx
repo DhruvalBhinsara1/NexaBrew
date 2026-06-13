@@ -198,11 +198,11 @@ export function PaymentPanel({
 
   if (!orderStatus || orderStatus === "draft") {
     return (
-      <div className="flex h-full flex-col items-center justify-center gap-4 border-l border-surface-border bg-surface-muted p-6 text-center">
+      <div className="flex h-full flex-col items-center justify-center gap-4 border-l border-wise-border bg-wise-canvas-soft p-6 text-center">
         <div className="rounded-full bg-white p-4 shadow-sm">
-          <ChefHat className="h-8 w-8 text-zinc-300" />
+          <ChefHat className="h-8 w-8 text-wise-mute" />
         </div>
-        <p className="text-sm font-medium text-zinc-500">
+        <p className="text-sm font-medium text-wise-body">
           Add items and send to kitchen to proceed
         </p>
       </div>
@@ -211,13 +211,13 @@ export function PaymentPanel({
 
   if (orderStatus === "sent_to_kitchen") {
     return (
-      <div className="flex h-full flex-col items-center justify-center gap-4 border-l border-surface-border bg-surface-muted p-6 text-center">
-        <Loader2 className="h-8 w-8 animate-spin text-brand-400" />
+      <div className="flex h-full flex-col items-center justify-center gap-4 border-l border-wise-border bg-wise-canvas-soft p-6 text-center">
+        <Loader2 className="h-8 w-8 animate-spin text-wise-ink-deep" />
         <div>
-          <p className="font-semibold text-zinc-700">Order #{orderNumber}</p>
-          <p className="mt-1 text-sm text-zinc-400">Waiting for kitchen…</p>
+          <p className="font-semibold text-wise-body">Order #{orderNumber}</p>
+          <p className="mt-1 text-sm text-wise-mute">Waiting for kitchen…</p>
         </div>
-        <p className="text-xs text-zinc-400">
+        <p className="text-xs text-wise-mute">
           Payment panel activates when kitchen marks order ready.
         </p>
         {(onNewBill || onOpenBills) && (
@@ -231,7 +231,7 @@ export function PaymentPanel({
               <button
                 type="button"
                 onClick={onOpenBills}
-                className="text-xs font-medium text-brand-600 hover:underline"
+                className="text-xs font-medium text-wise-ink-deep hover:underline"
               >
                 View {openBillCount} open bills
               </button>
@@ -244,7 +244,7 @@ export function PaymentPanel({
 
   if (orderStatus === "paid" || paid) {
     return (
-      <div className="flex h-full flex-col items-center justify-center gap-4 border-l border-surface-border bg-green-50 p-6 text-center">
+      <div className="flex h-full flex-col items-center justify-center gap-4 border-l border-wise-border bg-green-50 p-6 text-center">
         <CheckCircle2 className="h-12 w-12 text-green-500" />
         <div>
           <p className="text-lg font-bold text-green-800">Payment Complete!</p>
@@ -262,8 +262,8 @@ export function PaymentPanel({
 
   if (orderStatus !== "payment_pending") {
     return (
-      <div className="flex h-full items-center justify-center border-l border-surface-border bg-surface-muted p-6 text-center">
-        <p className="text-sm text-zinc-400">{orderStatus?.replace(/_/g, " ")}</p>
+      <div className="flex h-full items-center justify-center border-l border-wise-border bg-wise-canvas-soft p-6 text-center">
+        <p className="text-sm text-wise-mute">{orderStatus?.replace(/_/g, " ")}</p>
       </div>
     );
   }
@@ -284,13 +284,13 @@ export function PaymentPanel({
         strategy="lazyOnload"
       />
 
-      <div className="flex h-full flex-col border-l border-surface-border bg-white">
-        <div className="border-b border-surface-border px-4 py-3">
-          <h2 className="font-semibold text-zinc-800">Payment</h2>
+      <div className="flex h-full flex-col border-l border-wise-border bg-white">
+        <div className="border-b border-wise-border px-4 py-3">
+          <h2 className="font-semibold text-wise-ink">Payment</h2>
           {orderTotal !== null && (
-            <p className="text-2xl font-bold text-brand-600">{formatCurrency(orderTotal)}</p>
+            <p className="text-2xl font-bold text-wise-ink-deep">{formatCurrency(orderTotal)}</p>
           )}
-          <p className="text-xs text-zinc-400">Order #{orderNumber}</p>
+          <p className="text-xs text-wise-mute">Order #{orderNumber}</p>
         </div>
 
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
@@ -302,37 +302,37 @@ export function PaymentPanel({
             <label
               className={`flex cursor-pointer items-center gap-3 rounded-lg border p-3 transition-colors ${
                 method === "razorpay"
-                  ? "border-brand-400 bg-brand-50"
-                  : "border-surface-border hover:bg-surface-muted"
+                  ? "border-wise-primary bg-wise-primary-pale"
+                  : "border-wise-border hover:bg-wise-canvas-soft"
               }`}
             >
               <RadioGroupItem value="razorpay" id="pm-razorpay" className="sr-only" />
               <CreditCard
-                className={`h-4 w-4 ${method === "razorpay" ? "text-brand-600" : "text-zinc-400"}`}
+                className={`h-4 w-4 ${method === "razorpay" ? "text-wise-ink-deep" : "text-wise-mute"}`}
               />
               <div>
                 <p
-                  className={`text-sm font-medium ${method === "razorpay" ? "text-brand-700" : "text-zinc-600"}`}
+                  className={`text-sm font-medium ${method === "razorpay" ? "text-wise-ink-deep" : "text-wise-body"}`}
                 >
                   Razorpay
                 </p>
-                <p className="text-xs text-zinc-400">Card · UPI · Netbanking · Wallets</p>
+                <p className="text-xs text-wise-mute">Card · UPI · Netbanking · Wallets</p>
               </div>
             </label>
 
             <label
               className={`flex cursor-pointer items-center gap-3 rounded-lg border p-3 transition-colors ${
                 method === "cash"
-                  ? "border-brand-400 bg-brand-50"
-                  : "border-surface-border hover:bg-surface-muted"
+                  ? "border-wise-primary bg-wise-primary-pale"
+                  : "border-wise-border hover:bg-wise-canvas-soft"
               }`}
             >
               <RadioGroupItem value="cash" id="pm-cash" className="sr-only" />
               <Banknote
-                className={`h-4 w-4 ${method === "cash" ? "text-brand-600" : "text-zinc-400"}`}
+                className={`h-4 w-4 ${method === "cash" ? "text-wise-ink-deep" : "text-wise-mute"}`}
               />
               <span
-                className={`text-sm font-medium ${method === "cash" ? "text-brand-700" : "text-zinc-600"}`}
+                className={`text-sm font-medium ${method === "cash" ? "text-wise-ink-deep" : "text-wise-body"}`}
               >
                 Cash
               </span>
@@ -341,7 +341,7 @@ export function PaymentPanel({
 
           {method === "cash" && (
             <div className="space-y-2">
-              <Label className="text-xs text-zinc-500">Amount Tendered (₹)</Label>
+              <Label className="text-xs text-wise-body">Amount Tendered (₹)</Label>
               <Input
                 type="number"
                 min={0}
@@ -359,12 +359,12 @@ export function PaymentPanel({
           )}
         </div>
 
-        <div className="border-t border-surface-border p-4">
+        <div className="border-t border-wise-border p-4">
           {onNewBill && (
             <button
               type="button"
               onClick={onNewBill}
-              className="mb-3 w-full text-center text-xs font-medium text-zinc-500 hover:text-brand-600"
+              className="mb-3 w-full text-center text-xs font-medium text-wise-body hover:text-wise-ink-deep"
             >
               Park this bill &amp; start a new one
             </button>

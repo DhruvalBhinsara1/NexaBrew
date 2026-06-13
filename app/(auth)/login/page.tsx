@@ -78,9 +78,9 @@ export default function LoginPage(): React.ReactElement {
   }
 
   return (
-    <Card className="border-surface-border shadow-sm">
+    <Card className="border-wise-border shadow-sm">
       <CardHeader className="space-y-1">
-        <CardTitle className="text-2xl font-bold tracking-tight text-zinc-900">
+        <CardTitle className="text-2xl font-bold tracking-tight text-wise-ink">
           Welcome back
         </CardTitle>
         <CardDescription>Sign in to your NexaBrew account</CardDescription>
@@ -133,7 +133,7 @@ export default function LoginPage(): React.ReactElement {
               No account?{" "}
               <Link
                 href="/signup"
-                className="font-medium text-brand-600 hover:underline"
+                className="font-medium text-wise-ink-deep hover:underline"
               >
                 Create one
               </Link>
