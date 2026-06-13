@@ -77,12 +77,17 @@ export default function MenuPage(): React.ReactElement {
   return (
     <div className="flex min-h-screen flex-col">
       {/* Header */}
-      <header className="flex items-center justify-between border-b border-surface-border bg-white px-4 py-3">
-        <div className="flex items-center gap-2">
-          <Coffee className="h-5 w-5 text-brand-600" />
-          <span className="text-base font-bold text-brand-600">NexaBrew</span>
+      <header className="sticky top-0 z-10 flex items-center justify-between border-b border-surface-border bg-white/90 px-4 py-3 backdrop-blur">
+        <div className="flex items-center gap-2.5">
+          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-brand-500 to-brand-700 text-white">
+            <Coffee className="h-4 w-4" />
+          </span>
+          <div className="leading-tight">
+            <span className="block text-sm font-bold text-zinc-900">NexaBrew</span>
+            <span className="block text-[11px] text-zinc-400">Menu &amp; Orders</span>
+          </div>
         </div>
-        <button onClick={() => void logout()} className="flex items-center gap-1 text-sm text-zinc-500 hover:text-zinc-800">
+        <button onClick={() => void logout()} className="flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-sm text-zinc-500 transition-colors hover:bg-surface-muted hover:text-zinc-800">
           <LogOut className="h-4 w-4" /> Logout
         </button>
       </header>

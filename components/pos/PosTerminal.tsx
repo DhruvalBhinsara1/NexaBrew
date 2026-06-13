@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { AlertCircle, ChefHat, LogOut, LayoutGrid, Receipt } from "lucide-react";
+import { AlertCircle, ChefHat, Coffee, LogOut, LayoutGrid, Receipt } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createBrowserClient } from "@/lib/supabase/client";
@@ -202,7 +202,12 @@ export function PosTerminal(): React.ReactElement {
       {/* Top bar */}
       <header className="flex items-center justify-between border-b border-surface-border bg-white px-4 py-2.5 shadow-sm">
         <div className="flex items-center gap-3">
-          <span className="text-base font-bold text-brand-600">NexaBrew POS</span>
+          <span className="flex items-center gap-2">
+            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-brand-500 to-brand-700 text-white">
+              <Coffee className="h-4 w-4" />
+            </span>
+            <span className="text-base font-bold text-zinc-900">NexaBrew <span className="text-brand-600">POS</span></span>
+          </span>
           {session ? (
             <span className="rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">
               Session Open

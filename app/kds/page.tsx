@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { CheckCircle2, Clock, Search } from "lucide-react";
+import { CheckCircle2, Clock, Coffee, Search } from "lucide-react";
 import { useRealtimeKitchenTickets } from "@/hooks/useRealtimeKitchenTickets";
 import { createBrowserClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
@@ -235,9 +235,14 @@ export default function KdsPage(): React.ReactElement {
     <div className="flex h-screen flex-col bg-kds-bg text-white">
       {/* Header */}
       <header className="flex items-center justify-between border-b border-kds-border px-6 py-3">
-        <div className="flex items-center gap-3">
-          <span className="text-base font-bold text-white">NexaBrew</span>
-          <span className="text-xs text-white/40">Kitchen Display</span>
+        <div className="flex items-center gap-2.5">
+          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-kds-tocook to-kds-completed text-kds-bg">
+            <Coffee className="h-4 w-4" />
+          </span>
+          <div className="leading-tight">
+            <span className="block text-sm font-bold text-white">NexaBrew</span>
+            <span className="block text-[11px] text-white/40">Kitchen Display</span>
+          </div>
         </div>
 
         <div className="flex items-center gap-3">
