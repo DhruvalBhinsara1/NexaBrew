@@ -69,6 +69,7 @@ const USERS = [
   { name: "Admin User", email: "admin@nexabrew.com", role: "admin" },
   { name: "Alice Cashier", email: "alice@nexabrew.com", role: "employee" },
   { name: "Bob Cashier", email: "bob@nexabrew.com", role: "employee" },
+  { name: "Demo Customer", email: "customer@nexabrew.com", role: "customer" },
 ];
 
 function fail(label: string, error: { message: string } | null): void {

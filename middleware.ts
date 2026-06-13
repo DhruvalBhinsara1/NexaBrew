@@ -1,12 +1,14 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 
-type UserRole = "admin" | "employee";
+type UserRole = "admin" | "employee" | "customer";
 
 const AUTH_PATHS = ["/login", "/signup"];
 
 function homeForRole(role: UserRole): string {
-  return role === "admin" ? "/dashboard" : "/pos/terminal";
+  if (role === "admin") return "/dashboard";
+  if (role === "customer") return "/menu";
+  return "/pos/terminal";
 }
 
 /**
@@ -86,8 +88,20 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
     return redirectTo(homeForRole(role));
   }
 
+  // Customers may only use the customer surface (/menu). Anything else → /menu.
+  if (role === "customer") {
+    if (path === "/menu" || path.startsWith("/menu/")) return response;
+    return redirectTo("/menu");
+  }
+
+  // Admin-only dashboard.
   if ((path === "/dashboard" || path.startsWith("/dashboard/")) && role !== "admin") {
     return redirectTo("/pos/terminal");
+  }
+
+  // /menu is customer-only — staff get bounced to their home.
+  if (path === "/menu" || path.startsWith("/menu/")) {
+    return redirectTo(homeForRole(role));
   }
 
   return response;

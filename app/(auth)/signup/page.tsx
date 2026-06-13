@@ -42,8 +42,9 @@ export default function SignupPage(): React.ReactElement {
     setSubmitting(true);
     const supabase = createBrowserClient();
 
-    // Role is omitted — the handle_new_user trigger defaults new signups to
-    // 'employee'. Admins are provisioned via seed or User Management (Phase 10).
+    // Role is omitted — the handle_new_user trigger defaults public signups to
+    // 'customer' (and auto-links a CRM row). Staff are provisioned by an admin
+    // via User Management.
     const { data, error } = await supabase.auth.signUp({
       email: values.email,
       password: values.password,
@@ -83,7 +84,7 @@ export default function SignupPage(): React.ReactElement {
         <CardTitle className="text-3xl font-bold tracking-tight text-brand-700">
           Create your account
         </CardTitle>
-        <CardDescription>NexaBrew — Cafe Management System</CardDescription>
+        <CardDescription>NexaBrew — create a customer account to browse the menu and track your orders</CardDescription>
       </CardHeader>
       <Form {...form}>
         <form method="post" onSubmit={form.handleSubmit(onSubmit)}>

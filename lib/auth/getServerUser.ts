@@ -2,7 +2,7 @@ import type { User } from "@supabase/supabase-js";
 import { createServerClient } from "@/lib/supabase/server";
 import { AppError } from "@/lib/utils/app-error";
 
-export type UserRole = "admin" | "employee";
+export type UserRole = "admin" | "employee" | "customer";
 
 export interface AuthUser extends User {
   role: UserRole;

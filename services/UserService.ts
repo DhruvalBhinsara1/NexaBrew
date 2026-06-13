@@ -7,7 +7,7 @@ import { AppError } from "@/lib/utils/app-error";
 type Supa = SupabaseClient<Database>;
 
 export interface UserFilters {
-  role?: "admin" | "employee";
+  role?: "admin" | "employee" | "customer";
   isArchived?: boolean;
   search?: string;
 }

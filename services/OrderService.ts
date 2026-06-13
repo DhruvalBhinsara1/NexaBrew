@@ -37,6 +37,29 @@ export const OrderService = {
     return (data ?? []) as OrderWithItems[];
   },
 
+  /**
+   * Orders belonging to a logged-in customer — resolved via the CRM rows
+   * linked to their auth user (customers.user_id). Used by the /menu surface.
+   */
+  async listForCustomerUser(supabase: Supa, userId: string): Promise<OrderWithItems[]> {
+    const { data: crm, error: crmError } = await supabase
+      .from("customers")
+      .select("id")
+      .eq("user_id", userId);
+    if (crmError) throw new AppError(crmError.message, "CUSTOMER_FETCH_FAILED", 500);
+
+    const ids = (crm ?? []).map((c) => c.id);
+    if (ids.length === 0) return [];
+
+    const { data, error } = await supabase
+      .from("orders")
+      .select(ORDER_SELECT)
+      .in("customer_id", ids)
+      .order("created_at", { ascending: false });
+    if (error) throw new AppError(error.message, "ORDERS_LIST_FAILED", 500);
+    return (data ?? []) as OrderWithItems[];
+  },
+
   async getById(supabase: Supa, id: string): Promise<OrderWithItems> {
     const { data, error } = await supabase
       .from("orders")

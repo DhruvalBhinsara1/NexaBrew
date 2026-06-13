@@ -23,7 +23,7 @@ export type KitchenTicket = Row<"kitchen_tickets">;
 export type KitchenTicketItem = Row<"kitchen_ticket_items">;
 
 // Domain enums (mirror the CHECK constraints; columns are `text` in the DB) ----
-export type UserRole = "admin" | "employee";
+export type UserRole = "admin" | "employee" | "customer";
 export type OrderStatus =
   | "draft"
   | "sent_to_kitchen"
