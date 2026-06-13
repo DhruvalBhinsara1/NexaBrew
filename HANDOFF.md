@@ -10,7 +10,7 @@ Project root: `/Users/dhruvalbhinsara/NexaBrew`
 
 ---
 
-## Progress: Phases 0–6 COMPLETE & verified. Phase 7 NOT STARTED (next).
+## Progress: Phases 0–7 COMPLETE. Phase 8 NOT STARTED (next).
 
 | Phase | Status |
 |---|---|
@@ -21,7 +21,17 @@ Project root: `/Users/dhruvalbhinsara/NexaBrew`
 | 4 — Sessions | ✅ done, lifecycle verified |
 | 5 — Orders | ✅ done, `tsc` + `next build` + live service flow verified |
 | 6 — Discounts | ✅ done, `tsc` + `next build` + live discount service flow verified |
-| 7–17 | not started |
+| 7 — Kitchen APIs | ✅ done, routes + service methods implemented |
+| 8–17 | not started |
+
+### Device-switch handoff — 2026-06-13
+
+- Repo: `https://github.com/DhruvalBhinsara1/NexaBrew`
+- Branch: `main`
+- Pull latest `main` on the new device before continuing.
+- Local-only files are intentionally not committed and must be recreated on the new device: `.env.local`, `.supabase-db-password.local`, `supabase/.temp`.
+- Keep real Supabase keys and DB password out of git. Use `.env.example` as the template.
+- After restoring env files, run `npm install`, then `npx tsc --noEmit` and `npm run build`.
 
 ### Last health-check — 2026-06-13
 
@@ -101,10 +111,10 @@ lib/auth/{getServerUser,withAuth}.ts        # role-gated wrapper
 lib/utils/{app-error,handleError,formatCurrency,calculateTotals}.ts
 middleware.ts                               # role redirects; /kds public; /api excluded
 types/{database.types,domain.types,api.types}.ts
-schemas/{auth,product,category,floor,payment-method,session,order,coupon}.schema.ts
+schemas/{auth,product,category,floor,payment-method,session,order,coupon,kitchen}.schema.ts
 services/{ProductService,CategoryService,FloorService,PaymentMethodService,SessionService,OrderService,KitchenService,DiscountService}.ts
 app/(auth)/{login,signup}/page.tsx, app/(auth)/layout.tsx
-app/api/products|categories|floors|tables|payment-methods|sessions|orders|coupons|promotions/...  # all built
+app/api/products|categories|floors|tables|payment-methods|sessions|orders|coupons|promotions|kitchen/...  # all built
 app/{dashboard,pos/terminal,kds}/page.tsx  # PLACEHOLDERS
 components/ui/*                              # shadcn new-york set + card
 components/kokonutui/slide-text-button.tsx (+ index.ts barrel)
@@ -148,9 +158,29 @@ Verified:
 - `npm run build`
 - live Supabase service flow: product promotion (`Espresso` x3) → line discount and total verified; order promotion (`Pasta` x3) → fixed order discount verified; `SAVE10` coupon → overrides order promotion and clears `promotion_id`; coupon/promotion create+update verified; cleanup removed test orders/coupon/promotion/session.
 
-## NEXT: Phase 7 — Kitchen APIs
+## Phase 7 — Kitchen APIs (completed)
 
-Kitchen APIs (GET tickets, PATCH status [service-role, public], PATCH item complete).
+Implemented:
+- `schemas/kitchen.schema.ts`
+- `KitchenService.listTickets(...)`
+- `app/api/kitchen/tickets/route.ts`
+- `app/api/kitchen/tickets/[id]/route.ts`
+- `app/api/kitchen/tickets/[id]/items/[itemId]/route.ts`
+- Public KDS mutation routes use `supabaseAdmin` by design so the no-login KDS can advance tickets and complete items.
+
+Notes:
+- `GET /api/kitchen/tickets` is authenticated and supports `status` + `order_id` filters.
+- `PATCH /api/kitchen/tickets/[id]` advances `to_cook -> preparing -> completed`; on `completed`, `KitchenService.advanceTicketStatus` moves the linked order to `payment_pending`.
+- `PATCH /api/kitchen/tickets/[id]/items/[itemId]` marks a kitchen ticket item completed.
+- The route path differs slightly from TASKS.md wording (`items/[itemId]` instead of `items/[itemId]/complete`) but implements the same mutation.
+
+Verified before this handoff update:
+- Phase 7 is present in local commit `da6c9ea`.
+- Run fresh checks after pulling on the next device because env files are local-only.
+
+## NEXT: Phase 8 — Payments
+
+Payments (`PaymentService.process`, cash/card/UPI validation, order -> paid, table -> available, coupon `used_count`, receipt route/email, UPI QR).
 
 Historical Phase 5 plan:
 
@@ -221,7 +251,7 @@ open a session (admin) → create order on a table (snapshot + totals + table→
 
 ---
 
-## Roadmap after Phase 6 (TASKS.md)
-7 Kitchen APIs (GET tickets, PATCH status [service-role, public], PATCH item complete) · 8 Payments (+ Resend receipt, generateQR) · 9 Realtime hooks · 10 Users (Admin API) · 11 Reports · 12 Customers · 13 Dashboard UI · 14 POS UI · 15 KDS UI · 16 polish · 17 (P3) export.
+## Roadmap after Phase 7 (TASKS.md)
+8 Payments (+ Resend receipt, generateQR) · 9 Realtime hooks · 10 Users (Admin API) · 11 Reports · 12 Customers · 13 Dashboard UI · 14 POS UI · 15 KDS UI · 16 polish · 17 (P3) export.
 
-P0 remaining: Kitchen(7), Payments(8). Do P0 before P1.
+P0 remaining: Payments(8). Do P0 before P1.
