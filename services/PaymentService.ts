@@ -12,6 +12,7 @@ import type {
 } from "@/types/domain.types";
 import type { ProcessPaymentInput } from "@/schemas/payment.schema";
 import { AppError } from "@/lib/utils/app-error";
+import { verifyRazorpaySignature } from "@/lib/razorpay";
 import { ORDER_SELECT, OrderService } from "@/services/OrderService";
 import { freeTable, mapDatabaseError } from "@/services/OrderPricing";
 import { formatCurrency } from "@/lib/utils/formatCurrency";
@@ -28,11 +29,6 @@ function normalizeMoney(n: number): number {
   return round2(Number(n));
 }
 
-function assertPaymentMethodType(type: string): asserts type is PaymentMethodType {
-  if (type !== "cash" && type !== "card" && type !== "upi") {
-    throw new AppError("Unsupported payment method", "PAYMENT_METHOD_UNSUPPORTED", 400);
-  }
-}
 
 function emailConfigured(): boolean {
   const key = process.env.RESEND_API_KEY;
@@ -145,26 +141,39 @@ export const PaymentService = {
       throw new AppError("Order is not ready for payment", "ORDER_NOT_READY_FOR_PAYMENT", 409);
     }
 
-    const { data: method, error: methodError } = await supabase
-      .from("payment_methods")
-      .select("*")
-      .eq("type", input.payment_method_type)
-      .maybeSingle();
-    if (methodError) throw new AppError(methodError.message, "PAYMENT_METHOD_FETCH_FAILED", 500);
-    if (!method) throw new AppError("Payment method not found", "PAYMENT_METHOD_NOT_FOUND", 404);
-    if (!method.is_enabled) {
-      throw new AppError("Payment method is disabled", "PAYMENT_METHOD_DISABLED", 400);
-    }
-    assertPaymentMethodType(method.type);
-    if (method.type === "upi" && !method.upi_id) {
-      throw new AppError("UPI ID is required before accepting UPI payments", "UPI_ID_REQUIRED", 400);
-    }
-
     const amountPaid = normalizeMoney(Number(order.total_amount));
-    const amountTendered =
-      input.payment_method_type === "cash" ? normalizeMoney(input.amount_tendered ?? 0) : null;
-    if (input.payment_method_type === "cash" && Number(amountTendered) < amountPaid) {
-      throw new AppError("Cash tendered is less than the order total", "INSUFFICIENT_CASH", 400);
+    let amountTendered: number | null = null;
+    let changeDue: number | null = null;
+    let transactionReference: string | null = null;
+
+    if (input.payment_method_type === "cash") {
+      // Validate cash payment method is enabled
+      const { data: method, error: methodError } = await supabase
+        .from("payment_methods")
+        .select("is_enabled")
+        .eq("type", "cash")
+        .maybeSingle();
+      if (methodError) throw new AppError(methodError.message, "PAYMENT_METHOD_FETCH_FAILED", 500);
+      if (!method?.is_enabled) throw new AppError("Cash payments are disabled", "PAYMENT_METHOD_DISABLED", 400);
+
+      amountTendered = normalizeMoney(input.amount_tendered);
+      if (amountTendered < amountPaid) {
+        throw new AppError("Cash tendered is less than the order total", "INSUFFICIENT_CASH", 400);
+      }
+      changeDue = normalizeMoney(amountTendered - amountPaid);
+    } else if (input.payment_method_type === "razorpay") {
+      // Verify Razorpay HMAC-SHA256 signature — rejects tampered responses
+      const valid = verifyRazorpaySignature(
+        input.razorpay_order_id,
+        input.razorpay_payment_id,
+        input.razorpay_signature
+      );
+      if (!valid) {
+        throw new AppError("Razorpay signature verification failed", "RAZORPAY_SIGNATURE_INVALID", 400);
+      }
+      transactionReference = input.razorpay_payment_id;
+    } else {
+      throw new AppError("Unsupported payment method", "PAYMENT_METHOD_UNSUPPORTED", 400);
     }
 
     const paymentInsert: Database["public"]["Tables"]["payments"]["Insert"] = {
@@ -172,8 +181,8 @@ export const PaymentService = {
       payment_method_type: input.payment_method_type,
       amount_paid: amountPaid,
       amount_tendered: amountTendered,
-      change_due: input.payment_method_type === "cash" ? normalizeMoney(Number(amountTendered) - amountPaid) : null,
-      transaction_reference: input.transaction_reference ?? null,
+      change_due: changeDue,
+      transaction_reference: transactionReference,
       status: "completed",
       paid_at: new Date().toISOString(),
     };

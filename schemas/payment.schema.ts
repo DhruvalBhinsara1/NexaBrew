@@ -1,34 +1,27 @@
 import { z } from "zod";
 
-export const PaymentMethodTypeSchema = z.enum(["cash", "card", "upi"]);
+const CashPaymentSchema = z.object({
+  payment_method_type: z.literal("cash"),
+  amount_tendered: z.number().positive("Amount tendered must be greater than 0"),
+});
 
-export const ProcessPaymentSchema = z
-  .object({
-    payment_method_type: PaymentMethodTypeSchema,
-    amount_tendered: z.number().positive("Amount tendered must be greater than 0").optional(),
-    transaction_reference: z.string().trim().min(1).optional(),
-  })
-  .superRefine((value, ctx) => {
-    if (value.payment_method_type === "cash" && value.amount_tendered === undefined) {
-      ctx.addIssue({
-        code: "custom",
-        path: ["amount_tendered"],
-        message: "Amount tendered is required for cash payments",
-      });
-    }
+// Razorpay: client sends back the 3 identifiers after checkout success.
+// Server verifies the HMAC-SHA256 signature before recording the payment.
+const RazorpayPaymentSchema = z.object({
+  payment_method_type: z.literal("razorpay"),
+  razorpay_payment_id: z.string().min(1, "Missing razorpay_payment_id"),
+  razorpay_order_id: z.string().min(1, "Missing razorpay_order_id"),
+  razorpay_signature: z.string().min(1, "Missing razorpay_signature"),
+});
 
-    if (
-      (value.payment_method_type === "card" || value.payment_method_type === "upi") &&
-      !value.transaction_reference
-    ) {
-      ctx.addIssue({
-        code: "custom",
-        path: ["transaction_reference"],
-        message: "Transaction reference is required for card and UPI payments",
-      });
-    }
-  });
+export const ProcessPaymentSchema = z.discriminatedUnion("payment_method_type", [
+  CashPaymentSchema,
+  RazorpayPaymentSchema,
+]);
+
 export type ProcessPaymentInput = z.infer<typeof ProcessPaymentSchema>;
+export type CashPaymentInput = z.infer<typeof CashPaymentSchema>;
+export type RazorpayPaymentInput = z.infer<typeof RazorpayPaymentSchema>;
 
 export const SendReceiptSchema = z.object({
   email: z.string().email("A valid email is required").optional(),

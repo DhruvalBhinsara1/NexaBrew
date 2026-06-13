@@ -32,7 +32,7 @@ export type OrderStatus =
   | "cancelled";
 export type KitchenTicketStatus = "to_cook" | "preparing" | "completed";
 export type SessionStatus = "open" | "closed";
-export type PaymentMethodType = "cash" | "card" | "upi";
+export type PaymentMethodType = "cash" | "card" | "upi" | "razorpay";
 export type PaymentStatus = "pending" | "completed" | "failed";
 export type DiscountType = "percentage" | "fixed";
 export type TableStatus = "available" | "occupied";
