@@ -13,21 +13,48 @@ import { apiGet } from "@/lib/api-client";
 import { formatCurrency } from "@/lib/utils/formatCurrency";
 import type { Category, OrderWithItems, ProductWithCategory } from "@/types/domain.types";
 
-const STATUS_STEPS = ["draft", "sent_to_kitchen", "payment_pending", "paid"] as const;
-const STATUS_LABEL: Record<string, string> = {
-  draft: "Order placed",
-  sent_to_kitchen: "In the kitchen",
-  payment_pending: "Ready — awaiting payment",
+// Order with the kitchen ticket status joined in (see OrderService.listForCustomerUser)
+type CustomerOrder = OrderWithItems & { kitchen_tickets?: { status: string }[] };
+
+// Granular stages: the order status can't distinguish "queued to cook" from
+// "preparing" (both are sent_to_kitchen), so we fold in the kitchen ticket.
+type Stage = "placed" | "queued" | "preparing" | "ready" | "paid" | "cancelled";
+const STAGE_STEPS: Stage[] = ["placed", "queued", "preparing", "ready", "paid"];
+const STAGE_LABEL: Record<Stage, string> = {
+  placed: "Order placed",
+  queued: "In the kitchen",
+  preparing: "Preparing",
+  ready: "Ready — awaiting payment",
   paid: "Completed",
   cancelled: "Cancelled",
 };
-const STATUS_BADGE: Record<string, string> = {
-  draft: "bg-zinc-100 text-zinc-600",
-  sent_to_kitchen: "bg-blue-100 text-blue-700",
-  payment_pending: "bg-amber-100 text-amber-700",
+const STAGE_BADGE: Record<Stage, string> = {
+  placed: "bg-zinc-100 text-zinc-600",
+  queued: "bg-blue-100 text-blue-700",
+  preparing: "bg-indigo-100 text-indigo-700",
+  ready: "bg-amber-100 text-amber-700",
   paid: "bg-green-100 text-green-700",
   cancelled: "bg-red-100 text-red-600",
 };
+
+function stageOf(order: CustomerOrder): Stage {
+  switch (order.status) {
+    case "cancelled":
+      return "cancelled";
+    case "paid":
+      return "paid";
+    case "payment_pending":
+      return "ready";
+    case "draft":
+      return "placed";
+    case "sent_to_kitchen": {
+      const ticket = order.kitchen_tickets?.[0]?.status;
+      return ticket === "preparing" || ticket === "completed" ? "preparing" : "queued";
+    }
+    default:
+      return "placed";
+  }
+}
 
 export default function MenuPage(): React.ReactElement {
   const router = useRouter();
@@ -35,7 +62,7 @@ export default function MenuPage(): React.ReactElement {
   const [tab, setTab] = useState<"menu" | "orders">("menu");
   const [products, setProducts] = useState<ProductWithCategory[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
-  const [orders, setOrders] = useState<OrderWithItems[]>([]);
+  const [orders, setOrders] = useState<CustomerOrder[]>([]);
   const [activeCat, setActiveCat] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -54,7 +81,7 @@ export default function MenuPage(): React.ReactElement {
 
   const loadOrders = useCallback(async () => {
     try {
-      setOrders(await apiGet<OrderWithItems[]>("/api/orders/mine"));
+      setOrders(await apiGet<CustomerOrder[]>("/api/orders/mine"));
     } catch (e) {
       toast({ title: (e as Error).message, variant: "destructive" });
     }
@@ -182,21 +209,22 @@ export default function MenuPage(): React.ReactElement {
             ) : (
               <div className="space-y-3">
                 {orders.map((o) => {
-                  const stepIdx = STATUS_STEPS.indexOf(o.status as (typeof STATUS_STEPS)[number]);
+                  const stage = stageOf(o);
+                  const stepIdx = STAGE_STEPS.indexOf(stage);
                   return (
                     <Card key={o.id} className="border-surface-border">
                       <CardContent className="py-4">
                         <div className="flex items-center justify-between">
                           <p className="font-semibold text-zinc-800">Order {o.order_number}</p>
-                          <span className={cn("rounded-full px-2 py-0.5 text-xs font-medium", STATUS_BADGE[o.status])}>
-                            {STATUS_LABEL[o.status] ?? o.status}
+                          <span className={cn("rounded-full px-2 py-0.5 text-xs font-medium", STAGE_BADGE[stage])}>
+                            {STAGE_LABEL[stage]}
                           </span>
                         </div>
 
                         {/* Progress bar (skip for cancelled) */}
-                        {o.status !== "cancelled" && (
+                        {stage !== "cancelled" && (
                           <div className="mt-3 flex gap-1">
-                            {STATUS_STEPS.map((s, i) => (
+                            {STAGE_STEPS.map((s, i) => (
                               <div key={s} className={cn("h-1.5 flex-1 rounded-full", i <= stepIdx ? "bg-brand-500" : "bg-surface-border")} />
                             ))}
                           </div>

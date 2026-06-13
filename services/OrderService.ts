@@ -51,9 +51,12 @@ export const OrderService = {
     const ids = (crm ?? []).map((c) => c.id);
     if (ids.length === 0) return [];
 
+    // Include the kitchen ticket status so the customer view can show the
+    // granular kitchen stage (to_cook vs preparing), which the order status
+    // alone can't express (it stays 'sent_to_kitchen' across both).
     const { data, error } = await supabase
       .from("orders")
-      .select(ORDER_SELECT)
+      .select(`${ORDER_SELECT}, kitchen_tickets(status)`)
       .in("customer_id", ids)
       .order("created_at", { ascending: false });
     if (error) throw new AppError(error.message, "ORDERS_LIST_FAILED", 500);
