@@ -62,6 +62,7 @@ export function PaymentPanel({
   const [method, setMethod] = useState<PaymentMethod>("razorpay");
   const [tendered, setTendered] = useState("");
   const [orderTotal, setOrderTotal] = useState<number | null>(null);
+  const [orderCustomerName, setOrderCustomerName] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [paid, setPaid] = useState(false);
   const [rzpScriptReady, setRzpScriptReady] = useState(false);
@@ -72,7 +73,10 @@ export function PaymentPanel({
     fetch(`/api/orders/${orderId}`)
       .then((r) => r.json())
       .then((d) => {
-        if (d.data) setOrderTotal(Number(d.data.total_amount));
+        if (d.data) {
+          setOrderTotal(Number(d.data.total_amount));
+          setOrderCustomerName(d.data.customer?.name ?? null);
+        }
       })
       .catch(() => null);
   }, [orderId, orderRefresh]);
@@ -185,6 +189,7 @@ export function PaymentPanel({
     setPaid(false);
     setTendered("");
     setOrderTotal(null);
+    setOrderCustomerName(null);
     reset();
     onPaymentComplete();
   }
@@ -244,6 +249,9 @@ export function PaymentPanel({
         <div>
           <p className="text-lg font-bold text-green-800">Payment Complete!</p>
           <p className="mt-1 text-sm text-green-600">Order #{orderNumber} settled.</p>
+          {orderCustomerName && (
+            <p className="mt-1 text-xs text-green-700 font-medium">Customer: {orderCustomerName}</p>
+          )}
         </div>
         <SlideTextButton tone="green" onClick={handleNewOrder} className="mt-4">
           Start New Order

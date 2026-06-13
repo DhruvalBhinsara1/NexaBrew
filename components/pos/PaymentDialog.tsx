@@ -43,6 +43,7 @@ interface Props {
   onClose: () => void;
   onPaid: () => void;
   toast: (msg: string, variant?: "success" | "error") => void;
+  customerName?: string | null;
 }
 
 export function PaymentDialog({
@@ -53,6 +54,7 @@ export function PaymentDialog({
   onClose,
   onPaid,
   toast,
+  customerName,
 }: Props): React.ReactElement {
   const [method, setMethod] = useState<Method>("razorpay");
   const [tendered, setTendered] = useState("");
@@ -166,7 +168,12 @@ export function PaymentDialog({
         {paid ? (
           <div className="flex flex-col items-center gap-3 py-6 text-center">
             <CheckCircle2 className="h-12 w-12 text-green-500" />
-            <p className="text-sm text-zinc-600">Order {orderNumber} is settled.</p>
+            <div>
+              <p className="text-sm font-semibold text-zinc-800">Order {orderNumber} is settled.</p>
+              {customerName && (
+                <p className="mt-1 text-xs text-green-700 font-medium">Customer: {customerName}</p>
+              )}
+            </div>
             <SlideTextButton tone="green" onClick={onClose}>Done</SlideTextButton>
           </div>
         ) : (

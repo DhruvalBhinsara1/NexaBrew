@@ -63,6 +63,13 @@ function receiptText(receipt: OrderReceipt): string {
     "NexaBrew Receipt",
     `Order: ${receipt.order_number}`,
     `Paid at: ${receipt.paid_at ?? ""}`,
+  ];
+
+  if (receipt.customer?.name) {
+    lines.push(`Customer: ${receipt.customer.name}`);
+  }
+
+  lines.push(
     "",
     ...receipt.items.map(
       (item) =>
@@ -73,8 +80,8 @@ function receiptText(receipt: OrderReceipt): string {
     `Discount: ${formatCurrency(receipt.discount_amount)}`,
     `Tax: ${formatCurrency(receipt.tax_amount)}`,
     `Total: ${formatCurrency(receipt.total_amount)}`,
-    `Payment: ${receipt.payment.payment_method_type.toUpperCase()}`,
-  ];
+    `Payment: ${receipt.payment.payment_method_type.toUpperCase()}`
+  );
 
   if (receipt.payment.transaction_reference) {
     lines.push(`Reference: ${receipt.payment.transaction_reference}`);
@@ -98,7 +105,12 @@ function receiptHtml(receipt: OrderReceipt): string {
   return `
     <div style="font-family:Arial,sans-serif;color:#18181b;max-width:560px;margin:0 auto">
       <h1 style="margin:0 0 8px">NexaBrew Receipt</h1>
-      <p style="margin:0 0 24px;color:#52525b">Order ${receipt.order_number}</p>
+      <p style="margin:0 0 4px;color:#52525b">Order ${receipt.order_number}</p>
+      ${
+        receipt.customer?.name
+          ? `<p style="margin:0 0 24px;color:#52525b">Customer: <strong>${receipt.customer.name}</strong></p>`
+          : `<div style="margin-bottom:24px;"></div>`
+      }
       <table style="width:100%;border-collapse:collapse;margin-bottom:20px">
         <thead>
           <tr>

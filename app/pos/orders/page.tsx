@@ -267,6 +267,7 @@ export default function PosOrdersPage(): React.ReactElement {
           orderId={payingOrder.id}
           orderNumber={payingOrder.order_number}
           total={Number(payingOrder.total_amount)}
+          customerName={payingOrder.customer?.name}
           open={!!payingOrder}
           onClose={() => setPayingOrder(null)}
           onPaid={() => {
