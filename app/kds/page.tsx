@@ -152,14 +152,17 @@ function KdsColumn({
 
 export default function KdsPage(): React.ReactElement {
   const { data: tickets, loading } = useRealtimeKitchenTickets();
-  const [time, setTime] = useState(liveTime());
+  // Empty on first render (server + client match); filled after mount to avoid
+  // an SSR/client locale hydration mismatch (e.g. "pm" vs "PM").
+  const [time, setTime] = useState("");
   const [search, setSearch] = useState("");
   const [categoryId, setCategoryId] = useState<string>("all");
   const [categories, setCategories] = useState<{ id: string; name: string }[]>([]);
   const [productMeta, setProductMeta] = useState<Map<string, ProductMeta>>(new Map());
 
-  // Tick clock every 30s
+  // Tick clock every 30s (and set immediately on mount, client-only)
   useEffect(() => {
+    setTime(liveTime());
     const interval = setInterval(() => setTime(liveTime()), 30_000);
     return () => clearInterval(interval);
   }, []);
