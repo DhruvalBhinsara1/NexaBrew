@@ -21,6 +21,7 @@ import {
   Receipt,
   ShoppingCart,
   Smartphone,
+  Sparkles,
   TrendingUp,
   Trophy,
 } from "lucide-react";
@@ -49,14 +50,16 @@ function rangeFor(period: Period): { from: string; to: string } {
   return { from: start.toISOString().slice(0, 10), to };
 }
 
-/** Continuous date list from..to (inclusive), YYYY-MM-DD. */
+/** Continuous date list from..to (inclusive), YYYY-MM-DD.
+ *  UTC-anchored so keys match the daily-summary dates (created_at UTC) exactly,
+ *  regardless of the viewer's timezone. */
 function dateRange(from: string, to: string): string[] {
   const out: string[] = [];
-  const d = new Date(from + "T00:00:00");
-  const end = new Date(to + "T00:00:00");
+  const d = new Date(from + "T12:00:00Z");
+  const end = new Date(to + "T12:00:00Z");
   while (d <= end) {
     out.push(d.toISOString().slice(0, 10));
-    d.setDate(d.getDate() + 1);
+    d.setUTCDate(d.getUTCDate() + 1);
   }
   return out;
 }
@@ -68,7 +71,7 @@ function compactCurrency(n: number): string {
 }
 
 function shortLabel(iso: string): string {
-  return new Date(iso + "T00:00:00").toLocaleDateString("en-IN", { day: "2-digit", month: "short" });
+  return new Date(iso + "T12:00:00Z").toLocaleDateString("en-IN", { day: "2-digit", month: "short", timeZone: "UTC" });
 }
 
 function fmtTime(iso: string): string {
@@ -150,6 +153,21 @@ export default function ReportsPage(): React.ReactElement {
   const maxEmpRev = Math.max(...employees.map((e) => e.total_revenue), 1);
   const payTotal = payments.reduce((s, p) => s + p.total_amount, 0);
 
+  // ── Quick insights (human-friendly highlights from loaded data) ──
+  const busiest = chartData.reduce(
+    (a, b) => (b.revenue > a.revenue ? b : a),
+    chartData[0] ?? { date: "—", revenue: 0, orders: 0 }
+  );
+  const topPay = payments.reduce<PaymentBreakdownRow | null>(
+    (a, b) => (b.total_amount > (a?.total_amount ?? 0) ? b : a),
+    null
+  );
+  const insights = [
+    { label: "Busiest day", value: totalOrders ? busiest.date : "—", sub: totalOrders ? `${compactCurrency(busiest.revenue)} earned` : "no sales yet" },
+    { label: "Bestseller", value: topProduct?.product_name ?? "—", sub: topProduct ? `${topProduct.quantity_sold} sold` : "no sales yet" },
+    { label: "Most-used payment", value: topPay ? (PAY_META[topPay.payment_method_type]?.label ?? topPay.payment_method_type) : "—", sub: topPay ? `${compactCurrency(topPay.total_amount)} collected` : "no payments" },
+  ];
+
   return (
     <div className="space-y-6 p-6">
       <PageHeader
@@ -210,6 +228,22 @@ export default function ReportsPage(): React.ReactElement {
         />
       </div>
 
+      {/* Quick insights */}
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+        {insights.map((ins) => (
+          <div
+            key={ins.label}
+            className="rounded-wiseCard border border-wise-border bg-white px-4 py-3 shadow-wiseCard transition-transform duration-200 hover:-translate-y-0.5"
+          >
+            <p className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-wise-mute">
+              <Sparkles className="h-3 w-3 text-wise-ink-deep" /> {ins.label}
+            </p>
+            <p className="mt-1 truncate font-display text-lg font-extrabold text-wise-ink">{ins.value}</p>
+            <p className="text-xs text-wise-body">{ins.sub}</p>
+          </div>
+        ))}
+      </div>
+
       {/* Revenue chart */}
       <Card className="overflow-hidden border-wise-border shadow-sm">
         <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -242,12 +276,16 @@ export default function ReportsPage(): React.ReactElement {
                 </defs>
                 <CartesianGrid vertical={false} stroke="#d7ddd2" strokeDasharray="3 3" />
                 <XAxis dataKey="date" stroke="#868685" fontSize={11} tickLine={false} axisLine={false} />
-                <YAxis stroke="#868685" fontSize={11} tickLine={false} axisLine={false} tickFormatter={compactCurrency} width={48} />
+                {/* Revenue scales on its own (left) axis; orders on a hidden
+                    right axis so a quiet day's bars don't crush the line. */}
+                <YAxis yAxisId="rev" stroke="#868685" fontSize={11} tickLine={false} axisLine={false} tickFormatter={compactCurrency} width={48} />
+                <YAxis yAxisId="ord" orientation="right" hide />
                 <Tooltip content={<ChartTooltip />} cursor={{ fill: "#e8ebe6" }} />
-                <Bar dataKey="orders" fill="#c5edab" radius={[3, 3, 0, 0]} barSize={18} />
+                <Bar yAxisId="ord" dataKey="orders" fill="#c5edab" radius={[3, 3, 0, 0]} barSize={18} />
                 <Area
+                  yAxisId="rev"
                   type="monotone" dataKey="revenue" stroke="#2ead4b" strokeWidth={2.5}
-                  fill="url(#revFill)" dot={false} activeDot={{ r: 4, strokeWidth: 2, stroke: "#fff" }}
+                  fill="url(#revFill)" dot={{ r: 2.5, fill: "#2ead4b", strokeWidth: 0 }} activeDot={{ r: 4, strokeWidth: 2, stroke: "#fff" }}
                   animationDuration={700}
                 />
               </ComposedChart>
