@@ -22,6 +22,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { EmptyState } from "@/components/shared/EmptyState";
+import { Pagination } from "@/components/ui/pagination";
 import { useToast } from "@/hooks/use-toast";
 import { apiGet, apiSend } from "@/lib/api-client";
 import type { User } from "@/types/domain.types";
@@ -36,6 +37,10 @@ export default function UsersPage(): React.ReactElement {
   const [password, setPassword] = useState("");
   const [role, setRole] = useState<"admin" | "employee">("employee");
   const [busy, setBusy] = useState(false);
+  const [page, setPage] = useState(1);
+  const PER_PAGE = 12;
+  const totalPages = Math.max(1, Math.ceil(users.length / PER_PAGE));
+  const pagedUsers = users.slice((page - 1) * PER_PAGE, page * PER_PAGE);
 
   const load = useCallback(async () => {
     try {
@@ -107,7 +112,7 @@ export default function UsersPage(): React.ReactElement {
                   </tr>
                 </thead>
                 <tbody>
-                  {users.map((u) => (
+                  {pagedUsers.map((u) => (
                     <tr key={u.id} className={`border-b border-surface-border last:border-0 ${u.is_archived ? "opacity-50" : ""}`}>
                       <td className="px-4 py-3 font-medium text-zinc-800">{u.name}</td>
                       <td className="px-4 py-3 text-zinc-500">{u.email}</td>
@@ -134,6 +139,16 @@ export default function UsersPage(): React.ReactElement {
           )}
         </CardContent>
       </Card>
+
+      {totalPages > 1 && (
+        <Pagination
+          page={page}
+          totalPages={totalPages}
+          hasNextPage={page < totalPages}
+          hasPreviousPage={page > 1}
+          onPageChange={setPage}
+        />
+      )}
 
       <Dialog open={dialog} onOpenChange={setDialog}>
         <DialogContent className="max-w-sm">

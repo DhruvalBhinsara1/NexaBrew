@@ -7,6 +7,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Pagination } from "@/components/ui/pagination";
 import {
   Dialog,
   DialogContent,
@@ -18,6 +19,7 @@ import { EmptyState } from "@/components/shared/EmptyState";
 import { useToast } from "@/hooks/use-toast";
 import { apiGet, apiSend } from "@/lib/api-client";
 import type { Category } from "@/types/domain.types";
+import type { PaginatedResponse } from "@/types/pagination.types";
 
 const PRESET_COLORS = [
   "#6F4E37", "#2ECC71", "#3498DB", "#F39C12", "#E91E63", "#9B59B6",
@@ -28,15 +30,36 @@ export default function CategoriesPage(): React.ReactElement {
   const { toast } = useToast();
   const [items, setItems] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [hasNextPage, setHasNextPage] = useState(false);
+  const [hasPreviousPage, setHasPreviousPage] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<Category | null>(null);
   const [name, setName] = useState("");
   const [color, setColor] = useState(PRESET_COLORS[0]);
   const [busy, setBusy] = useState(false);
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (currentPage: number = 1) => {
     try {
-      setItems(await apiGet<Category[]>("/api/categories"));
+      setLoading(true);
+      const params = new URLSearchParams();
+      params.set("page", String(currentPage));
+      params.set("limit", "20");
+
+      const data = await apiGet<PaginatedResponse<Category>>(
+        `/api/categories?${params.toString()}`
+      );
+
+      if (!data?.data || !data?.pagination) {
+        throw new Error("Invalid response format");
+      }
+
+      setItems(data.data);
+      setPage(data.pagination.page);
+      setTotalPages(data.pagination.totalPages);
+      setHasNextPage(data.pagination.hasNextPage);
+      setHasPreviousPage(data.pagination.hasPreviousPage);
     } catch (e) {
       toast({ title: (e as Error).message, variant: "destructive" });
     } finally {
@@ -45,7 +68,7 @@ export default function CategoriesPage(): React.ReactElement {
   }, [toast]);
 
   useEffect(() => {
-    void load();
+    void load(1);
   }, [load]);
 
   function openCreate(): void {
@@ -73,7 +96,7 @@ export default function CategoriesPage(): React.ReactElement {
         toast({ title: "Category created" });
       }
       setDialogOpen(false);
-      await load();
+      await load(page);
     } catch (e) {
       toast({ title: (e as Error).message, variant: "destructive" });
     } finally {
@@ -86,7 +109,7 @@ export default function CategoriesPage(): React.ReactElement {
     try {
       await apiSend(`/api/categories/${cat.id}`, "DELETE");
       toast({ title: "Category deleted" });
-      await load();
+      await load(page);
     } catch (e) {
       toast({ title: (e as Error).message, variant: "destructive" });
     }
@@ -107,23 +130,36 @@ export default function CategoriesPage(): React.ReactElement {
       {items.length === 0 && !loading ? (
         <EmptyState icon={Tag} title="No categories" subtitle="Add your first category." action={{ label: "Add Category", onClick: openCreate }} />
       ) : (
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-          {items.map((cat) => (
-            <Card key={cat.id} className="group relative overflow-hidden border-surface-border p-4">
-              <div className="h-2 w-full rounded-full" style={{ backgroundColor: cat.color ?? "#ccc" }} />
-              <p className="mt-3 font-semibold text-zinc-800">{cat.name}</p>
-              <p className="text-xs text-zinc-400">{cat.color}</p>
-              <div className="absolute right-2 top-2 flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
-                <button onClick={() => openEdit(cat)} className="rounded p-1.5 text-zinc-400 hover:bg-surface-muted hover:text-zinc-700">
-                  <Pencil className="h-3.5 w-3.5" />
-                </button>
-                <button onClick={() => void handleDelete(cat)} className="rounded p-1.5 text-red-400 hover:bg-red-50">
-                  <Trash2 className="h-3.5 w-3.5" />
-                </button>
-              </div>
-            </Card>
-          ))}
-        </div>
+        <>
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+            {items.map((cat) => (
+              <Card key={cat.id} className="group relative overflow-hidden border-surface-border p-4">
+                <div className="h-2 w-full rounded-full" style={{ backgroundColor: cat.color ?? "#ccc" }} />
+                <p className="mt-3 font-semibold text-zinc-800">{cat.name}</p>
+                <p className="text-xs text-zinc-400">{cat.color}</p>
+                <div className="absolute right-2 top-2 flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+                  <button onClick={() => openEdit(cat)} className="rounded p-1.5 text-zinc-400 hover:bg-surface-muted hover:text-zinc-700">
+                    <Pencil className="h-3.5 w-3.5" />
+                  </button>
+                  <button onClick={() => void handleDelete(cat)} className="rounded p-1.5 text-red-400 hover:bg-red-50">
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              </Card>
+            ))}
+          </div>
+
+          {totalPages > 1 && (
+            <Pagination
+              page={page}
+              totalPages={totalPages}
+              hasNextPage={hasNextPage}
+              hasPreviousPage={hasPreviousPage}
+              onPageChange={(newPage) => void load(newPage)}
+              isLoading={loading}
+            />
+          )}
+        </>
       )}
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>

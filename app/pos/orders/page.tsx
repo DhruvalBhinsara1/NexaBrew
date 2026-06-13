@@ -16,6 +16,7 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 import { EmptyState } from "@/components/shared/EmptyState";
+import { Pagination } from "@/components/ui/pagination";
 import { PaymentDialog } from "@/components/pos/PaymentDialog";
 import { useToast } from "@/hooks/use-toast";
 import { apiGet, apiSend } from "@/lib/api-client";
@@ -112,6 +113,15 @@ export default function PosOrdersPage(): React.ReactElement {
     [orders, filter, search]
   );
 
+  // Client-side pagination over the filtered list.
+  const PER_PAGE = 12;
+  const [page, setPage] = useState(1);
+  useEffect(() => {
+    setPage(1);
+  }, [filter, search]);
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PER_PAGE));
+  const paged = filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE);
+
   return (
     <div className="min-h-screen">
       <header className="flex items-center justify-between border-b border-surface-border bg-white px-4 py-3">
@@ -166,7 +176,7 @@ export default function PosOrdersPage(): React.ReactElement {
                     </tr>
                   </thead>
                   <tbody>
-                    {filtered.map((o) => (
+                    {paged.map((o) => (
                       <tr
                         key={o.id}
                         onClick={() => setSelected(o)}
@@ -191,6 +201,16 @@ export default function PosOrdersPage(): React.ReactElement {
             )}
           </CardContent>
         </Card>
+
+        {totalPages > 1 && (
+          <Pagination
+            page={page}
+            totalPages={totalPages}
+            hasNextPage={page < totalPages}
+            hasPreviousPage={page > 1}
+            onPageChange={setPage}
+          />
+        )}
       </div>
 
       {/* Order detail sheet */}

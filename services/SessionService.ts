@@ -5,7 +5,13 @@ import type {
   SessionCloseSummary,
   SessionStatus,
 } from "@/types/domain.types";
+import type { PaginatedResponse } from "@/types/pagination.types";
 import { AppError } from "@/lib/utils/app-error";
+import {
+  calculateOffset,
+  calculatePaginationMeta,
+  DEFAULT_PAGE_SIZE,
+} from "@/lib/utils/pagination";
 
 type Supa = SupabaseClient<Database>;
 
@@ -37,6 +43,41 @@ export const SessionService = {
     const { data, error } = await query;
     if (error) throw new AppError(error.message, "SESSIONS_LIST_FAILED", 500);
     return (data ?? []) as SessionWithUser[];
+  },
+
+  async listPaginated(
+    supabase: Supa,
+    status?: SessionStatus,
+    page: number = 1,
+    limit: number = DEFAULT_PAGE_SIZE
+  ): Promise<PaginatedResponse<SessionWithUser>> {
+    // Get total count
+    let countQuery = supabase.from("sessions").select("id", { count: "exact" });
+    if (status) countQuery = countQuery.eq("status", status);
+
+    const { count, error: countError } = await countQuery;
+    if (countError) throw new AppError(countError.message, "SESSIONS_COUNT_FAILED", 500);
+
+    // Get paginated data
+    let dataQuery = supabase
+      .from("sessions")
+      .select(SESSION_SELECT)
+      .order("opened_at", { ascending: false });
+    if (status) dataQuery = dataQuery.eq("status", status);
+
+    const offset = calculateOffset(page, limit);
+    dataQuery = dataQuery.range(offset, offset + limit - 1);
+
+    const { data, error } = await dataQuery;
+    if (error) throw new AppError(error.message, "SESSIONS_LIST_FAILED", 500);
+
+    const total = count ?? 0;
+    const paginationMeta = calculatePaginationMeta(page, limit, total);
+
+    return {
+      data: (data ?? []) as SessionWithUser[],
+      pagination: paginationMeta,
+    };
   },
 
   async getById(supabase: Supa, id: string): Promise<SessionWithUser> {

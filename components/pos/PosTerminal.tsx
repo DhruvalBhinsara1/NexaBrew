@@ -41,6 +41,7 @@ export function PosTerminal(): React.ReactElement {
   const [openBillCount, setOpenBillCount] = useState(0);
   const [billsRefreshKey, setBillsRefreshKey] = useState(0);
   const [sending, setSending] = useState(false);
+  const [sessionBusy, setSessionBusy] = useState(false);
 
   // Store
   const {
@@ -73,7 +74,7 @@ export function PosTerminal(): React.ReactElement {
           setSession(openSession);
           setStoreSession(openSession.id);
         } else {
-          setSessionError("No active session. Ask an admin to open one.");
+          setSessionError("No active session. Open one to start taking orders.");
         }
 
         const prodData = await prodRes.json();
@@ -230,6 +231,59 @@ export function PosTerminal(): React.ReactElement {
     }
   }
 
+  async function openSession(): Promise<void> {
+    const input = window.prompt("Open a new session — opening cash balance (₹)", "0");
+    if (input === null) return;
+    setSessionBusy(true);
+    try {
+      const res = await fetch("/api/sessions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ opening_balance: Number(input) || 0 }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        showToast(data.error ?? "Failed to open session.", "error");
+        return;
+      }
+      const s = data.data as SessionData;
+      setSession(s);
+      setStoreSession(s.id);
+      setSessionError(null);
+      showToast("Session opened — ready to take orders.", "success");
+    } catch {
+      showToast("Failed to open session.", "error");
+    } finally {
+      setSessionBusy(false);
+    }
+  }
+
+  async function closeSession(): Promise<void> {
+    if (!session) return;
+    if (!confirm("Close the current session? This finalizes the cash drawer.")) return;
+    setSessionBusy(true);
+    try {
+      const res = await fetch(`/api/sessions/${session.id}/close`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        showToast(data.error ?? "Failed to close session.", "error");
+        return;
+      }
+      setSession(null);
+      clearCart();
+      setSessionError("No active session. Open one to start taking orders.");
+      showToast("Session closed.", "success");
+    } catch {
+      showToast("Failed to close session.", "error");
+    } finally {
+      setSessionBusy(false);
+    }
+  }
+
   async function handleLogout(): Promise<void> {
     await supabase.auth.signOut();
     router.replace("/login");
@@ -258,13 +312,26 @@ export function PosTerminal(): React.ReactElement {
             <span className="text-base font-bold text-zinc-900">NexaBrew <span className="text-brand-600">POS</span></span>
           </span>
           {session ? (
-            <span className="rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">
-              Session Open
+            <span className="flex items-center gap-1.5">
+              <span className="rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">
+                Session Open
+              </span>
+              <button
+                onClick={() => void closeSession()}
+                disabled={sessionBusy}
+                className="rounded-md px-2 py-0.5 text-xs font-medium text-red-600 hover:bg-red-50 disabled:opacity-50"
+              >
+                Close
+              </button>
             </span>
           ) : (
-            <span className="rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-600">
-              No Session
-            </span>
+            <button
+              onClick={() => void openSession()}
+              disabled={sessionBusy}
+              className="rounded-full bg-brand-500 px-3 py-0.5 text-xs font-semibold text-white hover:bg-brand-600 disabled:opacity-50"
+            >
+              {sessionBusy ? "Opening…" : "Open Session"}
+            </button>
           )}
           {tableNumber && (
             <span className="rounded-full bg-brand-100 px-2 py-0.5 text-xs font-medium text-brand-700">
@@ -322,9 +389,20 @@ export function PosTerminal(): React.ReactElement {
 
       {/* Session error banner */}
       {sessionError && (
-        <div className="flex items-center gap-2 bg-amber-50 px-4 py-2 text-sm text-amber-700 border-b border-amber-200">
-          <AlertCircle className="h-4 w-4 shrink-0" />
-          {sessionError}
+        <div className="flex items-center justify-between gap-2 bg-amber-50 px-4 py-2 text-sm text-amber-700 border-b border-amber-200">
+          <span className="flex items-center gap-2">
+            <AlertCircle className="h-4 w-4 shrink-0" />
+            {sessionError}
+          </span>
+          {!session && (
+            <button
+              onClick={() => void openSession()}
+              disabled={sessionBusy}
+              className="shrink-0 rounded-md bg-brand-500 px-3 py-1 text-xs font-semibold text-white hover:bg-brand-600 disabled:opacity-50"
+            >
+              {sessionBusy ? "Opening…" : "Open Session"}
+            </button>
+          )}
         </div>
       )}
 

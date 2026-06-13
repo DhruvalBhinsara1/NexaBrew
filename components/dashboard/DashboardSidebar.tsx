@@ -15,6 +15,7 @@ import {
   Users,
   ChefHat,
   Coffee,
+  Contact,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { LogoutButton } from "@/components/shared/LogoutButton";
@@ -27,6 +28,7 @@ const NAV_ITEMS = [
   { label: "Payment Methods", href: "/dashboard/payment-methods", icon: CreditCard },
   { label: "Coupons & Promos", href: "/dashboard/coupons", icon: Ticket },
   { label: "Users", href: "/dashboard/users", icon: Users },
+  { label: "Customers", href: "/pos/customers", icon: Contact },
   { label: "Sessions", href: "/dashboard/sessions", icon: Clock },
   { label: "Reports", href: "/dashboard/reports", icon: BarChart3 },
 ];

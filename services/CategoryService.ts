@@ -5,7 +5,13 @@ import type {
   CreateCategoryInput,
   UpdateCategoryInput,
 } from "@/schemas/category.schema";
+import type { PaginatedResponse } from "@/types/pagination.types";
 import { AppError } from "@/lib/utils/app-error";
+import {
+  calculateOffset,
+  calculatePaginationMeta,
+  DEFAULT_PAGE_SIZE,
+} from "@/lib/utils/pagination";
 
 type Supa = SupabaseClient<Database>;
 
@@ -17,6 +23,37 @@ export const CategoryService = {
       .order("name");
     if (error) throw new AppError(error.message, "CATEGORIES_LIST_FAILED", 500);
     return data ?? [];
+  },
+
+  async listPaginated(
+    supabase: Supa,
+    page: number = 1,
+    limit: number = DEFAULT_PAGE_SIZE
+  ): Promise<PaginatedResponse<Category>> {
+    // Get total count
+    const { count, error: countError } = await supabase
+      .from("categories")
+      .select("id", { count: "exact" });
+
+    if (countError) throw new AppError(countError.message, "CATEGORIES_COUNT_FAILED", 500);
+
+    // Get paginated data
+    const offset = calculateOffset(page, limit);
+    const { data, error } = await supabase
+      .from("categories")
+      .select("*")
+      .order("name")
+      .range(offset, offset + limit - 1);
+
+    if (error) throw new AppError(error.message, "CATEGORIES_LIST_FAILED", 500);
+
+    const total = count ?? 0;
+    const paginationMeta = calculatePaginationMeta(page, limit, total);
+
+    return {
+      data: data ?? [],
+      pagination: paginationMeta,
+    };
   },
 
   async create(supabase: Supa, input: CreateCategoryInput): Promise<Category> {

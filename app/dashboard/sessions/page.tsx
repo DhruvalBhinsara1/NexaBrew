@@ -7,6 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Pagination } from "@/components/ui/pagination";
 import {
   Dialog,
   DialogContent,
@@ -19,6 +20,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiGet, apiSend } from "@/lib/api-client";
 import { formatCurrency } from "@/lib/utils/formatCurrency";
 import type { SessionWithUser } from "@/types/domain.types";
+import type { PaginatedResponse } from "@/types/pagination.types";
 
 function fmt(iso: string | null): string {
   if (!iso) return "—";
@@ -43,13 +45,34 @@ export default function SessionsPage(): React.ReactElement {
   const { toast } = useToast();
   const [sessions, setSessions] = useState<SessionWithUser[]>([]);
   const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [hasNextPage, setHasNextPage] = useState(false);
+  const [hasPreviousPage, setHasPreviousPage] = useState(false);
   const [openDialog, setOpenDialog] = useState(false);
   const [openingBalance, setOpeningBalance] = useState("");
   const [busy, setBusy] = useState(false);
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (currentPage: number = 1) => {
     try {
-      setSessions(await apiGet<SessionWithUser[]>("/api/sessions"));
+      setLoading(true);
+      const params = new URLSearchParams();
+      params.set("page", String(currentPage));
+      params.set("limit", "20");
+
+      const data = await apiGet<PaginatedResponse<SessionWithUser>>(
+        `/api/sessions?${params.toString()}`
+      );
+
+      if (!data?.data || !data?.pagination) {
+        throw new Error("Invalid response format");
+      }
+
+      setSessions(data.data);
+      setPage(data.pagination.page);
+      setTotalPages(data.pagination.totalPages);
+      setHasNextPage(data.pagination.hasNextPage);
+      setHasPreviousPage(data.pagination.hasPreviousPage);
     } catch (e) {
       toast({ title: (e as Error).message, variant: "destructive" });
     } finally {
@@ -58,7 +81,7 @@ export default function SessionsPage(): React.ReactElement {
   }, [toast]);
 
   useEffect(() => {
-    void load();
+    void load(1);
   }, [load]);
 
   const active = sessions.find((s) => s.status === "open") ?? null;
@@ -72,7 +95,7 @@ export default function SessionsPage(): React.ReactElement {
       toast({ title: "Session opened" });
       setOpenDialog(false);
       setOpeningBalance("");
-      await load();
+      await load(1);
     } catch (e) {
       toast({ title: (e as Error).message, variant: "destructive" });
     } finally {
@@ -86,7 +109,7 @@ export default function SessionsPage(): React.ReactElement {
     try {
       await apiSend(`/api/sessions/${id}/close`, "POST", {});
       toast({ title: "Session closed" });
-      await load();
+      await load(page);
     } catch (e) {
       toast({ title: (e as Error).message, variant: "destructive" });
     } finally {
@@ -160,48 +183,62 @@ export default function SessionsPage(): React.ReactElement {
           {sessions.length === 0 && !loading ? (
             <EmptyState icon={Clock} title="No sessions yet" subtitle="Open your first session to start." />
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-surface-border text-xs uppercase tracking-wider text-zinc-400">
-                    <th className="px-4 py-3 text-left">Opened</th>
-                    <th className="px-4 py-3 text-left">By</th>
-                    <th className="px-4 py-3 text-left">Closed</th>
-                    <th className="px-4 py-3 text-left">Duration</th>
-                    <th className="px-4 py-3 text-right">Opening</th>
-                    <th className="px-4 py-3 text-right">Closing</th>
-                    <th className="px-4 py-3 text-center">Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {sessions.map((s) => (
-                    <tr key={s.id} className="border-b border-surface-border last:border-0">
-                      <td className="px-4 py-3 text-zinc-700">{fmt(s.opened_at)}</td>
-                      <td className="px-4 py-3 text-zinc-500">{s.opened_by_user?.name ?? "—"}</td>
-                      <td className="px-4 py-3 text-zinc-500">{fmt(s.closed_at)}</td>
-                      <td className="px-4 py-3 text-zinc-500">{duration(s.opened_at, s.closed_at)}</td>
-                      <td className="px-4 py-3 text-right text-zinc-700">
-                        {formatCurrency(Number(s.opening_balance))}
-                      </td>
-                      <td className="px-4 py-3 text-right text-zinc-700">
-                        {s.closing_balance != null ? formatCurrency(Number(s.closing_balance)) : "—"}
-                      </td>
-                      <td className="px-4 py-3 text-center">
-                        <span
-                          className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                            s.status === "open"
-                              ? "bg-green-100 text-green-700"
-                              : "bg-zinc-100 text-zinc-500"
-                          }`}
-                        >
-                          {s.status}
-                        </span>
-                      </td>
+            <>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-surface-border text-xs uppercase tracking-wider text-zinc-400">
+                      <th className="px-4 py-3 text-left">Opened</th>
+                      <th className="px-4 py-3 text-left">By</th>
+                      <th className="px-4 py-3 text-left">Closed</th>
+                      <th className="px-4 py-3 text-left">Duration</th>
+                      <th className="px-4 py-3 text-right">Opening</th>
+                      <th className="px-4 py-3 text-right">Closing</th>
+                      <th className="px-4 py-3 text-center">Status</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {sessions.map((s) => (
+                      <tr key={s.id} className="border-b border-surface-border last:border-0">
+                        <td className="px-4 py-3 text-zinc-700">{fmt(s.opened_at)}</td>
+                        <td className="px-4 py-3 text-zinc-500">{s.opened_by_user?.name ?? "—"}</td>
+                        <td className="px-4 py-3 text-zinc-500">{fmt(s.closed_at)}</td>
+                        <td className="px-4 py-3 text-zinc-500">{duration(s.opened_at, s.closed_at)}</td>
+                        <td className="px-4 py-3 text-right text-zinc-700">
+                          {formatCurrency(Number(s.opening_balance))}
+                        </td>
+                        <td className="px-4 py-3 text-right text-zinc-700">
+                          {s.closing_balance != null ? formatCurrency(Number(s.closing_balance)) : "—"}
+                        </td>
+                        <td className="px-4 py-3 text-center">
+                          <span
+                            className={`rounded-full px-2 py-0.5 text-xs font-medium ${s.status === "open"
+                                ? "bg-green-100 text-green-700"
+                                : "bg-zinc-100 text-zinc-500"
+                              }`}
+                          >
+                            {s.status}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {totalPages > 1 && (
+                <div className="border-t border-surface-border p-4">
+                  <Pagination
+                    page={page}
+                    totalPages={totalPages}
+                    hasNextPage={hasNextPage}
+                    hasPreviousPage={hasPreviousPage}
+                    onPageChange={(newPage) => void load(newPage)}
+                    isLoading={loading}
+                  />
+                </div>
+              )}
+            </>
           )}
         </CardContent>
       </Card>

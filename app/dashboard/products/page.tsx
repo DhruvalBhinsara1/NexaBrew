@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Package, Pencil, Plus, Search, Trash2 } from "lucide-react";
 import { PageHeader } from "@/components/dashboard/PageHeader";
 import { Card, CardContent } from "@/components/ui/card";
@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { Pagination } from "@/components/ui/pagination";
 import {
   Select,
   SelectContent,
@@ -27,6 +28,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiGet, apiSend } from "@/lib/api-client";
 import { formatCurrency } from "@/lib/utils/formatCurrency";
 import type { Category, ProductWithCategory } from "@/types/domain.types";
+import type { PaginatedResponse } from "@/types/pagination.types";
 
 interface FormState {
   name: string;
@@ -55,39 +57,64 @@ export default function ProductsPage(): React.ReactElement {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [hasNextPage, setHasNextPage] = useState(false);
+  const [hasPreviousPage, setHasPreviousPage] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<ProductWithCategory | null>(null);
   const [form, setForm] = useState<FormState>(EMPTY);
   const [busy, setBusy] = useState(false);
 
-  const load = useCallback(async () => {
-    try {
-      const [p, c] = await Promise.all([
-        apiGet<ProductWithCategory[]>("/api/products"),
-        apiGet<Category[]>("/api/categories"),
-      ]);
-      setProducts(p);
-      setCategories(c);
-    } catch (e) {
-      toast({ title: (e as Error).message, variant: "destructive" });
-    } finally {
-      setLoading(false);
-    }
-  }, [toast]);
+  const load = useCallback(
+    async (currentPage: number = 1) => {
+      try {
+        setLoading(true);
+        const params = new URLSearchParams();
+        params.set("page", String(currentPage));
+        params.set("limit", "20");
+        if (categoryFilter !== "all") {
+          params.set("category_id", categoryFilter);
+        }
+        if (search) {
+          params.set("search", search);
+        }
+
+        const [productsData, categoriesData] = await Promise.all([
+          apiGet<PaginatedResponse<ProductWithCategory>>(
+            `/api/products?${params.toString()}`
+          ),
+          apiGet<PaginatedResponse<Category>>("/api/categories?page=1&limit=999"),
+        ]);
+
+        if (!productsData?.data || !productsData?.pagination) {
+          throw new Error("Invalid products response");
+        }
+        if (!categoriesData?.data) {
+          throw new Error("Invalid categories response");
+        }
+
+        setProducts(productsData.data);
+        setPage(productsData.pagination.page);
+        setTotalPages(productsData.pagination.totalPages);
+        setHasNextPage(productsData.pagination.hasNextPage);
+        setHasPreviousPage(productsData.pagination.hasPreviousPage);
+        setCategories(categoriesData.data);
+      } catch (e) {
+        toast({ title: (e as Error).message, variant: "destructive" });
+        setProducts([]);
+        setCategories([]);
+        setTotalPages(1);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [categoryFilter, search, toast]
+  );
 
   useEffect(() => {
-    void load();
-  }, [load]);
-
-  const filtered = useMemo(
-    () =>
-      products.filter((p) => {
-        const matchesSearch = p.name.toLowerCase().includes(search.toLowerCase());
-        const matchesCat = categoryFilter === "all" || p.category_id === categoryFilter;
-        return matchesSearch && matchesCat;
-      }),
-    [products, search, categoryFilter]
-  );
+    void load(1);
+  }, [load, categoryFilter, search]);
 
   function openCreate(): void {
     setEditing(null);
@@ -131,7 +158,7 @@ export default function ProductsPage(): React.ReactElement {
         toast({ title: "Product created" });
       }
       setDialogOpen(false);
-      await load();
+      await load(page);
     } catch (e) {
       toast({ title: (e as Error).message, variant: "destructive" });
     } finally {
@@ -144,7 +171,7 @@ export default function ProductsPage(): React.ReactElement {
     try {
       await apiSend(`/api/products/${p.id}`, "DELETE");
       toast({ title: "Product deleted" });
-      await load();
+      await load(page);
     } catch (e) {
       toast({ title: (e as Error).message, variant: "destructive" });
     }
@@ -189,7 +216,7 @@ export default function ProductsPage(): React.ReactElement {
 
       <Card className="border-surface-border">
         <CardContent className="p-0">
-          {filtered.length === 0 && !loading ? (
+          {products.length === 0 && !loading ? (
             <EmptyState icon={Package} title="No products" subtitle="Adjust filters or add a product." />
           ) : (
             <div className="overflow-x-auto">
@@ -206,7 +233,7 @@ export default function ProductsPage(): React.ReactElement {
                   </tr>
                 </thead>
                 <tbody>
-                  {filtered.map((p) => (
+                  {products.map((p) => (
                     <tr key={p.id} className="border-b border-surface-border last:border-0">
                       <td className="px-4 py-3 font-medium text-zinc-800">{p.name}</td>
                       <td className="px-4 py-3">
@@ -247,6 +274,17 @@ export default function ProductsPage(): React.ReactElement {
           )}
         </CardContent>
       </Card>
+
+      {totalPages > 1 && (
+        <Pagination
+          page={page}
+          totalPages={totalPages}
+          hasNextPage={hasNextPage}
+          hasPreviousPage={hasPreviousPage}
+          onPageChange={(newPage) => void load(newPage)}
+          isLoading={loading}
+        />
+      )}
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-w-md">

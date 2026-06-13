@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/types/database.types";
 import type { Coupon, OrderStatus, OrderWithItems } from "@/types/domain.types";
 import type { CreateOrderInput, UpdateOrderInput } from "@/schemas/order.schema";
+import type { PaginatedResponse } from "@/types/pagination.types";
 import { AppError } from "@/lib/utils/app-error";
 import {
   buildDiscountState,
@@ -10,6 +11,11 @@ import {
   orderItemsToDiscountableItems,
   snapshotItems,
 } from "@/services/OrderPricing";
+import {
+  calculateOffset,
+  calculatePaginationMeta,
+  DEFAULT_PAGE_SIZE,
+} from "@/lib/utils/pagination";
 
 type Supa = SupabaseClient<Database>;
 
@@ -35,6 +41,44 @@ export const OrderService = {
     const { data, error } = await query;
     if (error) throw new AppError(error.message, "ORDERS_LIST_FAILED", 500);
     return (data ?? []) as OrderWithItems[];
+  },
+
+  async listPaginated(
+    supabase: Supa,
+    filters: OrderFilters,
+    page: number = 1,
+    limit: number = DEFAULT_PAGE_SIZE
+  ): Promise<PaginatedResponse<OrderWithItems>> {
+    // Get total count
+    let countQuery = supabase.from("orders").select("id", { count: "exact" });
+    if (filters.sessionId) countQuery = countQuery.eq("session_id", filters.sessionId);
+    if (filters.status) countQuery = countQuery.eq("status", filters.status);
+    if (filters.tableId) countQuery = countQuery.eq("table_id", filters.tableId);
+    if (filters.search) countQuery = countQuery.ilike("order_number", `%${filters.search}%`);
+
+    const { count, error: countError } = await countQuery;
+    if (countError) throw new AppError(countError.message, "ORDERS_COUNT_FAILED", 500);
+
+    // Get paginated data
+    let dataQuery = supabase.from("orders").select(ORDER_SELECT).order("created_at", { ascending: false });
+    if (filters.sessionId) dataQuery = dataQuery.eq("session_id", filters.sessionId);
+    if (filters.status) dataQuery = dataQuery.eq("status", filters.status);
+    if (filters.tableId) dataQuery = dataQuery.eq("table_id", filters.tableId);
+    if (filters.search) dataQuery = dataQuery.ilike("order_number", `%${filters.search}%`);
+
+    const offset = calculateOffset(page, limit);
+    dataQuery = dataQuery.range(offset, offset + limit - 1);
+
+    const { data, error } = await dataQuery;
+    if (error) throw new AppError(error.message, "ORDERS_LIST_FAILED", 500);
+
+    const total = count ?? 0;
+    const paginationMeta = calculatePaginationMeta(page, limit, total);
+
+    return {
+      data: (data ?? []) as OrderWithItems[],
+      pagination: paginationMeta,
+    };
   },
 
   /**

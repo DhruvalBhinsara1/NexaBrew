@@ -48,14 +48,21 @@ function KpiCard({
   value,
   sub,
   icon: Icon,
+  href,
 }: {
   title: string;
   value: string;
   sub?: string;
   icon: React.ElementType;
+  href?: string;
 }): React.ReactElement {
-  return (
-    <Card className="border-surface-border bg-white shadow-sm">
+  const card = (
+    <Card
+      className={cn(
+        "border-surface-border bg-white shadow-sm",
+        href && "transition-all hover:border-brand-300 hover:shadow-md"
+      )}
+    >
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <CardTitle className="text-sm font-medium text-zinc-500">{title}</CardTitle>
         <Icon className="h-4 w-4 text-brand-400" />
@@ -65,6 +72,13 @@ function KpiCard({
         {sub && <p className="mt-0.5 text-xs text-zinc-400">{sub}</p>}
       </CardContent>
     </Card>
+  );
+  return href ? (
+    <Link href={href} className="block">
+      {card}
+    </Link>
+  ) : (
+    card
   );
 }
 
@@ -133,16 +147,23 @@ export default async function DashboardPage(): Promise<React.ReactElement> {
   const supabase = createServerClient();
   const today = todayISO();
 
-  const [sessionResult, reportResult, floorsResult, ordersResult] = await Promise.allSettled([
-    SessionService.getActive(supabase),
-    ReportService.dailySummary(supabase, { from: today, to: today }),
-    FloorService.listWithTables(supabase),
-    supabase
-      .from("orders")
-      .select("id, order_number, status, total_amount, created_at, table_id")
-      .order("created_at", { ascending: false })
-      .limit(10),
-  ]);
+  const [sessionResult, reportResult, floorsResult, ordersResult, activeResult] =
+    await Promise.allSettled([
+      SessionService.getActive(supabase),
+      ReportService.dailySummary(supabase, { from: today, to: today }),
+      FloorService.listWithTables(supabase),
+      supabase
+        .from("orders")
+        .select("id, order_number, status, total_amount, created_at, table_id")
+        .order("created_at", { ascending: false })
+        .limit(10),
+      // Tables with an active, UNPAID order — these can't be freed manually.
+      supabase
+        .from("orders")
+        .select("order_number, status, table_id")
+        .in("status", ["draft", "sent_to_kitchen", "payment_pending"])
+        .not("table_id", "is", null),
+    ]);
 
   const activeSession: SessionWithUser | null =
     sessionResult.status === "fulfilled" ? sessionResult.value : null;
@@ -152,6 +173,15 @@ export default async function DashboardPage(): Promise<React.ReactElement> {
     floorsResult.status === "fulfilled" ? floorsResult.value : [];
   const recentOrders: RecentOrder[] =
     ordersResult.status === "fulfilled" ? ((ordersResult.value.data as RecentOrder[]) ?? []) : [];
+
+  // Map of table_id → active unpaid order (blocks manual free in the grid).
+  const activeRows =
+    activeResult.status === "fulfilled"
+      ? ((activeResult.value.data as { order_number: string; status: string; table_id: string }[]) ?? [])
+      : [];
+  const lockedTables = activeRows
+    .filter((r) => r.table_id)
+    .map((r) => ({ tableId: r.table_id, orderNumber: r.order_number, status: r.status }));
 
   // Aggregated KPIs
   const todayOrderCount = todayRows.reduce((s, r) => s + r.order_count, 0);
@@ -223,24 +253,28 @@ export default async function DashboardPage(): Promise<React.ReactElement> {
           value={String(todayOrderCount)}
           sub="paid orders"
           icon={ShoppingCart}
+          href="/pos/orders"
         />
         <KpiCard
           title="Revenue Today"
           value={formatCurrency(todayRevenue)}
           sub="after discounts + tax"
           icon={TrendingUp}
+          href="/dashboard/reports"
         />
         <KpiCard
           title="Avg Order Value"
           value={todayOrderCount > 0 ? formatCurrency(avgOrderValue) : "—"}
           sub={todayOrderCount > 0 ? `over ${todayOrderCount} orders` : "no paid orders yet"}
           icon={BarChart3}
+          href="/dashboard/reports"
         />
         <KpiCard
           title="Tables Occupied"
           value={`${occupiedCount} / ${totalTables}`}
           sub={`${totalTables - occupiedCount} available`}
           icon={LayoutGrid}
+          href="/dashboard/floors"
         />
       </div>
 
@@ -263,7 +297,7 @@ export default async function DashboardPage(): Promise<React.ReactElement> {
             {floors.length === 0 ? (
               <p className="text-sm text-zinc-400">No floors configured.</p>
             ) : (
-              <TableOccupancyGrid floors={floors} />
+              <TableOccupancyGrid floors={floors} lockedTables={lockedTables} />
             )}
           </CardContent>
         </Card>

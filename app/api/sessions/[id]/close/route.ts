@@ -13,5 +13,5 @@ export const POST = withAuth<Ctx>(
     const data = await SessionService.close(supabase, params.id, notes);
     return NextResponse.json({ data });
   },
-  { roles: ["admin"] }
+  { roles: ["admin", "employee"] }
 );
