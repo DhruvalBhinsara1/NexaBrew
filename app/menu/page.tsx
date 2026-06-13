@@ -56,6 +56,8 @@ interface CartLine {
   qty: number;
 }
 
+const CART_STORAGE_KEY = (uid: string) => `nexabrew:cart:${uid}`;
+
 export default function MenuPage(): React.ReactElement {
   const router = useRouter();
   const { toast } = useToast();
@@ -66,6 +68,7 @@ export default function MenuPage(): React.ReactElement {
   const [orders, setOrders] = useState<CustomerOrder[]>([]);
   const [activeCat, setActiveCat] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [userId, setUserId] = useState<string | null>(null);
 
   // Cart + checkout
   const [cart, setCart] = useState<Record<string, CartLine>>({});
@@ -99,6 +102,41 @@ export default function MenuPage(): React.ReactElement {
       toast({ title: (e as Error).message, variant: "destructive" });
     }
   }, [toast]);
+
+  // Resolve user ID and restore saved cart from localStorage
+  useEffect(() => {
+    const supabase = createBrowserClient();
+    void supabase.auth.getUser().then(({ data }) => {
+      const uid = data.user?.id ?? null;
+      setUserId(uid);
+      if (uid) {
+        try {
+          const saved = localStorage.getItem(CART_STORAGE_KEY(uid));
+          if (saved) {
+            const parsed = JSON.parse(saved) as Record<string, CartLine>;
+            // Only restore if products haven't loaded yet (avoids stale refs)
+            setCart(parsed);
+          }
+        } catch {
+          // ignore malformed storage
+        }
+      }
+    });
+  }, []);
+
+  // Persist cart to localStorage whenever it changes
+  useEffect(() => {
+    if (!userId) return;
+    try {
+      if (Object.keys(cart).length === 0) {
+        localStorage.removeItem(CART_STORAGE_KEY(userId));
+      } else {
+        localStorage.setItem(CART_STORAGE_KEY(userId), JSON.stringify(cart));
+      }
+    } catch {
+      // quota exceeded or private browsing — fail silently
+    }
+  }, [cart, userId]);
 
   useEffect(() => {
     void Promise.all([loadMenu(), loadOrders()]).finally(() => setLoading(false));
@@ -160,7 +198,9 @@ export default function MenuPage(): React.ReactElement {
         return;
       }
       const order = data.data as OrderWithItems;
+      // Clear persisted cart on successful placement
       setCart({});
+      if (userId) localStorage.removeItem(CART_STORAGE_KEY(userId));
       setCoupon("");
       setTableId("");
       setCartOpen(false);

@@ -2,10 +2,20 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { CheckCircle2, Clock, Coffee, LogOut, Search, UtensilsCrossed } from "lucide-react";
+import {
+  CheckCircle2,
+  ChefHat,
+  Clock,
+  Coffee,
+  LogOut,
+  Search,
+  Sparkles,
+  UtensilsCrossed,
+} from "lucide-react";
 import { useRealtimeKitchenTickets } from "@/hooks/useRealtimeKitchenTickets";
 import { createBrowserClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
+import { Skeleton } from "@/components/ui/skeleton";
 import type { KitchenTicketItem, KitchenTicketWithItems } from "@/types/domain.types";
 
 interface ProductMeta {
@@ -14,49 +24,60 @@ interface ProductMeta {
   category_name: string | null;
 }
 
-// ─── Stage theme (light, matches the coffee/cream app theme) ──────────────────
+// ─── Stage config ─────────────────────────────────────────────────────────────
 
 interface Stage {
   key: "to_cook" | "preparing" | "completed";
   label: string;
-  headerBar: string; // top accent bar on the column
-  headerText: string;
-  countBadge: string;
-  cardBorder: string; // left border on ticket cards
-  dot: string;
+  icon: React.ElementType;
+  // Column header accent colours
+  accentBg: string;      // pill / badge bg
+  accentText: string;    // pill / badge text
+  accentDot: string;     // status dot
+  accentBar: string;     // top 3px bar on column
+  // Card left border
+  cardBorder: string;
+  // Item highlight on hover
+  itemHover: string;
 }
 
 const STAGES: Stage[] = [
   {
     key: "to_cook",
     label: "To Cook",
-    headerBar: "bg-amber-500",
-    headerText: "text-amber-700",
-    countBadge: "bg-amber-100 text-amber-700",
-    cardBorder: "border-l-amber-500",
-    dot: "bg-amber-500",
+    icon: ChefHat,
+    accentBg: "bg-amber-400/20",
+    accentText: "text-amber-300",
+    accentDot: "bg-amber-400",
+    accentBar: "bg-amber-400",
+    cardBorder: "border-l-amber-400",
+    itemHover: "hover:bg-amber-50/60",
   },
   {
     key: "preparing",
     label: "Preparing",
-    headerBar: "bg-blue-500",
-    headerText: "text-blue-700",
-    countBadge: "bg-blue-100 text-blue-700",
-    cardBorder: "border-l-blue-500",
-    dot: "bg-blue-500",
+    icon: Sparkles,
+    accentBg: "bg-wise-primary/20",
+    accentText: "text-wise-primary",
+    accentDot: "bg-wise-primary",
+    accentBar: "bg-wise-primary",
+    cardBorder: "border-l-wise-primary",
+    itemHover: "hover:bg-wise-primary-pale/60",
   },
   {
     key: "completed",
     label: "Completed",
-    headerBar: "bg-emerald-500",
-    headerText: "text-emerald-700",
-    countBadge: "bg-emerald-100 text-emerald-700",
-    cardBorder: "border-l-emerald-500",
-    dot: "bg-emerald-500",
+    icon: CheckCircle2,
+    accentBg: "bg-emerald-400/20",
+    accentText: "text-emerald-400",
+    accentDot: "bg-emerald-400",
+    accentBar: "bg-emerald-400",
+    cardBorder: "border-l-emerald-400",
+    itemHover: "hover:bg-emerald-50/60",
   },
 ];
 
-// ─── Helpers ────────────────────────────────────────────────────────────────
+// ─── Helpers ─────────────────────────────────────────────────────────────────
 
 function elapsed(iso: string): string {
   const diff = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
@@ -74,7 +95,25 @@ function liveTime(): string {
   });
 }
 
-// ─── Ticket Card ────────────────────────────────────────────────────────────
+// ─── Skeleton card ────────────────────────────────────────────────────────────
+
+function TicketSkeleton(): React.ReactElement {
+  return (
+    <div className="rounded-2xl border border-wise-border bg-white p-4 shadow-sm space-y-3">
+      <div className="flex items-center justify-between">
+        <Skeleton className="h-5 w-24" />
+        <Skeleton className="h-5 w-20 rounded-full" />
+      </div>
+      <Skeleton className="h-3 w-16" />
+      <div className="space-y-2 pt-1">
+        <Skeleton className="h-8 w-full rounded-lg" />
+        <Skeleton className="h-8 w-full rounded-lg" />
+      </div>
+    </div>
+  );
+}
+
+// ─── Ticket Card ──────────────────────────────────────────────────────────────
 
 interface TicketCardProps {
   ticket: KitchenTicketWithItems;
@@ -85,44 +124,62 @@ interface TicketCardProps {
 
 function TicketCard({ ticket, stage, onAdvance, onCompleteItem }: TicketCardProps): React.ReactElement {
   const canAdvance = ticket.status !== "completed";
+  const Icon = stage.icon;
 
   return (
     <div
       className={cn(
-        "rounded-xl border border-wise-border border-l-4 bg-white p-4 shadow-sm transition-all",
+        "group rounded-2xl border border-wise-border border-l-4 bg-white shadow-sm transition-all duration-200",
         stage.cardBorder,
-        canAdvance && "cursor-pointer hover:shadow-md hover:-translate-y-0.5"
+        canAdvance && "cursor-pointer hover:shadow-wiseCard hover:-translate-y-0.5"
       )}
       onClick={() => canAdvance && onAdvance(ticket.id, ticket.status)}
     >
-      {/* Header */}
-      <div className="mb-3 flex items-start justify-between">
+      {/* Card header */}
+      <div className="flex items-start justify-between px-4 pt-4 pb-3">
         <div>
-          <p className="text-lg font-bold text-wise-ink">#{ticket.ticket_number}</p>
+          <p className="font-display text-base font-extrabold text-wise-ink tracking-tight">
+            #{ticket.ticket_number}
+          </p>
           <div className="mt-0.5 flex items-center gap-1 text-xs text-wise-mute">
             <Clock className="h-3 w-3" />
-            {elapsed(ticket.sent_at)} ago
+            <span>{elapsed(ticket.sent_at)} ago</span>
           </div>
         </div>
+
         {canAdvance ? (
-          <span className={cn("rounded-full px-2 py-0.5 text-xs font-medium", stage.countBadge)}>
-            tap to advance →
+          <span
+            className={cn(
+              "flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold transition-colors",
+              stage.accentBg,
+              stage.accentText,
+              "group-hover:opacity-90"
+            )}
+          >
+            <Icon className="h-3 w-3" />
+            advance →
           </span>
         ) : (
-          <CheckCircle2 className="h-5 w-5 text-emerald-500" />
+          <span className="flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-600">
+            <CheckCircle2 className="h-3 w-3" />
+            Done
+          </span>
         )}
       </div>
 
+      {/* Divider */}
+      <div className="mx-4 h-px bg-wise-border" />
+
       {/* Items */}
-      <ul className="space-y-1.5">
+      <ul className="space-y-1.5 px-4 py-3">
         {ticket.items.map((item: KitchenTicketItem) => (
           <li
             key={item.id}
             className={cn(
-              "flex items-center justify-between rounded-lg px-3 py-2 text-sm transition-colors",
+              "flex items-center justify-between rounded-xl px-3 py-2 text-sm transition-colors cursor-pointer select-none",
               item.is_completed
-                ? "bg-wise-canvas-soft text-wise-mute line-through"
-                : "bg-wise-canvas-soft text-wise-ink hover:bg-wise-primary-pale"
+                ? "bg-wise-canvas-soft/70 text-wise-mute line-through"
+                : cn("bg-wise-canvas-soft text-wise-ink", stage.itemHover)
             )}
             onClick={(e) => {
               e.stopPropagation();
@@ -130,7 +187,7 @@ function TicketCard({ ticket, stage, onAdvance, onCompleteItem }: TicketCardProp
             }}
           >
             <span className="font-medium">{item.product_name}</span>
-            <span className="ml-2 shrink-0 rounded-full bg-white px-2 py-0.5 text-xs font-bold text-wise-body shadow-sm">
+            <span className="ml-2 shrink-0 rounded-full bg-white px-2 py-0.5 text-xs font-bold text-wise-body shadow-sm ring-1 ring-wise-border">
               ×{item.quantity}
             </span>
           </li>
@@ -140,37 +197,54 @@ function TicketCard({ ticket, stage, onAdvance, onCompleteItem }: TicketCardProp
   );
 }
 
-// ─── Column ──────────────────────────────────────────────────────────────────
+// ─── Column ───────────────────────────────────────────────────────────────────
 
 interface ColumnProps {
   stage: Stage;
   tickets: KitchenTicketWithItems[];
+  loading: boolean;
   onAdvance: (id: string, current: string) => void;
   onCompleteItem: (ticketId: string, itemId: string) => void;
 }
 
-function KdsColumn({ stage, tickets, onAdvance, onCompleteItem }: ColumnProps): React.ReactElement {
+function KdsColumn({ stage, tickets, loading, onAdvance, onCompleteItem }: ColumnProps): React.ReactElement {
+  const Icon = stage.icon;
+
   return (
-    <div className="flex min-h-0 flex-col overflow-hidden rounded-2xl border border-wise-border bg-wise-canvas-soft">
-      {/* Accent bar */}
-      <div className={cn("h-1 w-full", stage.headerBar)} />
+    <div className="flex min-h-0 flex-col overflow-hidden rounded-2xl border border-wise-border bg-wise-canvas-soft/60 shadow-sm">
+      {/* Accent top bar */}
+      <div className={cn("h-[3px] w-full", stage.accentBar)} />
+
       {/* Column header */}
-      <div className="flex items-center justify-between bg-white px-4 py-3">
-        <h2 className={cn("flex items-center gap-2 text-sm font-bold uppercase tracking-wider", stage.headerText)}>
-          <span className={cn("h-2 w-2 rounded-full", stage.dot)} />
-          {stage.label}
+      <div className="flex items-center justify-between bg-white/70 backdrop-blur px-4 py-3 border-b border-wise-border">
+        <h2 className="flex items-center gap-2 text-sm font-bold text-wise-ink">
+          <Icon className={cn("h-4 w-4", stage.accentText)} />
+          <span className="uppercase tracking-widest text-[11px]">{stage.label}</span>
         </h2>
-        <span className={cn("rounded-full px-2 py-0.5 text-xs font-bold", stage.countBadge)}>
+        <span
+          className={cn(
+            "flex h-6 min-w-6 items-center justify-center rounded-full px-2 text-xs font-bold",
+            stage.accentBg,
+            stage.accentText
+          )}
+        >
           {tickets.length}
         </span>
       </div>
 
-      {/* Cards */}
+      {/* Scrollable ticket list */}
       <div className="flex-1 space-y-3 overflow-y-auto p-3">
-        {tickets.length === 0 ? (
-          <div className="flex flex-col items-center gap-2 py-12 text-center text-wise-mute">
-            <UtensilsCrossed className="h-8 w-8" />
-            <p className="text-xs">No {stage.label.toLowerCase()} tickets</p>
+        {loading ? (
+          <>
+            <TicketSkeleton />
+            <TicketSkeleton />
+          </>
+        ) : tickets.length === 0 ? (
+          <div className="flex flex-col items-center gap-3 py-14 text-center">
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-wise-border/50">
+              <UtensilsCrossed className="h-6 w-6 text-wise-mute" />
+            </div>
+            <p className="text-xs text-wise-mute">No {stage.label.toLowerCase()} tickets</p>
           </div>
         ) : (
           tickets.map((t) => (
@@ -188,13 +262,11 @@ function KdsColumn({ stage, tickets, onAdvance, onCompleteItem }: ColumnProps): 
   );
 }
 
-// ─── Page ────────────────────────────────────────────────────────────────────
+// ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function KdsPage(): React.ReactElement {
   const router = useRouter();
   const { data: tickets, loading } = useRealtimeKitchenTickets();
-  // Empty on first render (server + client match); filled after mount to avoid
-  // an SSR/client locale hydration mismatch (e.g. "pm" vs "PM").
   const [time, setTime] = useState("");
   const [loggedIn, setLoggedIn] = useState(false);
   const [search, setSearch] = useState("");
@@ -202,15 +274,13 @@ export default function KdsPage(): React.ReactElement {
   const [categories, setCategories] = useState<{ id: string; name: string }[]>([]);
   const [productMeta, setProductMeta] = useState<Map<string, ProductMeta>>(new Map());
 
-  // Tick clock every 30s (and set immediately on mount, client-only)
+  // Tick clock every 30s (client-only to avoid SSR mismatch)
   useEffect(() => {
     setTime(liveTime());
     const interval = setInterval(() => setTime(liveTime()), 30_000);
     return () => clearInterval(interval);
   }, []);
 
-  // Detect a logged-in session so we can offer logout (kitchen accounts are
-  // locked to /kds). Anonymous wall displays see no logout button.
   useEffect(() => {
     const supabase = createBrowserClient();
     void supabase.auth.getUser().then(({ data }) => setLoggedIn(!!data.user));
@@ -221,7 +291,6 @@ export default function KdsPage(): React.ReactElement {
     router.replace("/login");
   }
 
-  // Load product → category map for filtering (anon key; products are public-read)
   useEffect(() => {
     const supabase = createBrowserClient();
     void (async () => {
@@ -241,7 +310,6 @@ export default function KdsPage(): React.ReactElement {
     })();
   }, []);
 
-  // Apply search + category filter to a ticket's items
   const matches = useMemo(() => {
     const q = search.trim().toLowerCase();
     return (t: KitchenTicketWithItems): boolean => {
@@ -258,12 +326,10 @@ export default function KdsPage(): React.ReactElement {
     };
   }, [search, categoryId, productMeta]);
 
-  // Group by status (filtered)
   const visible = tickets.filter(matches);
   const byStatus: Record<string, KitchenTicketWithItems[]> = {
     to_cook: visible.filter((t) => t.status === "to_cook"),
     preparing: visible.filter((t) => t.status === "preparing"),
-    // Show completed only from the last 5 minutes
     completed: visible.filter((t) => {
       if (t.status !== "completed") return false;
       if (!t.completed_at) return true;
@@ -278,7 +344,6 @@ export default function KdsPage(): React.ReactElement {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ status: next }),
     });
-    // Realtime subscription in the hook will update the UI automatically
   }
 
   async function handleCompleteItem(ticketId: string, itemId: string): Promise<void> {
@@ -286,80 +351,87 @@ export default function KdsPage(): React.ReactElement {
   }
 
   return (
-    <div className="flex h-screen flex-col bg-wise-canvas-soft text-wise-ink">
-      {/* Header */}
-      <header className="flex items-center justify-between border-b border-wise-border bg-white px-6 py-3 shadow-sm">
-        <div className="flex items-center gap-2.5">
-          <span className="flex h-8 w-8 items-center justify-center rounded-wise bg-wise-primary text-wise-ink">
+    <div className="flex h-screen flex-col bg-wise-canvas-soft">
+      {/* ── Header (dark brand bar — matches dashboard sidebar) ── */}
+      <header className="flex shrink-0 items-center justify-between bg-wise-ink px-5 py-3 shadow-md">
+        {/* Brand */}
+        <div className="flex items-center gap-3">
+          <span className="flex h-8 w-8 items-center justify-center rounded-wise bg-wise-primary text-wise-ink shadow-sm">
             <Coffee className="h-4 w-4" />
           </span>
           <div className="leading-tight">
-            <span className="block text-sm font-bold text-wise-ink">NexaBrew</span>
-            <span className="block text-[11px] text-wise-mute">Kitchen Display</span>
+            <span className="block text-sm font-bold text-white">NexaBrew</span>
+            <span className="block text-[11px] font-medium text-wise-primary/80 tracking-wide uppercase">
+              Kitchen Display
+            </span>
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        {/* Controls */}
+        <div className="flex items-center gap-2.5">
           {/* Search */}
           <div className="relative">
-            <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-wise-mute" />
+            <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-white/40" />
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search item or ticket…"
-              className="w-48 rounded-lg border border-wise-border bg-white py-1.5 pl-8 pr-2 text-sm text-wise-ink placeholder:text-wise-mute focus:outline-none focus:ring-2 focus:ring-wise-primary"
+              className="w-48 rounded-lg border border-white/10 bg-white/10 py-1.5 pl-8 pr-3 text-sm text-white placeholder:text-white/40 focus:border-wise-primary focus:bg-white/15 focus:outline-none focus:ring-2 focus:ring-wise-primary/40 transition-colors"
             />
           </div>
+
           {/* Category filter */}
           <select
             value={categoryId}
             onChange={(e) => setCategoryId(e.target.value)}
-            className="rounded-lg border border-wise-border bg-white px-2 py-1.5 text-sm text-wise-ink focus:outline-none focus:ring-2 focus:ring-wise-primary"
+            className="rounded-lg border border-white/10 bg-white/10 px-3 py-1.5 text-sm text-white focus:border-wise-primary focus:outline-none focus:ring-2 focus:ring-wise-primary/40 transition-colors"
           >
             <option value="all">All products</option>
             {categories.map((c) => (
-              <option key={c.id} value={c.id}>{c.name}</option>
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
             ))}
           </select>
-          <div className="flex items-center gap-2 rounded-lg bg-wise-canvas-soft px-3 py-1.5 text-wise-body">
-            <Clock className="h-4 w-4 text-wise-primary" />
-            <span className="font-mono text-sm font-medium">{time}</span>
+
+          {/* Clock */}
+          <div className="flex items-center gap-2 rounded-lg bg-white/10 px-3 py-1.5">
+            <Clock className="h-3.5 w-3.5 text-wise-primary" />
+            <span className="font-mono text-sm font-semibold text-white">{time}</span>
           </div>
+
+          {/* Logout */}
           {loggedIn && (
             <button
               onClick={() => void handleLogout()}
-              className="flex items-center gap-1.5 rounded-lg border border-wise-border px-3 py-1.5 text-sm font-medium text-wise-body transition-colors hover:bg-wise-canvas-soft hover:text-wise-ink"
+              className="flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/10 px-3 py-1.5 text-sm font-medium text-white/80 transition-colors hover:bg-white/20 hover:text-white"
             >
-              <LogOut className="h-4 w-4" />
+              <LogOut className="h-3.5 w-3.5" />
               Logout
             </button>
           )}
         </div>
       </header>
 
-      {/* Kanban body */}
+      {/* ── Kanban board ── */}
       <div className="flex-1 overflow-hidden p-4">
-        {loading ? (
-          <div className="flex h-full items-center justify-center">
-            <div className="h-8 w-8 animate-spin rounded-full border-2 border-wise-primary border-t-transparent" />
-          </div>
-        ) : (
-          <div className="grid h-full grid-cols-1 gap-4 md:grid-cols-3">
-            {STAGES.map((stage) => (
-              <KdsColumn
-                key={stage.key}
-                stage={stage}
-                tickets={byStatus[stage.key]}
-                onAdvance={(id, s) => void handleAdvance(id, s)}
-                onCompleteItem={(tid, iid) => void handleCompleteItem(tid, iid)}
-              />
-            ))}
-          </div>
-        )}
+        <div className="grid h-full grid-cols-1 gap-4 md:grid-cols-3">
+          {STAGES.map((stage) => (
+            <KdsColumn
+              key={stage.key}
+              stage={stage}
+              tickets={byStatus[stage.key]}
+              loading={loading}
+              onAdvance={(id, s) => void handleAdvance(id, s)}
+              onCompleteItem={(tid, iid) => void handleCompleteItem(tid, iid)}
+            />
+          ))}
+        </div>
       </div>
 
-      <footer className="border-t border-wise-border bg-white px-6 py-2 text-center text-xs text-wise-mute">
-        Tap a ticket to advance · Tap an item to mark it complete · Completed tickets clear after 5 min
+      {/* ── Footer ── */}
+      <footer className="shrink-0 border-t border-wise-border bg-white/60 backdrop-blur px-6 py-2 text-center text-[11px] text-wise-mute">
+        Tap a ticket to advance&nbsp;·&nbsp;Tap an item to mark it complete&nbsp;·&nbsp;Completed tickets clear after 5 min
       </footer>
     </div>
   );
