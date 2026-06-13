@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, Receipt, Search, Trash2, XCircle } from "lucide-react";
+import { ArrowLeft, CreditCard, Receipt, Search, Trash2, XCircle } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -16,6 +16,7 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 import { EmptyState } from "@/components/shared/EmptyState";
+import { PaymentDialog } from "@/components/pos/PaymentDialog";
 import { useToast } from "@/hooks/use-toast";
 import { apiGet, apiSend } from "@/lib/api-client";
 import { formatCurrency } from "@/lib/utils/formatCurrency";
@@ -51,6 +52,7 @@ export default function PosOrdersPage(): React.ReactElement {
   const [filter, setFilter] = useState<OrderStatus | "all">("all");
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<OrderWithItems | null>(null);
+  const [payingOrder, setPayingOrder] = useState<OrderWithItems | null>(null);
   const [busy, setBusy] = useState(false);
 
   const load = useCallback(async () => {
@@ -231,6 +233,17 @@ export default function PosOrdersPage(): React.ReactElement {
                 <div className="flex justify-between text-base font-bold text-zinc-900"><span>Total</span><span>{formatCurrency(Number(selected.total_amount))}</span></div>
               </div>
 
+              {selected.status === "payment_pending" && (
+                <SheetFooter className="mt-6">
+                  <Button
+                    className="w-full bg-brand-500 hover:bg-brand-600"
+                    onClick={() => setPayingOrder(selected)}
+                  >
+                    <CreditCard className="mr-2 h-4 w-4" /> Process Payment
+                  </Button>
+                </SheetFooter>
+              )}
+
               {(selected.status === "draft" || selected.status === "sent_to_kitchen") && (
                 <SheetFooter className="mt-6 flex-col gap-2 sm:flex-col">
                   {selected.status === "draft" && (
@@ -247,6 +260,24 @@ export default function PosOrdersPage(): React.ReactElement {
           )}
         </SheetContent>
       </Sheet>
+
+      {/* Process Payment */}
+      {payingOrder && (
+        <PaymentDialog
+          orderId={payingOrder.id}
+          orderNumber={payingOrder.order_number}
+          total={Number(payingOrder.total_amount)}
+          open={!!payingOrder}
+          onClose={() => setPayingOrder(null)}
+          onPaid={() => {
+            setSelected(null);
+            void load();
+          }}
+          toast={(msg, variant) =>
+            toast({ title: msg, variant: variant === "error" ? "destructive" : "default" })
+          }
+        />
+      )}
     </div>
   );
 }

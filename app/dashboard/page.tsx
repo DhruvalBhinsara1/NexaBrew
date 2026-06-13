@@ -276,10 +276,10 @@ export default async function DashboardPage(): Promise<React.ReactElement> {
             </CardTitle>
             <div className="flex items-center gap-3">
               <Link
-                href="/pos/terminal"
+                href="/pos/orders"
                 className="flex items-center gap-1 text-xs font-medium text-brand-600 hover:underline"
               >
-                POS Terminal <ArrowRight className="h-3 w-3" />
+                All Orders &amp; Payments <ArrowRight className="h-3 w-3" />
               </Link>
               <Link href="/kds" className="text-xs text-zinc-500 hover:underline">
                 Kitchen Display
