@@ -9,7 +9,6 @@ import {
   Coffee,
   LogOut,
   Search,
-  Sparkles,
   UtensilsCrossed,
 } from "lucide-react";
 import { useRealtimeKitchenTickets } from "@/hooks/useRealtimeKitchenTickets";
@@ -24,21 +23,23 @@ interface ProductMeta {
   category_name: string | null;
 }
 
-// ─── Stage config ─────────────────────────────────────────────────────────────
+// ─── Stage config — uses the app's exact design tokens ───────────────────────
 
 interface Stage {
   key: "to_cook" | "preparing" | "completed";
   label: string;
   icon: React.ElementType;
-  // Column header accent colours
-  accentBg: string;      // pill / badge bg
-  accentText: string;    // pill / badge text
-  accentDot: string;     // status dot
-  accentBar: string;     // top 3px bar on column
+  // Header accent line (top of column)
+  barClass: string;
+  // Badge on column header (count pill)
+  badgeBg: string;
+  badgeText: string;
+  // Status dot
+  dotClass: string;
   // Card left border
   cardBorder: string;
-  // Item highlight on hover
-  itemHover: string;
+  // Item row background
+  itemBg: string;
 }
 
 const STAGES: Stage[] = [
@@ -46,34 +47,34 @@ const STAGES: Stage[] = [
     key: "to_cook",
     label: "To Cook",
     icon: ChefHat,
-    accentBg: "bg-amber-400/20",
-    accentText: "text-amber-300",
-    accentDot: "bg-amber-400",
-    accentBar: "bg-amber-400",
-    cardBorder: "border-l-amber-400",
-    itemHover: "hover:bg-amber-50/60",
+    barClass: "bg-wise-warning",           // brand warning yellow
+    badgeBg: "bg-wise-warning/15",
+    badgeText: "text-wise-warning-deep",
+    dotClass: "bg-wise-warning",
+    cardBorder: "border-l-wise-warning",
+    itemBg: "bg-amber-50 hover:bg-amber-100/70",
   },
   {
     key: "preparing",
     label: "Preparing",
-    icon: Sparkles,
-    accentBg: "bg-wise-primary/20",
-    accentText: "text-wise-primary",
-    accentDot: "bg-wise-primary",
-    accentBar: "bg-wise-primary",
+    icon: ChefHat,
+    barClass: "bg-wise-primary",           // brand lime-green
+    badgeBg: "bg-wise-primary/15",
+    badgeText: "text-wise-ink-deep",
+    dotClass: "bg-wise-primary",
     cardBorder: "border-l-wise-primary",
-    itemHover: "hover:bg-wise-primary-pale/60",
+    itemBg: "bg-wise-primary-pale hover:bg-wise-primary-neutral/60",
   },
   {
     key: "completed",
     label: "Completed",
     icon: CheckCircle2,
-    accentBg: "bg-emerald-400/20",
-    accentText: "text-emerald-400",
-    accentDot: "bg-emerald-400",
-    accentBar: "bg-emerald-400",
-    cardBorder: "border-l-emerald-400",
-    itemHover: "hover:bg-emerald-50/60",
+    barClass: "bg-wise-positive",          // brand green
+    badgeBg: "bg-wise-positive/10",
+    badgeText: "text-wise-positive-deep",
+    dotClass: "bg-wise-positive",
+    cardBorder: "border-l-wise-positive",
+    itemBg: "bg-emerald-50 hover:bg-emerald-100/70",
   },
 ];
 
@@ -81,10 +82,10 @@ const STAGES: Stage[] = [
 
 function elapsed(iso: string): string {
   const diff = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
-  if (diff < 60) return `${diff}s`;
+  if (diff < 60) return `${diff}s ago`;
   const m = Math.floor(diff / 60);
-  if (m < 60) return `${m}m`;
-  return `${Math.floor(m / 60)}h ${m % 60}m`;
+  if (m < 60) return `${m}m ago`;
+  return `${Math.floor(m / 60)}h ${m % 60}m ago`;
 }
 
 function liveTime(): string {
@@ -95,19 +96,19 @@ function liveTime(): string {
   });
 }
 
-// ─── Skeleton card ────────────────────────────────────────────────────────────
+// ─── Skeleton ────────────────────────────────────────────────────────────────
 
 function TicketSkeleton(): React.ReactElement {
   return (
-    <div className="rounded-2xl border border-wise-border bg-white p-4 shadow-sm space-y-3">
+    <div className="rounded-wiseCard border border-wise-border bg-white p-4 shadow-wiseCard space-y-3">
       <div className="flex items-center justify-between">
-        <Skeleton className="h-5 w-24" />
+        <Skeleton className="h-5 w-28" />
         <Skeleton className="h-5 w-20 rounded-full" />
       </div>
-      <Skeleton className="h-3 w-16" />
+      <Skeleton className="h-3 w-20" />
       <div className="space-y-2 pt-1">
-        <Skeleton className="h-8 w-full rounded-lg" />
-        <Skeleton className="h-8 w-full rounded-lg" />
+        <Skeleton className="h-9 w-full rounded-wise" />
+        <Skeleton className="h-9 w-full rounded-wise" />
       </div>
     </div>
   );
@@ -124,70 +125,66 @@ interface TicketCardProps {
 
 function TicketCard({ ticket, stage, onAdvance, onCompleteItem }: TicketCardProps): React.ReactElement {
   const canAdvance = ticket.status !== "completed";
-  const Icon = stage.icon;
 
   return (
     <div
       className={cn(
-        "group rounded-2xl border border-wise-border border-l-4 bg-white shadow-sm transition-all duration-200",
+        // Matches the card style used across dashboard: white, wiseCard radius, shadow
+        "group rounded-wiseCard border border-wise-border border-l-4 bg-white shadow-wiseCard",
+        "transition-all duration-200",
         stage.cardBorder,
-        canAdvance && "cursor-pointer hover:shadow-wiseCard hover:-translate-y-0.5"
+        canAdvance && "cursor-pointer hover:shadow-wiseModal hover:-translate-y-0.5"
       )}
       onClick={() => canAdvance && onAdvance(ticket.id, ticket.status)}
     >
-      {/* Card header */}
-      <div className="flex items-start justify-between px-4 pt-4 pb-3">
+      {/* Card header — same spacing as dashboard Card headers */}
+      <div className="flex items-start justify-between px-4 pt-4 pb-3 border-b border-wise-border">
         <div>
-          <p className="font-display text-base font-extrabold text-wise-ink tracking-tight">
+          <p className="font-display text-base font-extrabold tracking-tight text-wise-ink">
             #{ticket.ticket_number}
           </p>
-          <div className="mt-0.5 flex items-center gap-1 text-xs text-wise-mute">
+          <div className="mt-0.5 flex items-center gap-1.5 text-xs text-wise-mute">
             <Clock className="h-3 w-3" />
-            <span>{elapsed(ticket.sent_at)} ago</span>
+            <span>{elapsed(ticket.sent_at)}</span>
           </div>
         </div>
 
         {canAdvance ? (
           <span
             className={cn(
-              "flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold transition-colors",
-              stage.accentBg,
-              stage.accentText,
-              "group-hover:opacity-90"
+              "rounded-wisePill px-3 py-1 text-xs font-semibold transition-colors",
+              stage.badgeBg,
+              stage.badgeText
             )}
           >
-            <Icon className="h-3 w-3" />
-            advance →
+            tap to advance →
           </span>
         ) : (
-          <span className="flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-600">
+          <span className="flex items-center gap-1 rounded-wisePill bg-wise-positive/10 px-3 py-1 text-xs font-semibold text-wise-positive-deep">
             <CheckCircle2 className="h-3 w-3" />
             Done
           </span>
         )}
       </div>
 
-      {/* Divider */}
-      <div className="mx-4 h-px bg-wise-border" />
-
-      {/* Items */}
+      {/* Items list */}
       <ul className="space-y-1.5 px-4 py-3">
         {ticket.items.map((item: KitchenTicketItem) => (
           <li
             key={item.id}
             className={cn(
-              "flex items-center justify-between rounded-xl px-3 py-2 text-sm transition-colors cursor-pointer select-none",
+              "flex items-center justify-between rounded-wise px-3 py-2.5 text-sm transition-colors cursor-pointer select-none",
               item.is_completed
-                ? "bg-wise-canvas-soft/70 text-wise-mute line-through"
-                : cn("bg-wise-canvas-soft text-wise-ink", stage.itemHover)
+                ? "bg-wise-canvas-soft text-wise-mute line-through"
+                : stage.itemBg
             )}
             onClick={(e) => {
               e.stopPropagation();
               if (!item.is_completed) onCompleteItem(ticket.id, item.id);
             }}
           >
-            <span className="font-medium">{item.product_name}</span>
-            <span className="ml-2 shrink-0 rounded-full bg-white px-2 py-0.5 text-xs font-bold text-wise-body shadow-sm ring-1 ring-wise-border">
+            <span className="font-medium text-wise-ink">{item.product_name}</span>
+            <span className="ml-2 shrink-0 rounded-wisePill bg-white px-2.5 py-0.5 text-xs font-bold text-wise-body ring-1 ring-wise-border shadow-sm">
               ×{item.quantity}
             </span>
           </li>
@@ -211,40 +208,37 @@ function KdsColumn({ stage, tickets, loading, onAdvance, onCompleteItem }: Colum
   const Icon = stage.icon;
 
   return (
-    <div className="flex min-h-0 flex-col overflow-hidden rounded-2xl border border-wise-border bg-wise-canvas-soft/60 shadow-sm">
-      {/* Accent top bar */}
-      <div className={cn("h-[3px] w-full", stage.accentBar)} />
+    // Column container — same card style used in dashboard grid
+    <div className="flex min-h-0 flex-col overflow-hidden rounded-wiseCard border border-wise-border bg-white shadow-wiseCard">
+      {/* Accent top bar — 3px, same as used on KPI cards */}
+      <div className={cn("h-[3px] w-full shrink-0", stage.barClass)} />
 
       {/* Column header */}
-      <div className="flex items-center justify-between bg-white/70 backdrop-blur px-4 py-3 border-b border-wise-border">
-        <h2 className="flex items-center gap-2 text-sm font-bold text-wise-ink">
-          <Icon className={cn("h-4 w-4", stage.accentText)} />
-          <span className="uppercase tracking-widest text-[11px]">{stage.label}</span>
+      <div className="flex items-center justify-between border-b border-wise-border px-4 py-3">
+        <h2 className="flex items-center gap-2">
+          <Icon className={cn("h-4 w-4", `text-wise-body`)} />
+          <span className="font-display text-sm font-bold tracking-tight text-wise-ink">
+            {stage.label}
+          </span>
         </h2>
-        <span
-          className={cn(
-            "flex h-6 min-w-6 items-center justify-center rounded-full px-2 text-xs font-bold",
-            stage.accentBg,
-            stage.accentText
-          )}
-        >
+        <span className={cn("rounded-wisePill px-2.5 py-0.5 text-xs font-bold", stage.badgeBg, stage.badgeText)}>
           {tickets.length}
         </span>
       </div>
 
-      {/* Scrollable ticket list */}
-      <div className="flex-1 space-y-3 overflow-y-auto p-3">
+      {/* Scrollable ticket area */}
+      <div className="flex-1 space-y-3 overflow-y-auto bg-wise-canvas-soft p-3">
         {loading ? (
           <>
             <TicketSkeleton />
             <TicketSkeleton />
           </>
         ) : tickets.length === 0 ? (
-          <div className="flex flex-col items-center gap-3 py-14 text-center">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-wise-border/50">
-              <UtensilsCrossed className="h-6 w-6 text-wise-mute" />
-            </div>
-            <p className="text-xs text-wise-mute">No {stage.label.toLowerCase()} tickets</p>
+          <div className="flex flex-col items-center gap-3 py-16 text-center">
+            <span className="flex h-12 w-12 items-center justify-center rounded-wise bg-wise-border/60">
+              <UtensilsCrossed className="h-5 w-5 text-wise-mute" />
+            </span>
+            <p className="text-xs font-medium text-wise-mute">No {stage.label.toLowerCase()} tickets</p>
           </div>
         ) : (
           tickets.map((t) => (
@@ -274,7 +268,6 @@ export default function KdsPage(): React.ReactElement {
   const [categories, setCategories] = useState<{ id: string; name: string }[]>([]);
   const [productMeta, setProductMeta] = useState<Map<string, ProductMeta>>(new Map());
 
-  // Tick clock every 30s (client-only to avoid SSR mismatch)
   useEffect(() => {
     setTime(liveTime());
     const interval = setInterval(() => setTime(liveTime()), 30_000);
@@ -351,32 +344,34 @@ export default function KdsPage(): React.ReactElement {
   }
 
   return (
+    // Full-height layout — same bg as dashboard pages
     <div className="flex h-screen flex-col bg-wise-canvas-soft">
-      {/* ── Header (dark brand bar — matches dashboard sidebar) ── */}
-      <header className="flex shrink-0 items-center justify-between bg-wise-ink px-5 py-3 shadow-md">
-        {/* Brand */}
-        <div className="flex items-center gap-3">
-          <span className="flex h-8 w-8 items-center justify-center rounded-wise bg-wise-primary text-wise-ink shadow-sm">
-            <Coffee className="h-4 w-4" />
+
+      {/* ── Header — exact same dark bar as DashboardSidebar brand section ── */}
+      <header className="flex shrink-0 items-center justify-between border-b border-white/10 bg-wise-ink px-6 py-3">
+        {/* Brand — identical markup to DashboardSidebar */}
+        <div className="flex items-center gap-2.5">
+          <span className="flex h-9 w-9 items-center justify-center rounded-wise bg-wise-primary text-wise-ink">
+            <Coffee className="h-5 w-5" />
           </span>
           <div className="leading-tight">
-            <span className="block text-sm font-bold text-white">NexaBrew</span>
-            <span className="block text-[11px] font-medium text-wise-primary/80 tracking-wide uppercase">
-              Kitchen Display
+            <span className="block font-display text-base font-extrabold tracking-tight text-white">
+              NexaBrew
             </span>
+            <span className="block text-[11px] text-white/40">Kitchen Display</span>
           </div>
         </div>
 
         {/* Controls */}
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-2">
           {/* Search */}
           <div className="relative">
-            <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-white/40" />
+            <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-white/30" />
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search item or ticket…"
-              className="w-48 rounded-lg border border-white/10 bg-white/10 py-1.5 pl-8 pr-3 text-sm text-white placeholder:text-white/40 focus:border-wise-primary focus:bg-white/15 focus:outline-none focus:ring-2 focus:ring-wise-primary/40 transition-colors"
+              className="w-48 rounded-wise border border-white/10 bg-white/8 py-1.5 pl-8 pr-3 text-sm text-white placeholder:text-white/30 focus:border-wise-primary/60 focus:bg-white/10 focus:outline-none focus:ring-1 focus:ring-wise-primary/40 transition-colors"
             />
           </div>
 
@@ -384,27 +379,25 @@ export default function KdsPage(): React.ReactElement {
           <select
             value={categoryId}
             onChange={(e) => setCategoryId(e.target.value)}
-            className="rounded-lg border border-white/10 bg-white/10 px-3 py-1.5 text-sm text-white focus:border-wise-primary focus:outline-none focus:ring-2 focus:ring-wise-primary/40 transition-colors"
+            className="rounded-wise border border-white/10 bg-white/8 px-3 py-1.5 text-sm text-white focus:border-wise-primary/60 focus:outline-none focus:ring-1 focus:ring-wise-primary/40 transition-colors"
           >
             <option value="all">All products</option>
             {categories.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
+              <option key={c.id} value={c.id}>{c.name}</option>
             ))}
           </select>
 
-          {/* Clock */}
-          <div className="flex items-center gap-2 rounded-lg bg-white/10 px-3 py-1.5">
+          {/* Live clock — same pill style as dashboard session pill */}
+          <div className="flex items-center gap-2 rounded-wisePill border border-white/10 bg-white/8 px-3 py-1.5">
             <Clock className="h-3.5 w-3.5 text-wise-primary" />
             <span className="font-mono text-sm font-semibold text-white">{time}</span>
           </div>
 
-          {/* Logout */}
+          {/* Logout — same style as sidebar nav links */}
           {loggedIn && (
             <button
               onClick={() => void handleLogout()}
-              className="flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/10 px-3 py-1.5 text-sm font-medium text-white/80 transition-colors hover:bg-white/20 hover:text-white"
+              className="flex items-center gap-1.5 rounded-wise border border-white/10 bg-white/8 px-3 py-1.5 text-sm font-medium text-white/70 transition-colors hover:bg-white/15 hover:text-white"
             >
               <LogOut className="h-3.5 w-3.5" />
               Logout
@@ -414,8 +407,8 @@ export default function KdsPage(): React.ReactElement {
       </header>
 
       {/* ── Kanban board ── */}
-      <div className="flex-1 overflow-hidden p-4">
-        <div className="grid h-full grid-cols-1 gap-4 md:grid-cols-3">
+      <div className="flex-1 overflow-hidden p-5">
+        <div className="grid h-full grid-cols-1 gap-5 md:grid-cols-3">
           {STAGES.map((stage) => (
             <KdsColumn
               key={stage.key}
@@ -429,8 +422,8 @@ export default function KdsPage(): React.ReactElement {
         </div>
       </div>
 
-      {/* ── Footer ── */}
-      <footer className="shrink-0 border-t border-wise-border bg-white/60 backdrop-blur px-6 py-2 text-center text-[11px] text-wise-mute">
+      {/* ── Footer — same border/bg as page separators used in dashboard ── */}
+      <footer className="shrink-0 border-t border-wise-border bg-white px-6 py-2.5 text-center text-xs text-wise-mute">
         Tap a ticket to advance&nbsp;·&nbsp;Tap an item to mark it complete&nbsp;·&nbsp;Completed tickets clear after 5 min
       </footer>
     </div>
