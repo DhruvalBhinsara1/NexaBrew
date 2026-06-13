@@ -6,6 +6,8 @@ const config: Config = {
     "./pages/**/*.{js,ts,jsx,tsx,mdx}",
     "./components/**/*.{js,ts,jsx,tsx,mdx}",
     "./app/**/*.{js,ts,jsx,tsx,mdx}",
+    // Preline UI component classes (Tailwind v3 compatible, pinned 2.x)
+    "./node_modules/preline/preline.js",
   ],
   theme: {
     container: {
@@ -113,6 +115,6 @@ const config: Config = {
       },
     },
   },
-  plugins: [require("tailwindcss-animate")],
+  plugins: [require("tailwindcss-animate"), require("preline/plugin")],
 };
 export default config;
