@@ -16,10 +16,24 @@ const config: Config = {
       screens: { "2xl": "1400px" },
     },
     extend: {
+      fontFamily: {
+        // Wise design language: geometric heavy display (Manrope ≈ Wise Sans)
+        // paired with Inter for body/utility. Wired via next/font CSS vars.
+        sans: ["var(--font-sans)", "system-ui", "-apple-system", "sans-serif"],
+        display: ["var(--font-display)", "var(--font-sans)", "system-ui", "sans-serif"],
+      },
       borderRadius: {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
+        // Wise radius scale (DESIGN-wise.md): inputs 12px, cards/buttons 24px.
+        wise: "12px",
+        wiseCard: "24px",
+        wisePill: "9999px",
+      },
+      boxShadow: {
+        wiseCard: "0 1px 2px rgba(14,15,12,0.04), 0 8px 24px -12px rgba(14,15,12,0.12)",
+        wiseModal: "0 24px 64px -16px rgba(14,15,12,0.28)",
       },
       colors: {
         background: "hsl(var(--background))",
@@ -97,6 +111,32 @@ const config: Config = {
           tocook: "#f59e0b",
           preparing: "#3b82f6",
           completed: "#10b981",
+        },
+        // --- Wise design language (DESIGN-wise.md) — Phase 1 token foundation.
+        // Lime-green is the sole brand/CTA accent; ink text on sage/white canvas.
+        wise: {
+          primary: "#9fe870",
+          "primary-active": "#cdffad",
+          "primary-neutral": "#c5edab",
+          "primary-pale": "#e2f6d5",
+          "on-primary": "#0e0f0c",
+          ink: "#0e0f0c",
+          "ink-deep": "#163300",
+          body: "#454745",
+          mute: "#868685",
+          canvas: "#ffffff",
+          "canvas-soft": "#e8ebe6",
+          border: "#d7ddd2",
+          positive: "#2ead4b",
+          "positive-deep": "#054d28",
+          warning: "#ffd11a",
+          "warning-deep": "#b86700",
+          "warning-content": "#4a3b1c",
+          negative: "#d03238",
+          "negative-deep": "#a72027",
+          "negative-bg": "#320707",
+          "accent-orange": "#ffc091",
+          "accent-cyan": "#38c8ff",
         },
       },
       keyframes: {

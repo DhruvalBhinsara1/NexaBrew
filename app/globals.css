@@ -4,39 +4,59 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 240 10% 3.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 240 10% 3.9%;
+    /* shadcn primitives, remapped to the Wise palette (Phase 1).
+       Lime-green primary, ink text, sage canvas, white cards. */
+    --background: 96 11% 91%;        /* canvas-soft (sage page) */
+    --foreground: 80 11% 5%;         /* ink */
+    --card: 0 0% 100%;               /* white cards on sage */
+    --card-foreground: 80 11% 5%;
     --popover: 0 0% 100%;
-    --popover-foreground: 240 10% 3.9%;
-    --primary: 240 5.9% 10%;
-    --primary-foreground: 0 0% 98%;
-    --secondary: 240 4.8% 95.9%;
-    --secondary-foreground: 240 5.9% 10%;
-    --muted: 240 4.8% 95.9%;
-    --muted-foreground: 240 3.8% 46.1%;
-    --accent: 240 4.8% 95.9%;
-    --accent-foreground: 240 5.9% 10%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 240 5.9% 90%;
-    --input: 240 5.9% 90%;
-    --ring: 240 10% 3.9%;
-    --chart-1: 12 76% 61%;
-    --chart-2: 173 58% 39%;
-    --chart-3: 197 37% 24%;
-    --chart-4: 43 74% 66%;
-    --chart-5: 27 87% 67%;
-    --radius: 0.5rem;
-    --sidebar: 0 0% 98%;
-    --sidebar-foreground: 240 5.3% 26.1%;
-    --sidebar-primary: 240 5.9% 10%;
-    --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 240 4.8% 95.9%;
-    --sidebar-accent-foreground: 240 5.9% 10%;
-    --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --popover-foreground: 80 11% 5%;
+    --primary: 96 72% 67%;           /* Wise green CTA */
+    --primary-foreground: 80 11% 5%; /* ink text on green */
+    --secondary: 96 11% 91%;         /* sage */
+    --secondary-foreground: 80 11% 5%;
+    --muted: 96 11% 91%;
+    --muted-foreground: 100 2% 38%;  /* readable mid-gray (≈6:1 on white) */
+    --accent: 96 11% 91%;            /* sage hover */
+    --accent-foreground: 80 11% 5%;
+    --destructive: 358 63% 51%;      /* negative red */
+    --destructive-foreground: 0 0% 100%;
+    --border: 93 14% 85%;            /* soft sage hairline */
+    --input: 93 14% 85%;
+    --ring: 96 60% 45%;              /* deeper Wise green focus ring */
+    --chart-1: 96 72% 67%;           /* green */
+    --chart-2: 199 100% 61%;         /* accent cyan */
+    --chart-3: 94 100% 10%;          /* ink-deep forest */
+    --chart-4: 26 100% 78%;          /* accent orange */
+    --chart-5: 48 100% 55%;          /* warning */
+    --radius: 0.75rem;
+    --sidebar: 80 11% 5%;            /* ink (dark sidebar) */
+    --sidebar-foreground: 96 11% 91%;
+    --sidebar-primary: 96 72% 67%;   /* green active */
+    --sidebar-primary-foreground: 80 11% 5%;
+    --sidebar-accent: 80 8% 12%;
+    --sidebar-accent-foreground: 96 11% 91%;
+    --sidebar-border: 80 8% 14%;
+    --sidebar-ring: 96 60% 45%;
+
+    /* Raw Wise palette mirror — for non-Tailwind contexts (SVG, recharts, inline). */
+    --wise-primary: #9fe870;
+    --wise-primary-active: #cdffad;
+    --wise-primary-pale: #e2f6d5;
+    --wise-on-primary: #0e0f0c;
+    --wise-ink: #0e0f0c;
+    --wise-ink-deep: #163300;
+    --wise-body: #454745;
+    --wise-mute: #868685;
+    --wise-canvas: #ffffff;
+    --wise-canvas-soft: #e8ebe6;
+    --wise-border: #d7ddd2;
+    --wise-positive: #2ead4b;
+    --wise-warning: #ffd11a;
+    --wise-negative: #d03238;
+    --wise-accent-orange: #ffc091;
+    --wise-accent-cyan: #38c8ff;
   }
 
   .dark {
@@ -46,8 +66,8 @@
     --card-foreground: 0 0% 98%;
     --popover: 240 10% 3.9%;
     --popover-foreground: 0 0% 98%;
-    --primary: 0 0% 98%;
-    --primary-foreground: 240 5.9% 10%;
+    --primary: 96 72% 67%;
+    --primary-foreground: 80 11% 5%;
     --secondary: 240 3.7% 15.9%;
     --secondary-foreground: 0 0% 98%;
     --muted: 240 3.7% 15.9%;
@@ -79,8 +99,29 @@
   * {
     @apply border-border;
   }
+  html {
+    scroll-behavior: smooth;
+  }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-sans antialiased;
+    font-feature-settings: "calt";
+    text-rendering: optimizeLegibility;
+  }
+  /* Wise focus signature: lime-green ring on keyboard focus. */
+  :focus-visible {
+    @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
   }
 }
 
