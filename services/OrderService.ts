@@ -118,6 +118,56 @@ export const OrderService = {
     return data as OrderWithItems;
   },
 
+  /**
+   * Self-service order placed by a logged-in customer from /menu. Resolves the
+   * customer's CRM row and the current open session server-side (never trusts
+   * the client), then creates the order with the customer as its own creator
+   * (employee_id = their uid, satisfying the orders_insert_own RLS policy).
+   */
+  async createForCustomerUser(
+    supabase: Supa,
+    userId: string,
+    payload: { items: CreateOrderInput["items"]; table_id?: string | null; coupon_code?: string | null }
+  ): Promise<OrderWithItems> {
+    const { data: crm, error: crmErr } = await supabase
+      .from("customers")
+      .select("id")
+      .eq("user_id", userId)
+      .limit(1)
+      .maybeSingle();
+    if (crmErr) throw new AppError(crmErr.message, "CUSTOMER_FETCH_FAILED", 500);
+    if (!crm) throw new AppError("No customer profile is linked to this account.", "CUSTOMER_NOT_FOUND", 400);
+
+    const { data: sess, error: sessErr } = await supabase
+      .from("sessions")
+      .select("id")
+      .eq("status", "open")
+      .order("opened_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (sessErr) throw new AppError(sessErr.message, "SESSION_FETCH_FAILED", 500);
+    if (!sess) {
+      throw new AppError("Ordering is closed right now — please try again during opening hours.", "SESSION_NOT_OPEN", 409);
+    }
+
+    const { order } = await this.create(
+      supabase,
+      { session_id: sess.id, table_id: payload.table_id ?? null, customer_id: crm.id, items: payload.items },
+      userId
+    );
+
+    if (payload.coupon_code) {
+      // Coupon failures are non-fatal for a self-service customer.
+      try {
+        await this.applyCoupon(supabase, order.id, payload.coupon_code);
+      } catch {
+        /* ignore — order still placed at full price */
+      }
+    }
+
+    return this.getById(supabase, order.id);
+  },
+
   async create(
     supabase: Supa,
     payload: CreateOrderInput,

@@ -46,6 +46,8 @@ interface Props {
   onPaid: () => void;
   toast: (msg: string, variant?: "success" | "error") => void;
   customerName?: string | null;
+  /** Hide the cash option (customer self-checkout pays online only). */
+  onlineOnly?: boolean;
 }
 
 export function PaymentDialog({
@@ -57,6 +59,7 @@ export function PaymentDialog({
   onPaid,
   toast,
   customerName,
+  onlineOnly = false,
 }: Props): React.ReactElement {
   const [method, setMethod] = useState<Method>("razorpay");
   const [tendered, setTendered] = useState("");
@@ -241,11 +244,13 @@ export function PaymentDialog({
                   <p className="text-xs text-wise-mute">Card · UPI · Netbanking</p>
                 </div>
               </label>
-              <label className={`flex cursor-pointer items-center gap-3 rounded-lg border p-3 ${method === "cash" ? "border-wise-primary bg-wise-primary-pale" : "border-wise-border hover:bg-wise-canvas-soft"}`}>
-                <RadioGroupItem value="cash" className="sr-only" />
-                <Banknote className={`h-4 w-4 ${method === "cash" ? "text-wise-ink-deep" : "text-wise-mute"}`} />
-                <span className={`text-sm font-medium ${method === "cash" ? "text-wise-ink-deep" : "text-wise-body"}`}>Cash</span>
-              </label>
+              {!onlineOnly && (
+                <label className={`flex cursor-pointer items-center gap-3 rounded-lg border p-3 ${method === "cash" ? "border-wise-primary bg-wise-primary-pale" : "border-wise-border hover:bg-wise-canvas-soft"}`}>
+                  <RadioGroupItem value="cash" className="sr-only" />
+                  <Banknote className={`h-4 w-4 ${method === "cash" ? "text-wise-ink-deep" : "text-wise-mute"}`} />
+                  <span className={`text-sm font-medium ${method === "cash" ? "text-wise-ink-deep" : "text-wise-body"}`}>Cash</span>
+                </label>
+              )}
             </RadioGroup>
 
             {method === "cash" && (
