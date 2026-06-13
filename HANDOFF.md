@@ -192,6 +192,25 @@ Payments (`PaymentService.process`, cash/card/UPI validation, order -> paid, tab
 - Live verification is still pending because `.env.local` is absent and this PowerShell session currently reports `supabase` and `gh` as not found on PATH.
 - NEXT: restore env/PATH, run the live payment service flow, then continue to Phase 9 Realtime hooks.
 
+## Phase 9 - Realtime hooks (implemented)
+
+Implemented:
+- `hooks/useRealtimeOrders.ts`
+- `hooks/useRealtimeKitchenTickets.ts`
+- `hooks/useRealtimeTables.ts`
+- `hooks/index.ts`
+
+Behavior:
+- `useRealtimeOrders(filters)` fetches joined order data and refetches when `public.orders` changes.
+- `useRealtimeKitchenTickets(filters)` fetches tickets with items and refetches when `public.kitchen_tickets` or `public.kitchen_ticket_items` changes. It can be used by the public KDS because the RLS policy permits anonymous reads for these two tables.
+- `useRealtimeTables()` fetches floors with tables and refetches when `public.tables` changes.
+- All hooks return `{ data, loading, error, lastSyncedAt, refetch }`.
+
+Verified:
+- `npx tsc --noEmit` passed.
+
+NEXT: Phase 10 Users (Admin API), unless live Phase 8 verification is prioritized first.
+
 Historical Phase 5 plan:
 
 ### 5.0 Replace `lib/utils/calculateTotals.ts` (currently a throwing stub)
