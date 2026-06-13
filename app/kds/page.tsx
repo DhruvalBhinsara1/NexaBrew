@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { CheckCircle2, Clock, Coffee, Search } from "lucide-react";
+import { CheckCircle2, Clock, Coffee, Search, UtensilsCrossed } from "lucide-react";
 import { useRealtimeKitchenTickets } from "@/hooks/useRealtimeKitchenTickets";
 import { createBrowserClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
@@ -12,6 +12,48 @@ interface ProductMeta {
   category_id: string | null;
   category_name: string | null;
 }
+
+// ─── Stage theme (light, matches the coffee/cream app theme) ──────────────────
+
+interface Stage {
+  key: "to_cook" | "preparing" | "completed";
+  label: string;
+  headerBar: string; // top accent bar on the column
+  headerText: string;
+  countBadge: string;
+  cardBorder: string; // left border on ticket cards
+  dot: string;
+}
+
+const STAGES: Stage[] = [
+  {
+    key: "to_cook",
+    label: "To Cook",
+    headerBar: "bg-amber-500",
+    headerText: "text-amber-700",
+    countBadge: "bg-amber-100 text-amber-700",
+    cardBorder: "border-l-amber-500",
+    dot: "bg-amber-500",
+  },
+  {
+    key: "preparing",
+    label: "Preparing",
+    headerBar: "bg-blue-500",
+    headerText: "text-blue-700",
+    countBadge: "bg-blue-100 text-blue-700",
+    cardBorder: "border-l-blue-500",
+    dot: "bg-blue-500",
+  },
+  {
+    key: "completed",
+    label: "Completed",
+    headerBar: "bg-emerald-500",
+    headerText: "text-emerald-700",
+    countBadge: "bg-emerald-100 text-emerald-700",
+    cardBorder: "border-l-emerald-500",
+    dot: "bg-emerald-500",
+  },
+];
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -35,38 +77,38 @@ function liveTime(): string {
 
 interface TicketCardProps {
   ticket: KitchenTicketWithItems;
+  stage: Stage;
   onAdvance: (id: string, current: string) => void;
   onCompleteItem: (ticketId: string, itemId: string) => void;
-  borderColor: string;
 }
 
-function TicketCard({ ticket, onAdvance, onCompleteItem, borderColor }: TicketCardProps): React.ReactElement {
+function TicketCard({ ticket, stage, onAdvance, onCompleteItem }: TicketCardProps): React.ReactElement {
   const canAdvance = ticket.status !== "completed";
 
   return (
     <div
       className={cn(
-        "rounded-xl border-l-4 bg-kds-card p-4 shadow-md cursor-pointer transition-all hover:brightness-110",
-        borderColor
+        "rounded-xl border border-surface-border border-l-4 bg-white p-4 shadow-sm transition-all",
+        stage.cardBorder,
+        canAdvance && "cursor-pointer hover:shadow-md hover:-translate-y-0.5"
       )}
       onClick={() => canAdvance && onAdvance(ticket.id, ticket.status)}
     >
       {/* Header */}
-      <div className="flex items-start justify-between mb-3">
+      <div className="mb-3 flex items-start justify-between">
         <div>
-          <p className="text-lg font-bold text-white">#{ticket.ticket_number}</p>
-          <div className="flex items-center gap-1 text-xs text-white/50 mt-0.5">
+          <p className="text-lg font-bold text-zinc-900">#{ticket.ticket_number}</p>
+          <div className="mt-0.5 flex items-center gap-1 text-xs text-zinc-400">
             <Clock className="h-3 w-3" />
-            {elapsed(ticket.sent_at)}
+            {elapsed(ticket.sent_at)} ago
           </div>
         </div>
-        {canAdvance && (
-          <span className="rounded-full bg-white/10 px-2 py-0.5 text-xs text-white/60">
+        {canAdvance ? (
+          <span className={cn("rounded-full px-2 py-0.5 text-xs font-medium", stage.countBadge)}>
             tap to advance →
           </span>
-        )}
-        {ticket.status === "completed" && (
-          <CheckCircle2 className="h-5 w-5 text-kds-completed" />
+        ) : (
+          <CheckCircle2 className="h-5 w-5 text-emerald-500" />
         )}
       </div>
 
@@ -76,10 +118,10 @@ function TicketCard({ ticket, onAdvance, onCompleteItem, borderColor }: TicketCa
           <li
             key={item.id}
             className={cn(
-              "flex items-center justify-between rounded-lg px-3 py-2 text-sm transition-all",
+              "flex items-center justify-between rounded-lg px-3 py-2 text-sm transition-colors",
               item.is_completed
-                ? "bg-white/5 text-white/30 line-through"
-                : "bg-white/10 text-white"
+                ? "bg-surface-muted text-zinc-400 line-through"
+                : "bg-surface-muted text-zinc-800 hover:bg-brand-50"
             )}
             onClick={(e) => {
               e.stopPropagation();
@@ -87,7 +129,7 @@ function TicketCard({ ticket, onAdvance, onCompleteItem, borderColor }: TicketCa
             }}
           >
             <span className="font-medium">{item.product_name}</span>
-            <span className="ml-2 shrink-0 rounded-full bg-white/20 px-1.5 py-0.5 text-xs font-bold">
+            <span className="ml-2 shrink-0 rounded-full bg-white px-2 py-0.5 text-xs font-bold text-zinc-600 shadow-sm">
               ×{item.quantity}
             </span>
           </li>
@@ -100,46 +142,43 @@ function TicketCard({ ticket, onAdvance, onCompleteItem, borderColor }: TicketCa
 // ─── Column ──────────────────────────────────────────────────────────────────
 
 interface ColumnProps {
-  label: string;
-  status: string;
-  headerClass: string;
-  borderColor: string;
+  stage: Stage;
   tickets: KitchenTicketWithItems[];
   onAdvance: (id: string, current: string) => void;
   onCompleteItem: (ticketId: string, itemId: string) => void;
 }
 
-function KdsColumn({
-  label,
-  status,
-  headerClass,
-  borderColor,
-  tickets,
-  onAdvance,
-  onCompleteItem,
-}: ColumnProps): React.ReactElement {
+function KdsColumn({ stage, tickets, onAdvance, onCompleteItem }: ColumnProps): React.ReactElement {
   return (
-    <div className="flex flex-col rounded-2xl border border-kds-border bg-kds-bg overflow-hidden">
+    <div className="flex min-h-0 flex-col overflow-hidden rounded-2xl border border-surface-border bg-surface-muted">
+      {/* Accent bar */}
+      <div className={cn("h-1 w-full", stage.headerBar)} />
       {/* Column header */}
-      <div className={cn("flex items-center justify-between px-4 py-3", headerClass)}>
-        <h2 className="font-bold text-sm uppercase tracking-widest">{label}</h2>
-        <span className="rounded-full bg-white/20 px-2 py-0.5 text-xs font-bold">
+      <div className="flex items-center justify-between bg-white px-4 py-3">
+        <h2 className={cn("flex items-center gap-2 text-sm font-bold uppercase tracking-wider", stage.headerText)}>
+          <span className={cn("h-2 w-2 rounded-full", stage.dot)} />
+          {stage.label}
+        </h2>
+        <span className={cn("rounded-full px-2 py-0.5 text-xs font-bold", stage.countBadge)}>
           {tickets.length}
         </span>
       </div>
 
       {/* Cards */}
-      <div className="flex-1 overflow-y-auto space-y-3 p-3">
+      <div className="flex-1 space-y-3 overflow-y-auto p-3">
         {tickets.length === 0 ? (
-          <p className="py-8 text-center text-xs text-white/30">No {status.replace("_", " ")} tickets</p>
+          <div className="flex flex-col items-center gap-2 py-12 text-center text-zinc-300">
+            <UtensilsCrossed className="h-8 w-8" />
+            <p className="text-xs">No {stage.label.toLowerCase()} tickets</p>
+          </div>
         ) : (
           tickets.map((t) => (
             <TicketCard
               key={t.id}
               ticket={t}
+              stage={stage}
               onAdvance={onAdvance}
               onCompleteItem={onCompleteItem}
-              borderColor={borderColor}
             />
           ))
         )}
@@ -206,14 +245,16 @@ export default function KdsPage(): React.ReactElement {
 
   // Group by status (filtered)
   const visible = tickets.filter(matches);
-  const toCook = visible.filter((t) => t.status === "to_cook");
-  const preparing = visible.filter((t) => t.status === "preparing");
-  // Show completed only from the last 5 minutes
-  const completed = visible.filter((t) => {
-    if (t.status !== "completed") return false;
-    if (!t.completed_at) return true;
-    return Date.now() - new Date(t.completed_at).getTime() < 5 * 60 * 1000;
-  });
+  const byStatus: Record<string, KitchenTicketWithItems[]> = {
+    to_cook: visible.filter((t) => t.status === "to_cook"),
+    preparing: visible.filter((t) => t.status === "preparing"),
+    // Show completed only from the last 5 minutes
+    completed: visible.filter((t) => {
+      if (t.status !== "completed") return false;
+      if (!t.completed_at) return true;
+      return Date.now() - new Date(t.completed_at).getTime() < 5 * 60 * 1000;
+    }),
+  };
 
   async function handleAdvance(ticketId: string, currentStatus: string): Promise<void> {
     const next = currentStatus === "to_cook" ? "preparing" : "completed";
@@ -226,50 +267,48 @@ export default function KdsPage(): React.ReactElement {
   }
 
   async function handleCompleteItem(ticketId: string, itemId: string): Promise<void> {
-    await fetch(`/api/kitchen/tickets/${ticketId}/items/${itemId}`, {
-      method: "PATCH",
-    });
+    await fetch(`/api/kitchen/tickets/${ticketId}/items/${itemId}`, { method: "PATCH" });
   }
 
   return (
-    <div className="flex h-screen flex-col bg-kds-bg text-white">
+    <div className="flex h-screen flex-col bg-surface-muted text-zinc-900">
       {/* Header */}
-      <header className="flex items-center justify-between border-b border-kds-border px-6 py-3">
+      <header className="flex items-center justify-between border-b border-surface-border bg-white px-6 py-3 shadow-sm">
         <div className="flex items-center gap-2.5">
-          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-kds-tocook to-kds-completed text-kds-bg">
+          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-brand-500 to-brand-700 text-white">
             <Coffee className="h-4 w-4" />
           </span>
           <div className="leading-tight">
-            <span className="block text-sm font-bold text-white">NexaBrew</span>
-            <span className="block text-[11px] text-white/40">Kitchen Display</span>
+            <span className="block text-sm font-bold text-zinc-900">NexaBrew</span>
+            <span className="block text-[11px] text-zinc-400">Kitchen Display</span>
           </div>
         </div>
 
         <div className="flex items-center gap-3">
           {/* Search */}
           <div className="relative">
-            <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-white/40" />
+            <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-zinc-400" />
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search item or ticket…"
-              className="w-44 rounded-md border border-kds-border bg-kds-card py-1.5 pl-8 pr-2 text-sm text-white placeholder:text-white/30 focus:outline-none focus:ring-1 focus:ring-kds-preparing"
+              className="w-48 rounded-lg border border-surface-border bg-white py-1.5 pl-8 pr-2 text-sm text-zinc-800 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-brand-400"
             />
           </div>
           {/* Category filter */}
           <select
             value={categoryId}
             onChange={(e) => setCategoryId(e.target.value)}
-            className="rounded-md border border-kds-border bg-kds-card px-2 py-1.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-kds-preparing"
+            className="rounded-lg border border-surface-border bg-white px-2 py-1.5 text-sm text-zinc-800 focus:outline-none focus:ring-2 focus:ring-brand-400"
           >
             <option value="all">All products</option>
             {categories.map((c) => (
               <option key={c.id} value={c.id}>{c.name}</option>
             ))}
           </select>
-          <div className="flex items-center gap-2 text-white/60">
-            <Clock className="h-4 w-4" />
-            <span className="font-mono text-sm">{time}</span>
+          <div className="flex items-center gap-2 rounded-lg bg-surface-muted px-3 py-1.5 text-zinc-600">
+            <Clock className="h-4 w-4 text-brand-500" />
+            <span className="font-mono text-sm font-medium">{time}</span>
           </div>
         </div>
       </header>
@@ -278,43 +317,25 @@ export default function KdsPage(): React.ReactElement {
       <div className="flex-1 overflow-hidden p-4">
         {loading ? (
           <div className="flex h-full items-center justify-center">
-            <div className="h-8 w-8 animate-spin rounded-full border-2 border-kds-tocook border-t-transparent" />
+            <div className="h-8 w-8 animate-spin rounded-full border-2 border-brand-500 border-t-transparent" />
           </div>
         ) : (
-          <div className="grid h-full grid-cols-3 gap-4">
-            <KdsColumn
-              label="To Cook"
-              status="to_cook"
-              headerClass="bg-kds-tocook/20 text-kds-tocook"
-              borderColor="border-l-kds-tocook"
-              tickets={toCook}
-              onAdvance={(id, s) => void handleAdvance(id, s)}
-              onCompleteItem={(tid, iid) => void handleCompleteItem(tid, iid)}
-            />
-            <KdsColumn
-              label="Preparing"
-              status="preparing"
-              headerClass="bg-kds-preparing/20 text-kds-preparing"
-              borderColor="border-l-kds-preparing"
-              tickets={preparing}
-              onAdvance={(id, s) => void handleAdvance(id, s)}
-              onCompleteItem={(tid, iid) => void handleCompleteItem(tid, iid)}
-            />
-            <KdsColumn
-              label="Completed"
-              status="completed"
-              headerClass="bg-kds-completed/20 text-kds-completed"
-              borderColor="border-l-kds-completed"
-              tickets={completed}
-              onAdvance={(id, s) => void handleAdvance(id, s)}
-              onCompleteItem={(tid, iid) => void handleCompleteItem(tid, iid)}
-            />
+          <div className="grid h-full grid-cols-1 gap-4 md:grid-cols-3">
+            {STAGES.map((stage) => (
+              <KdsColumn
+                key={stage.key}
+                stage={stage}
+                tickets={byStatus[stage.key]}
+                onAdvance={(id, s) => void handleAdvance(id, s)}
+                onCompleteItem={(tid, iid) => void handleCompleteItem(tid, iid)}
+              />
+            ))}
           </div>
         )}
       </div>
 
-      <footer className="border-t border-kds-border px-6 py-2 text-center text-xs text-white/20">
-        Tap a ticket to advance · Tap an item to mark complete · Completed tickets clear after 5 min
+      <footer className="border-t border-surface-border bg-white px-6 py-2 text-center text-xs text-zinc-400">
+        Tap a ticket to advance · Tap an item to mark it complete · Completed tickets clear after 5 min
       </footer>
     </div>
   );
