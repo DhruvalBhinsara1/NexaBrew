@@ -62,7 +62,7 @@ export function ProductsPanel({ products, categories }: Props): React.ReactEleme
         {filtered.length === 0 ? (
           <p className="py-12 text-center text-sm text-wise-mute">No products found.</p>
         ) : (
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+          <div className="grid grid-cols-2 gap-3 xl:grid-cols-3 2xl:grid-cols-4">
             {filtered.map((product) => (
               <button
                 key={product.id}

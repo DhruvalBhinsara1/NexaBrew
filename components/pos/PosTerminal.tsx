@@ -437,15 +437,15 @@ export function PosTerminal(): React.ReactElement {
         </div>
       )}
 
-      {/* 3-panel layout */}
+      {/* 3-panel layout — products dominant, cart + payment fixed */}
       <div className="flex flex-1 overflow-hidden">
-        {/* Products panel — flex 2 */}
-        <div className="flex-[2] overflow-hidden border-r border-wise-border bg-wise-canvas-soft">
+        {/* Products panel — takes the remaining width */}
+        <div className="min-w-0 flex-1 overflow-hidden border-r border-wise-border bg-wise-canvas-soft">
           <ProductsPanel products={products} categories={categories} />
         </div>
 
-        {/* Cart panel — flex 1.2 */}
-        <div className="flex-[1_1_280px] overflow-hidden">
+        {/* Cart panel — fixed */}
+        <div className="w-[340px] shrink-0 overflow-hidden">
           <CartPanel
             onTableSelect={() => setTableSelectorOpen(true)}
             onApplyCoupon={() => setCouponDialogOpen(true)}
@@ -462,8 +462,8 @@ export function PosTerminal(): React.ReactElement {
           />
         </div>
 
-        {/* Payment panel — flex 1 */}
-        <div className="flex-[1_1_240px] overflow-hidden">
+        {/* Payment panel — fixed */}
+        <div className="w-[300px] shrink-0 overflow-hidden">
           <PaymentPanel
             onPaymentComplete={() => {
               clearCart();
