@@ -11,14 +11,17 @@ export const GET = withAuth(async (req) => {
   const supabase = createServerClient();
   const sp = req.nextUrl.searchParams;
   const statusParam = sp.get("status");
+  const openedByParam = sp.get("opened_by");
   const status = statusParam
     ? SessionStatusFilter.parse(statusParam)
     : undefined;
+  const openedBy = openedByParam ? String(openedByParam) : undefined;
+  
   // Backward compatible: POS fetches the array (to find the open session);
   // the dashboard sessions page passes page/limit for paginated history.
   if (sp.has("page") || sp.has("limit")) {
     const { page, limit } = parsePaginationParams(sp);
-    const data = await SessionService.listPaginated(supabase, status, page, limit);
+    const data = await SessionService.listPaginated(supabase, status, page, limit, openedBy);
     return NextResponse.json({ data });
   }
 

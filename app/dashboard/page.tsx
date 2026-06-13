@@ -16,6 +16,8 @@ import { formatCurrency } from "@/lib/utils/formatCurrency";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { TableOccupancyGrid } from "@/components/dashboard/TableOccupancyGrid";
+import { TablesOccupiedCard } from "@/components/dashboard/TablesOccupiedCard";
+import { KpiTrendCard, type TrendPoint } from "@/components/dashboard/KpiTrendCard";
 import type { SessionWithUser, FloorWithTables } from "@/types/domain.types";
 import type { DailyRevenueRow } from "@/services/ReportService";
 
@@ -41,46 +43,21 @@ function todayISO(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
-// ─── sub-components (inline to avoid over-engineering) ──────────────────────
-
-function KpiCard({
-  title,
-  value,
-  sub,
-  icon: Icon,
-  href,
-}: {
-  title: string;
-  value: string;
-  sub?: string;
-  icon: React.ElementType;
-  href?: string;
-}): React.ReactElement {
-  const card = (
-    <Card
-      className={cn(
-        "border-surface-border bg-white shadow-sm",
-        href && "transition-all hover:border-brand-300 hover:shadow-md"
-      )}
-    >
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-sm font-medium text-zinc-500">{title}</CardTitle>
-        <Icon className="h-4 w-4 text-brand-400" />
-      </CardHeader>
-      <CardContent>
-        <p className="text-2xl font-bold text-zinc-900">{value}</p>
-        {sub && <p className="mt-0.5 text-xs text-zinc-400">{sub}</p>}
-      </CardContent>
-    </Card>
-  );
-  return href ? (
-    <Link href={href} className="block">
-      {card}
-    </Link>
-  ) : (
-    card
-  );
+/** Last `n` calendar dates ending today, as YYYY-MM-DD (oldest first). */
+function lastNDates(n: number): string[] {
+  const out: string[] = [];
+  const now = Date.now();
+  for (let i = n - 1; i >= 0; i--) {
+    out.push(new Date(now - i * 86_400_000).toISOString().slice(0, 10));
+  }
+  return out;
 }
+
+function shortDay(iso: string): string {
+  return new Date(iso + "T00:00:00").toLocaleDateString("en-IN", { weekday: "short" }).slice(0, 2);
+}
+
+// ─── sub-components (inline to avoid over-engineering) ──────────────────────
 
 type RecentOrder = {
   id: string;
@@ -146,8 +123,10 @@ function RecentOrdersTable({ orders }: { orders: RecentOrder[] }): React.ReactEl
 export default async function DashboardPage(): Promise<React.ReactElement> {
   const supabase = createServerClient();
   const today = todayISO();
+  const weekDates = lastNDates(7);
+  const weekFrom = weekDates[0];
 
-  const [sessionResult, reportResult, floorsResult, ordersResult, activeResult] =
+  const [sessionResult, reportResult, floorsResult, ordersResult, activeResult, weekResult] =
     await Promise.allSettled([
       SessionService.getActive(supabase),
       ReportService.dailySummary(supabase, { from: today, to: today }),
@@ -163,6 +142,8 @@ export default async function DashboardPage(): Promise<React.ReactElement> {
         .select("order_number, status, table_id")
         .in("status", ["draft", "sent_to_kitchen", "payment_pending"])
         .not("table_id", "is", null),
+      // 7-day daily summary for the KPI trend sparklines.
+      ReportService.dailySummary(supabase, { from: weekFrom, to: today }),
     ]);
 
   const activeSession: SessionWithUser | null =
@@ -191,6 +172,26 @@ export default async function DashboardPage(): Promise<React.ReactElement> {
   const allTables = floors.flatMap((f) => f.tables);
   const occupiedCount = allTables.filter((t) => t.status === "occupied").length;
   const totalTables = allTables.length;
+
+  // 7-day trend series for the KPI hover sparklines (fill missing days with 0).
+  const weekRows: DailyRevenueRow[] =
+    weekResult.status === "fulfilled" ? weekResult.value : [];
+  const byDate = new Map(weekRows.map((r) => [r.date, r]));
+  const ordersSeries: TrendPoint[] = weekDates.map((d) => ({
+    label: shortDay(d),
+    value: byDate.get(d)?.order_count ?? 0,
+  }));
+  const revenueSeries: TrendPoint[] = weekDates.map((d) => ({
+    label: shortDay(d),
+    value: byDate.get(d)?.total_revenue ?? 0,
+  }));
+  const aovSeries: TrendPoint[] = weekDates.map((d) => {
+    const r = byDate.get(d);
+    return {
+      label: shortDay(d),
+      value: r && r.order_count > 0 ? r.total_revenue / r.order_count : 0,
+    };
+  });
 
   return (
     <div className="p-6 space-y-6">
@@ -248,32 +249,47 @@ export default async function DashboardPage(): Promise<React.ReactElement> {
 
       {/* KPI row */}
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <KpiCard
+        <KpiTrendCard
           title="Orders Today"
           value={String(todayOrderCount)}
           sub="paid orders"
-          icon={ShoppingCart}
+          icon="cart"
           href="/pos/orders"
+          color="#d4791f"
+          chartType="bar"
+          series={ordersSeries}
+          format="int"
+          popoverTitle="Orders trend"
         />
-        <KpiCard
+        <KpiTrendCard
           title="Revenue Today"
           value={formatCurrency(todayRevenue)}
           sub="after discounts + tax"
-          icon={TrendingUp}
+          icon="trending"
           href="/dashboard/reports"
+          color="#16a34a"
+          chartType="area"
+          series={revenueSeries}
+          format="currency"
+          popoverTitle="Revenue trend"
         />
-        <KpiCard
+        <KpiTrendCard
           title="Avg Order Value"
           value={todayOrderCount > 0 ? formatCurrency(avgOrderValue) : "—"}
           sub={todayOrderCount > 0 ? `over ${todayOrderCount} orders` : "no paid orders yet"}
-          icon={BarChart3}
+          icon="bar"
           href="/dashboard/reports"
+          color="#7c3aed"
+          chartType="area"
+          series={aovSeries}
+          format="currency"
+          popoverTitle="Avg order value"
         />
-        <KpiCard
-          title="Tables Occupied"
-          value={`${occupiedCount} / ${totalTables}`}
-          sub={`${totalTables - occupiedCount} available`}
-          icon={LayoutGrid}
+        <TablesOccupiedCard
+          occupiedCount={occupiedCount}
+          totalTables={totalTables}
+          floors={floors}
+          lockedTableIds={lockedTables.map((l) => l.tableId)}
           href="/dashboard/floors"
         />
       </div>

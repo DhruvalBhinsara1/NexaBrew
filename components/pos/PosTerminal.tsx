@@ -138,7 +138,38 @@ export function PosTerminal(): React.ReactElement {
     setBillsRefreshKey((k) => k + 1);
   }
 
-  function handleTableSelect(table: Table): void {
+  async function handleTableSelect(table: Table): Promise<void> {
+    // Active order with no table yet → persist the assignment server-side
+    // (occupies the table). Otherwise it's the new-order flow: stage locally.
+    if (orderId && !tableId) {
+      try {
+        const res = await fetch(`/api/orders/${orderId}/assign-table`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ table_id: table.id }),
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          showToast(data.error ?? "Failed to assign table.", "error");
+          return;
+        }
+        setTable(table.id, table.table_number);
+        bumpOrder();
+        // Reflect the now-occupied table in the floor map.
+        setFloors((prev) =>
+          prev.map((f) => ({
+            ...f,
+            tables: f.tables.map((t) =>
+              t.id === table.id ? { ...t, status: "occupied" } : t
+            ),
+          }))
+        );
+        showToast(`Table ${table.table_number} assigned to this bill.`, "success");
+      } catch {
+        showToast("Failed to assign table.", "error");
+      }
+      return;
+    }
     setTable(table.id, table.table_number);
   }
 
@@ -456,7 +487,7 @@ export function PosTerminal(): React.ReactElement {
         open={tableSelectorOpen}
         onClose={() => setTableSelectorOpen(false)}
         floors={floors}
-        onSelect={handleTableSelect}
+        onSelect={(t) => void handleTableSelect(t)}
         selectedTableId={tableId}
       />
       <CouponDialog open={couponDialogOpen} onClose={() => setCouponDialogOpen(false)} />

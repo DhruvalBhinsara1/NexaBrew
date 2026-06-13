@@ -119,10 +119,17 @@ export function CartPanel({
             <button
               type="button"
               onClick={onTableSelect}
-              disabled={isActiveOrder}
+              // An active order can still get a table if it has none yet
+              // (bill sent to kitchen before a table was chosen). Once a table
+              // is assigned, lock it.
+              disabled={isActiveOrder && !!tableNumber}
               className="rounded-md bg-surface-muted px-2 py-1 text-xs font-medium text-zinc-600 hover:bg-brand-50 hover:text-brand-700 disabled:opacity-50"
             >
-              {tableNumber ? `T${tableNumber} ✓` : "Select Table"}
+              {tableNumber
+                ? `T${tableNumber} ✓`
+                : isActiveOrder
+                  ? "Assign Table"
+                  : "Select Table"}
             </button>
           </div>
         </div>

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Script from "next/script";
-import { Banknote, CheckCircle2, CreditCard, Loader2 } from "lucide-react";
+import { Banknote, CheckCircle2, CreditCard, Loader2, Printer } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -12,7 +12,9 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Button } from "@/components/ui/button";
 import { SlideTextButton } from "@/components/kokonutui";
+import { ReceiptDialog } from "@/components/pos/ReceiptDialog";
 import { formatCurrency } from "@/lib/utils/formatCurrency";
 
 interface RazorpayOptions {
@@ -61,6 +63,7 @@ export function PaymentDialog({
   const [loading, setLoading] = useState(false);
   const [paid, setPaid] = useState(false);
   const [scriptReady, setScriptReady] = useState(false);
+  const [showReceipt, setShowReceipt] = useState(false);
 
   useEffect(() => {
     if (open) {
@@ -174,7 +177,12 @@ export function PaymentDialog({
                 <p className="mt-1 text-xs text-green-700 font-medium">Customer: {customerName}</p>
               )}
             </div>
-            <SlideTextButton tone="green" onClick={onClose}>Done</SlideTextButton>
+            <div className="flex w-full flex-col gap-2">
+              <Button variant="outline" onClick={() => setShowReceipt(true)} className="w-full">
+                <Printer className="mr-2 h-4 w-4" /> Print Receipt
+              </Button>
+              <SlideTextButton tone="green" onClick={onClose}>Done</SlideTextButton>
+            </div>
           </div>
         ) : (
           <div className="space-y-4">
@@ -226,6 +234,13 @@ export function PaymentDialog({
           </div>
         )}
       </DialogContent>
+
+      <ReceiptDialog
+        orderId={orderId}
+        open={showReceipt}
+        onClose={() => setShowReceipt(false)}
+        toast={toast}
+      />
     </Dialog>
   );
 }

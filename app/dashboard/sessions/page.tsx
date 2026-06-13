@@ -53,6 +53,35 @@ export default function SessionsPage(): React.ReactElement {
   const [openDialog, setOpenDialog] = useState(false);
   const [openingBalance, setOpeningBalance] = useState("");
   const [busy, setBusy] = useState(false);
+  const [users, setUsers] = useState<Array<{ id: string; name: string | null }>>([]);
+  const [selectedUser, setSelectedUser] = useState<string>("");
+  const [loadingUsers, setLoadingUsers] = useState(false);
+  // The single open session — fetched independently of the table's
+  // pagination/filter so the banner is the same for every user.
+  const [active, setActive] = useState<SessionWithUser | null>(null);
+
+  const loadActive = useCallback(async () => {
+    try {
+      const open = await apiGet<SessionWithUser[]>("/api/sessions?status=open");
+      setActive(open?.[0] ?? null);
+    } catch {
+      // non-fatal: leave the banner as-is
+    }
+  }, []);
+
+  const loadUsers = useCallback(async () => {
+    try {
+      setLoadingUsers(true);
+      const data = await apiGet<Array<{ id: string; name: string | null }>>(
+        "/api/sessions/users"
+      );
+      setUsers(data || []);
+    } catch (e) {
+      toast({ title: (e as Error).message, variant: "destructive" });
+    } finally {
+      setLoadingUsers(false);
+    }
+  }, [toast]);
 
   const load = useCallback(async (currentPage: number = 1) => {
     try {
@@ -60,6 +89,9 @@ export default function SessionsPage(): React.ReactElement {
       const params = new URLSearchParams();
       params.set("page", String(currentPage));
       params.set("limit", String(pageSize));
+      if (selectedUser) {
+        params.set("opened_by", selectedUser);
+      }
 
       const data = await apiGet<PaginatedResponse<SessionWithUser>>(
         `/api/sessions?${params.toString()}`
@@ -79,13 +111,19 @@ export default function SessionsPage(): React.ReactElement {
     } finally {
       setLoading(false);
     }
-  }, [pageSize, toast]);
+  }, [pageSize, selectedUser, toast]);
+
+  useEffect(() => {
+    void loadUsers();
+  }, [loadUsers]);
 
   useEffect(() => {
     void load(1);
   }, [load]);
 
-  const active = sessions.find((s) => s.status === "open") ?? null;
+  useEffect(() => {
+    void loadActive();
+  }, [loadActive]);
 
   async function handleOpen(): Promise<void> {
     setBusy(true);
@@ -96,7 +134,7 @@ export default function SessionsPage(): React.ReactElement {
       toast({ title: "Session opened" });
       setOpenDialog(false);
       setOpeningBalance("");
-      await load(1);
+      await Promise.all([load(1), loadActive()]);
     } catch (e) {
       toast({ title: (e as Error).message, variant: "destructive" });
     } finally {
@@ -110,7 +148,7 @@ export default function SessionsPage(): React.ReactElement {
     try {
       await apiSend(`/api/sessions/${id}/close`, "POST", {});
       toast({ title: "Session closed" });
-      await load(page);
+      await Promise.all([load(page), loadActive()]);
     } catch (e) {
       toast({ title: (e as Error).message, variant: "destructive" });
     } finally {
@@ -181,10 +219,29 @@ export default function SessionsPage(): React.ReactElement {
       {/* History */}
       <Card className="border-surface-border">
         <CardContent className="p-0">
+          {/* Filters — always visible so you can clear the filter */}
+          <div className="border-b border-surface-border px-4 py-3">
+            <Label className="text-xs font-medium text-zinc-600">Filter by User</Label>
+            <select
+              value={selectedUser}
+              onChange={(e) => setSelectedUser(e.target.value)}
+              disabled={loadingUsers}
+              className="mt-1.5 block w-full rounded-md border border-surface-border bg-white px-3 py-2 text-sm text-zinc-900 placeholder-zinc-400 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500 disabled:cursor-not-allowed disabled:bg-zinc-50 disabled:text-zinc-400 sm:max-w-xs"
+            >
+              <option value="">All Users</option>
+              {users.map((user) => (
+                <option key={user.id} value={user.id}>
+                  {user.name || "Unknown"}
+                </option>
+              ))}
+            </select>
+          </div>
+
           {sessions.length === 0 && !loading ? (
-            <EmptyState icon={Clock} title="No sessions yet" subtitle="Open your first session to start." />
+            <EmptyState icon={Clock} title="No sessions" subtitle="No sessions match this filter." />
           ) : (
             <>
+              {/* Table */}
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>

@@ -49,11 +49,13 @@ export const SessionService = {
     supabase: Supa,
     status?: SessionStatus,
     page: number = 1,
-    limit: number = DEFAULT_PAGE_SIZE
+    limit: number = DEFAULT_PAGE_SIZE,
+    openedBy?: string
   ): Promise<PaginatedResponse<SessionWithUser>> {
     // Get total count
     let countQuery = supabase.from("sessions").select("id", { count: "exact" });
     if (status) countQuery = countQuery.eq("status", status);
+    if (openedBy) countQuery = countQuery.eq("opened_by", openedBy);
 
     const { count, error: countError } = await countQuery;
     if (countError) throw new AppError(countError.message, "SESSIONS_COUNT_FAILED", 500);
@@ -64,6 +66,7 @@ export const SessionService = {
       .select(SESSION_SELECT)
       .order("opened_at", { ascending: false });
     if (status) dataQuery = dataQuery.eq("status", status);
+    if (openedBy) dataQuery = dataQuery.eq("opened_by", openedBy);
 
     const offset = calculateOffset(page, limit);
     dataQuery = dataQuery.range(offset, offset + limit - 1);
@@ -181,5 +184,28 @@ export const SessionService = {
       card_collected: cardCollected,
     };
     return { session: updated as SessionWithUser, summary };
+  },
+
+  async getDistinctUsers(supabase: Supa): Promise<Array<{ id: string; name: string | null }>> {
+    const { data, error } = await supabase
+      .from("sessions")
+      .select("opened_by_user:users!sessions_opened_by_fkey(id, name)")
+      .not("opened_by_user", "is", null)
+      .order("opened_at", { ascending: false });
+    
+    if (error) throw new AppError(error.message, "SESSIONS_USERS_FAILED", 500);
+
+    // Extract unique users
+    const usersMap = new Map<string, { id: string; name: string | null }>();
+    for (const session of (data ?? []) as any[]) {
+      if (session.opened_by_user) {
+        const user = session.opened_by_user;
+        if (!usersMap.has(user.id)) {
+          usersMap.set(user.id, user);
+        }
+      }
+    }
+
+    return Array.from(usersMap.values());
   },
 };

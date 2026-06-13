@@ -319,6 +319,53 @@ export const OrderService = {
   },
 
   /**
+   * Assign (or move) a table for an active, unpaid order that has none — e.g.
+   * a bill was sent to the kitchen before a table was chosen. Only allowed
+   * while the order is active (sent_to_kitchen | payment_pending) and the
+   * target table is active and not already occupied. Occupies the new table.
+   */
+  async assignTable(supabase: Supa, id: string, tableId: string): Promise<OrderWithItems> {
+    const order = await this.getById(supabase, id);
+    if (order.status !== "sent_to_kitchen" && order.status !== "payment_pending") {
+      throw new AppError("Table can only be assigned to an active bill", "ORDER_NOT_ASSIGNABLE", 409);
+    }
+    if (order.table_id) {
+      throw new AppError("This bill already has a table", "ORDER_HAS_TABLE", 409);
+    }
+
+    const { data: table, error: tableError } = await supabase
+      .from("tables")
+      .select("id, is_active, status")
+      .eq("id", tableId)
+      .maybeSingle();
+    if (tableError) throw new AppError(tableError.message, "TABLE_FETCH_FAILED", 500);
+    if (!table) throw new AppError("Table not found", "TABLE_NOT_FOUND", 404);
+    if (!table.is_active) throw new AppError("Table is inactive", "TABLE_INACTIVE", 400);
+    if (table.status === "occupied") {
+      throw new AppError("Table is already occupied", "TABLE_OCCUPIED", 409);
+    }
+
+    const { data, error } = await supabase
+      .from("orders")
+      .update({ table_id: tableId, updated_at: new Date().toISOString() })
+      .eq("id", id)
+      .is("table_id", null)
+      .in("status", ["sent_to_kitchen", "payment_pending"])
+      .select("id")
+      .maybeSingle();
+    if (error) throw mapDatabaseError(error, "ORDER_ASSIGN_TABLE_FAILED");
+    if (!data) throw new AppError("Table could not be assigned", "ORDER_NOT_ASSIGNABLE", 409);
+
+    const { error: occupyError } = await supabase
+      .from("tables")
+      .update({ status: "occupied" })
+      .eq("id", tableId);
+    if (occupyError) throw new AppError(occupyError.message, "TABLE_UPDATE_FAILED", 400);
+
+    return this.getById(supabase, id);
+  },
+
+  /**
    * Add items to an existing unpaid order (sent_to_kitchen | payment_pending)
    * — "add to the same bill". Items are merged/upserted (existing order_items
    * rows are never deleted, to keep kitchen_ticket_items FKs valid), the bill

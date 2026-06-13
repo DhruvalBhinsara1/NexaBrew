@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, CreditCard, Receipt, Search, Trash2, XCircle } from "lucide-react";
+import { ArrowLeft, CreditCard, Printer, Receipt, Search, Trash2, XCircle } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -18,6 +18,7 @@ import { cn } from "@/lib/utils";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { Pagination } from "@/components/ui/pagination";
 import { PaymentDialog } from "@/components/pos/PaymentDialog";
+import { ReceiptDialog } from "@/components/pos/ReceiptDialog";
 import { useToast } from "@/hooks/use-toast";
 import { apiGet, apiSend } from "@/lib/api-client";
 import { formatCurrency } from "@/lib/utils/formatCurrency";
@@ -54,6 +55,7 @@ export default function PosOrdersPage(): React.ReactElement {
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<OrderWithItems | null>(null);
   const [payingOrder, setPayingOrder] = useState<OrderWithItems | null>(null);
+  const [receiptOrderId, setReceiptOrderId] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
   const load = useCallback(async () => {
@@ -262,6 +264,18 @@ export default function PosOrdersPage(): React.ReactElement {
                 </SheetFooter>
               )}
 
+              {selected.status === "paid" && (
+                <SheetFooter className="mt-6">
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => setReceiptOrderId(selected.id)}
+                  >
+                    <Printer className="mr-2 h-4 w-4" /> Print Receipt
+                  </Button>
+                </SheetFooter>
+              )}
+
               {(selected.status === "draft" || selected.status === "sent_to_kitchen") && (
                 <SheetFooter className="mt-6 flex-col gap-2 sm:flex-col">
                   {selected.status === "draft" && (
@@ -297,6 +311,15 @@ export default function PosOrdersPage(): React.ReactElement {
           }
         />
       )}
+
+      <ReceiptDialog
+        orderId={receiptOrderId}
+        open={!!receiptOrderId}
+        onClose={() => setReceiptOrderId(null)}
+        toast={(msg, variant) =>
+          toast({ title: msg, variant: variant === "error" ? "destructive" : "default" })
+        }
+      />
     </div>
   );
 }

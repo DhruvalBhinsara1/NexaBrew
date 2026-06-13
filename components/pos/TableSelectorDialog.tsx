@@ -49,10 +49,15 @@ export function TableSelectorDialog({
                     .map((table) => {
                       const isSelected = table.id === selectedTableId;
                       const isOccupied = table.status === "occupied";
+                      // An occupied table can't be picked (unless it's the one
+                      // already on this order).
+                      const disabled = isOccupied && !isSelected;
                       return (
                         <button
                           key={table.id}
+                          disabled={disabled}
                           onClick={() => {
+                            if (disabled) return;
                             onSelect(table);
                             onClose();
                           }}
@@ -60,15 +65,17 @@ export function TableSelectorDialog({
                             "rounded-lg border p-3 text-center transition-all",
                             isSelected
                               ? "border-brand-500 bg-brand-50 text-brand-700"
-                              : isOccupied
-                                ? "border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100"
+                              : disabled
+                                ? "cursor-not-allowed border-amber-200 bg-amber-50/60 text-amber-600 opacity-60"
                                 : "border-surface-border bg-white text-zinc-700 hover:border-brand-300 hover:bg-brand-50"
                           )}
                         >
                           <p className="text-lg font-bold">{table.table_number}</p>
                           <p className="text-xs text-zinc-400">{table.seats} seats</p>
                           {isOccupied && (
-                            <p className="mt-0.5 text-xs font-medium text-amber-600">Active</p>
+                            <p className="mt-0.5 text-xs font-medium text-amber-600">
+                              {isSelected ? "This bill" : "Occupied"}
+                            </p>
                           )}
                         </button>
                       );
