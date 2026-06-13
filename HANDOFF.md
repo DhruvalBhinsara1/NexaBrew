@@ -14,7 +14,8 @@ Project root: `/Users/dhruvalbhinsara/NexaBrew`
 
 | Item | Value |
 |---|---|
-| **Production URL** | https://nexabrew.vercel.app |
+| **Production URL** | https://nxbrew.vercel.app |
+| **Alias (long)** | https://nexabrew.vercel.app |
 | **GitHub repo** | https://github.com/DhruvalBhinsara1/NexaBrew |
 | **Vercel project** | `dhruval-bhinsaras-projects/nexabrew` |
 | **Deployment ID** | `dpl_gBNuaR3qsDmVXQHLspxmW3GqPXSj` |
