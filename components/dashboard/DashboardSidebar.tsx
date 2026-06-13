@@ -7,6 +7,7 @@ import {
   Clock,
   CreditCard,
   ExternalLink,
+  LayoutDashboard,
   LayoutGrid,
   Package,
   Tag,
@@ -19,6 +20,7 @@ import { cn } from "@/lib/utils";
 import { LogoutButton } from "@/components/shared/LogoutButton";
 
 const NAV_ITEMS = [
+  { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard, exact: true },
   { label: "Products", href: "/dashboard/products", icon: Package },
   { label: "Categories", href: "/dashboard/categories", icon: Tag },
   { label: "Floors & Tables", href: "/dashboard/floors", icon: LayoutGrid },
@@ -51,8 +53,10 @@ export function DashboardSidebar(): React.ReactElement {
           Manage
         </p>
         <ul className="space-y-1">
-          {NAV_ITEMS.map(({ label, href, icon: Icon }) => {
-            const active = pathname === href || pathname.startsWith(href + "/");
+          {NAV_ITEMS.map(({ label, href, icon: Icon, exact }) => {
+            const active = exact
+              ? pathname === href
+              : pathname === href || pathname.startsWith(href + "/");
             return (
               <li key={href}>
                 <Link
