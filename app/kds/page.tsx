@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { CheckCircle2, Clock, Coffee, Search, UtensilsCrossed } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { CheckCircle2, Clock, Coffee, LogOut, Search, UtensilsCrossed } from "lucide-react";
 import { useRealtimeKitchenTickets } from "@/hooks/useRealtimeKitchenTickets";
 import { createBrowserClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
@@ -190,10 +191,12 @@ function KdsColumn({ stage, tickets, onAdvance, onCompleteItem }: ColumnProps): 
 // ─── Page ────────────────────────────────────────────────────────────────────
 
 export default function KdsPage(): React.ReactElement {
+  const router = useRouter();
   const { data: tickets, loading } = useRealtimeKitchenTickets();
   // Empty on first render (server + client match); filled after mount to avoid
   // an SSR/client locale hydration mismatch (e.g. "pm" vs "PM").
   const [time, setTime] = useState("");
+  const [loggedIn, setLoggedIn] = useState(false);
   const [search, setSearch] = useState("");
   const [categoryId, setCategoryId] = useState<string>("all");
   const [categories, setCategories] = useState<{ id: string; name: string }[]>([]);
@@ -205,6 +208,18 @@ export default function KdsPage(): React.ReactElement {
     const interval = setInterval(() => setTime(liveTime()), 30_000);
     return () => clearInterval(interval);
   }, []);
+
+  // Detect a logged-in session so we can offer logout (kitchen accounts are
+  // locked to /kds). Anonymous wall displays see no logout button.
+  useEffect(() => {
+    const supabase = createBrowserClient();
+    void supabase.auth.getUser().then(({ data }) => setLoggedIn(!!data.user));
+  }, []);
+
+  async function handleLogout(): Promise<void> {
+    await createBrowserClient().auth.signOut();
+    router.replace("/login");
+  }
 
   // Load product → category map for filtering (anon key; products are public-read)
   useEffect(() => {
@@ -310,6 +325,15 @@ export default function KdsPage(): React.ReactElement {
             <Clock className="h-4 w-4 text-brand-500" />
             <span className="font-mono text-sm font-medium">{time}</span>
           </div>
+          {loggedIn && (
+            <button
+              onClick={() => void handleLogout()}
+              className="flex items-center gap-1.5 rounded-lg border border-surface-border px-3 py-1.5 text-sm font-medium text-zinc-600 transition-colors hover:bg-surface-muted hover:text-zinc-900"
+            >
+              <LogOut className="h-4 w-4" />
+              Logout
+            </button>
+          )}
         </div>
       </header>
 
