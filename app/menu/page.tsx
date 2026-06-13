@@ -503,13 +503,11 @@ export default function MenuPage(): React.ReactElement {
           total={payOrder.total}
           open={!!payOrder}
           onClose={() => {
-            // User dismissed without paying — order exists but is unpaid.
-            // Redirect to My Orders so they can complete payment there.
-            // Cart is intentionally preserved so they can see what they ordered.
+            // Stay on the menu tab with the cart still intact.
+            // The user can edit their cart and re-open it from the bottom bar.
             setPayOrder(null);
-            setTab("orders");
-            void loadOrders();
-            showToast("Your order is saved — complete payment from My Orders.");
+            setCartOpen(true);
+            showToast("Order saved — edit your cart or pay when ready.");
           }}
           onlineOnly
           onPaid={() => {
