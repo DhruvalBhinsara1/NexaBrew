@@ -1,6 +1,11 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/types/database.types";
-import type { KitchenTicket, KitchenTicketItem, KitchenTicketStatus } from "@/types/domain.types";
+import type {
+  KitchenTicket,
+  KitchenTicketItem,
+  KitchenTicketStatus,
+  KitchenTicketWithItems,
+} from "@/types/domain.types";
 import { AppError } from "@/lib/utils/app-error";
 import { OrderService } from "@/services/OrderService";
 
@@ -22,6 +27,23 @@ const NEXT_STATUS: Record<Exclude<KitchenTicketStatus, "completed">, KitchenTick
 };
 
 export const KitchenService = {
+  async listTickets(
+    supabase: Supa,
+    filters: { status?: KitchenTicketStatus; orderId?: string } = {}
+  ): Promise<KitchenTicketWithItems[]> {
+    let query = supabase
+      .from("kitchen_tickets")
+      .select("*, items:kitchen_ticket_items(*)")
+      .order("sent_at", { ascending: true });
+
+    if (filters.status) query = query.eq("status", filters.status);
+    if (filters.orderId) query = query.eq("order_id", filters.orderId);
+
+    const { data, error } = await query;
+    if (error) throw new AppError(error.message, "KITCHEN_TICKETS_FETCH_FAILED", 500);
+    return (data ?? []) as KitchenTicketWithItems[];
+  },
+
   async sendToKitchen(supabase: Supa, orderId: string): Promise<TicketResult> {
     const order = await OrderService.getById(supabase, orderId);
     if (order.status !== "draft") {

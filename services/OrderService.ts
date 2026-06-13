@@ -1,9 +1,15 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/types/database.types";
-import type { OrderItem, OrderStatus, OrderWithItems, Table } from "@/types/domain.types";
+import type { Coupon, OrderStatus, OrderWithItems } from "@/types/domain.types";
 import type { CreateOrderInput, UpdateOrderInput } from "@/schemas/order.schema";
 import { AppError } from "@/lib/utils/app-error";
-import { calculateTotals, type LineInput } from "@/lib/utils/calculateTotals";
+import {
+  buildDiscountState,
+  freeTable,
+  mapDatabaseError,
+  orderItemsToDiscountableItems,
+  snapshotItems,
+} from "@/services/OrderPricing";
 
 type Supa = SupabaseClient<Database>;
 
@@ -15,89 +21,6 @@ export interface OrderFilters {
   status?: OrderStatus;
   tableId?: string;
   search?: string;
-}
-
-type OrderItemInput = CreateOrderInput["items"][number];
-type ProductSnapshot = Pick<
-  Database["public"]["Tables"]["products"]["Row"],
-  "id" | "name" | "price" | "tax_rate" | "is_active"
->;
-
-function round2(n: number): number {
-  return Math.round((n + Number.EPSILON) * 100) / 100;
-}
-
-function mapDatabaseError(error: { message: string; code?: string }, fallbackCode: string): AppError {
-  if (error.code === "23505") {
-    return new AppError("Duplicate record", "DUPLICATE_RECORD", 409);
-  }
-  if (error.code === "23503") {
-    return new AppError("Referenced record not found", "REFERENCE_NOT_FOUND", 404);
-  }
-  return new AppError(error.message, fallbackCode, 400);
-}
-
-function normalizeItems(items: OrderItemInput[]): OrderItemInput[] {
-  const quantities = new Map<string, number>();
-  for (const item of items) {
-    quantities.set(item.product_id, (quantities.get(item.product_id) ?? 0) + item.quantity);
-  }
-  return Array.from(quantities, ([product_id, quantity]) => ({ product_id, quantity }));
-}
-
-async function snapshotItems(
-  supabase: Supa,
-  items: OrderItemInput[]
-): Promise<Array<Omit<OrderItem, "id" | "order_id" | "promotion_id"> & { promotion_id: null }>> {
-  const normalized = normalizeItems(items);
-  if (normalized.length === 0) return [];
-
-  const productIds = normalized.map((item) => item.product_id);
-  const { data, error } = await supabase
-    .from("products")
-    .select("id, name, price, tax_rate, is_active")
-    .in("id", productIds);
-  if (error) throw new AppError(error.message, "PRODUCTS_FETCH_FAILED", 500);
-
-  const products = new Map((data ?? []).map((product) => [product.id, product as ProductSnapshot]));
-  return normalized.map((item) => {
-    const product = products.get(item.product_id);
-    if (!product || !product.is_active) {
-      throw new AppError("Product is unavailable", "PRODUCT_UNAVAILABLE", 400);
-    }
-
-    const discountAmount = 0;
-    const base = Number(product.price) * item.quantity;
-    return {
-      product_id: product.id,
-      product_name: product.name,
-      unit_price: Number(product.price),
-      tax_rate: Number(product.tax_rate),
-      quantity: item.quantity,
-      discount_amount: discountAmount,
-      line_total: round2(base - discountAmount),
-      promotion_id: null,
-    };
-  });
-}
-
-async function freeTable(supabase: Supa, tableId: string | null): Promise<void> {
-  if (!tableId) return;
-  const { error } = await supabase
-    .from("tables")
-    .update({ status: "available" })
-    .eq("id", tableId);
-  if (error) throw new AppError(error.message, "TABLE_UPDATE_FAILED", 400);
-}
-
-function totalsFor(items: Pick<OrderItem, "unit_price" | "quantity" | "tax_rate" | "discount_amount">[]) {
-  const lines: LineInput[] = items.map((item) => ({
-    unitPrice: Number(item.unit_price),
-    quantity: item.quantity,
-    taxRate: Number(item.tax_rate),
-    discountAmount: Number(item.discount_amount),
-  }));
-  return calculateTotals({ items: lines, orderDiscount: 0 });
 }
 
 export const OrderService = {
@@ -168,7 +91,7 @@ export const OrderService = {
     }
 
     const items = await snapshotItems(supabase, payload.items);
-    const totals = totalsFor(items);
+    const discountState = await buildDiscountState(supabase, items);
 
     const { data: inserted, error: insertError } = await supabase
       .from("orders")
@@ -178,19 +101,21 @@ export const OrderService = {
         customer_id: payload.customer_id ?? null,
         employee_id: employeeId,
         status: "draft",
-        subtotal: totals.subtotal,
-        discount_amount: totals.discountAmount,
-        tax_amount: totals.taxAmount,
-        total_amount: totals.totalAmount,
+        subtotal: discountState.subtotal,
+        discount_amount: discountState.discount_amount,
+        tax_amount: discountState.tax_amount,
+        total_amount: discountState.total_amount,
+        coupon_id: discountState.coupon_id,
+        promotion_id: discountState.promotion_id,
       })
       .select("id")
       .single();
     if (insertError) throw mapDatabaseError(insertError, "ORDER_CREATE_FAILED");
 
-    if (items.length > 0) {
+    if (discountState.items.length > 0) {
       const { error: itemsError } = await supabase
         .from("order_items")
-        .insert(items.map((item) => ({ ...item, order_id: inserted.id })));
+        .insert(discountState.items.map((item) => ({ ...item, order_id: inserted.id })));
       if (itemsError) {
         await supabase.from("orders").delete().eq("id", inserted.id);
         throw mapDatabaseError(itemsError, "ORDER_ITEMS_CREATE_FAILED");
@@ -232,19 +157,21 @@ export const OrderService = {
 
     if (payload.items) {
       const items = await snapshotItems(supabase, payload.items);
-      const totals = totalsFor(items);
-      updatePayload.subtotal = totals.subtotal;
-      updatePayload.discount_amount = totals.discountAmount;
-      updatePayload.tax_amount = totals.taxAmount;
-      updatePayload.total_amount = totals.totalAmount;
+      const discountState = await buildDiscountState(supabase, items, order.coupon?.code ?? null);
+      updatePayload.subtotal = discountState.subtotal;
+      updatePayload.discount_amount = discountState.discount_amount;
+      updatePayload.tax_amount = discountState.tax_amount;
+      updatePayload.total_amount = discountState.total_amount;
+      updatePayload.coupon_id = discountState.coupon_id;
+      updatePayload.promotion_id = discountState.promotion_id;
 
       const { error: deleteError } = await supabase.from("order_items").delete().eq("order_id", id);
       if (deleteError) throw new AppError(deleteError.message, "ORDER_ITEMS_UPDATE_FAILED", 400);
 
-      if (items.length > 0) {
+      if (discountState.items.length > 0) {
         const { error: insertItemsError } = await supabase
           .from("order_items")
-          .insert(items.map((item) => ({ ...item, order_id: id })));
+          .insert(discountState.items.map((item) => ({ ...item, order_id: id })));
         if (insertItemsError) throw mapDatabaseError(insertItemsError, "ORDER_ITEMS_UPDATE_FAILED");
       }
     }
@@ -260,6 +187,59 @@ export const OrderService = {
     if (!data) throw new AppError("Order is not editable", "ORDER_NOT_EDITABLE", 409);
 
     return this.getById(supabase, id);
+  },
+
+  async applyCoupon(
+    supabase: Supa,
+    id: string,
+    code: string
+  ): Promise<{ order: OrderWithItems; coupon: Coupon; discount_amount: number; new_total: number }> {
+    const order = await this.getById(supabase, id);
+    if (order.status !== "draft") {
+      throw new AppError("Coupon can only be applied to draft orders", "ORDER_NOT_EDITABLE", 409);
+    }
+    if (order.items.length === 0) {
+      throw new AppError("Cannot apply a coupon to an empty order", "EMPTY_ORDER", 400);
+    }
+
+    const items = orderItemsToDiscountableItems(order.items);
+    const discountState = await buildDiscountState(supabase, items, code);
+    if (!discountState.coupon) {
+      throw new AppError("Invalid coupon code", "COUPON_INVALID", 404);
+    }
+
+    const { error: deleteError } = await supabase.from("order_items").delete().eq("order_id", id);
+    if (deleteError) throw new AppError(deleteError.message, "ORDER_ITEMS_UPDATE_FAILED", 400);
+
+    const { error: insertItemsError } = await supabase
+      .from("order_items")
+      .insert(discountState.items.map((item) => ({ ...item, order_id: id })));
+    if (insertItemsError) throw mapDatabaseError(insertItemsError, "ORDER_ITEMS_UPDATE_FAILED");
+
+    const { data, error } = await supabase
+      .from("orders")
+      .update({
+        coupon_id: discountState.coupon_id,
+        promotion_id: null,
+        subtotal: discountState.subtotal,
+        discount_amount: discountState.discount_amount,
+        tax_amount: discountState.tax_amount,
+        total_amount: discountState.total_amount,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", id)
+      .eq("status", "draft")
+      .select("id")
+      .maybeSingle();
+    if (error) throw mapDatabaseError(error, "ORDER_UPDATE_FAILED");
+    if (!data) throw new AppError("Order is not editable", "ORDER_NOT_EDITABLE", 409);
+
+    return {
+      order: await this.getById(supabase, id),
+      coupon: discountState.coupon,
+      discount_amount: discountState.order_discount,
+      new_total: discountState.total_amount,
+    };
   },
 
   async cancel(supabase: Supa, id: string): Promise<OrderWithItems> {

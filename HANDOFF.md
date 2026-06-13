@@ -10,7 +10,7 @@ Project root: `/Users/dhruvalbhinsara/NexaBrew`
 
 ---
 
-## Progress: Phases 0–5 COMPLETE & verified. Phase 6 NOT STARTED (next).
+## Progress: Phases 0–6 COMPLETE & verified. Phase 7 NOT STARTED (next).
 
 | Phase | Status |
 |---|---|
@@ -20,7 +20,25 @@ Project root: `/Users/dhruvalbhinsara/NexaBrew`
 | 3 — Core Config APIs (products/categories/floors/tables/payment-methods) | ✅ done, RLS verified |
 | 4 — Sessions | ✅ done, lifecycle verified |
 | 5 — Orders | ✅ done, `tsc` + `next build` + live service flow verified |
-| 6–17 | not started |
+| 6 — Discounts | ✅ done, `tsc` + `next build` + live discount service flow verified |
+| 7–17 | not started |
+
+### Last health-check — 2026-06-13
+
+| Check | Result |
+|---|---|
+| `npx tsc --noEmit` | ✅ zero errors |
+| `npm run build` | ✅ clean — 27 routes compiled |
+| `npm run lint` | ✅ no ESLint warnings or errors |
+| `npm run dev` startup | ✅ ready in ~1 s, no runtime warnings |
+| API spot-checks (`/api/products`, `/api/sessions`) | ✅ correct 401 for unauthenticated callers |
+| Login page render | ✅ full SSR output, no hydration errors |
+
+> **Note — two `next dev` processes were running simultaneously** (stale background process on port 3000 + new one on 3001). Kill all before starting fresh:
+> ```bash
+> pkill -f "next dev"
+> npm run dev
+> ```
 
 ---
 
@@ -83,10 +101,10 @@ lib/auth/{getServerUser,withAuth}.ts        # role-gated wrapper
 lib/utils/{app-error,handleError,formatCurrency,calculateTotals}.ts
 middleware.ts                               # role redirects; /kds public; /api excluded
 types/{database.types,domain.types,api.types}.ts
-schemas/{auth,product,category,floor,payment-method,session,order}.schema.ts
-services/{ProductService,CategoryService,FloorService,PaymentMethodService,SessionService,OrderService,KitchenService}.ts
+schemas/{auth,product,category,floor,payment-method,session,order,coupon}.schema.ts
+services/{ProductService,CategoryService,FloorService,PaymentMethodService,SessionService,OrderService,KitchenService,DiscountService}.ts
 app/(auth)/{login,signup}/page.tsx, app/(auth)/layout.tsx
-app/api/products|categories|floors|tables|payment-methods|sessions|orders/...  # all built
+app/api/products|categories|floors|tables|payment-methods|sessions|orders|coupons|promotions/...  # all built
 app/{dashboard,pos/terminal,kds}/page.tsx  # PLACEHOLDERS
 components/ui/*                              # shadcn new-york set + card
 components/kokonutui/slide-text-button.tsx (+ index.ts barrel)
@@ -113,9 +131,26 @@ Verified:
 - `npm run build`
 - live Supabase service flow: open session → create order on table → same table returns same draft → update items/totals → send to kitchen → ticket `to_cook` → advance to `preparing` → advance to `completed` → order `payment_pending`; cleanup returned test table/order/ticket/session to clean state.
 
-## NEXT: Phase 6 — Discounts
+## Phase 6 — Discounts (completed)
 
-Discounts (DiscountService: validateCoupon, evaluateProductPromotions, evaluateOrderPromotion; integrate into OrderService create/update; apply-coupon route; coupons/promotions CRUD).
+Implemented:
+- `schemas/coupon.schema.ts`
+- `services/DiscountService.ts`
+- `app/api/coupons/route.ts`
+- `app/api/coupons/[id]/route.ts`
+- `app/api/promotions/route.ts`
+- `app/api/promotions/[id]/route.ts`
+- `app/api/orders/[id]/apply-coupon/route.ts`
+- `OrderService` integration for product promotions, order promotions, and coupon override/recalculation.
+
+Verified:
+- `npx tsc --noEmit`
+- `npm run build`
+- live Supabase service flow: product promotion (`Espresso` x3) → line discount and total verified; order promotion (`Pasta` x3) → fixed order discount verified; `SAVE10` coupon → overrides order promotion and clears `promotion_id`; coupon/promotion create+update verified; cleanup removed test orders/coupon/promotion/session.
+
+## NEXT: Phase 7 — Kitchen APIs
+
+Kitchen APIs (GET tickets, PATCH status [service-role, public], PATCH item complete).
 
 Historical Phase 5 plan:
 
@@ -186,7 +221,7 @@ open a session (admin) → create order on a table (snapshot + totals + table→
 
 ---
 
-## Roadmap after Phase 5 (TASKS.md)
-6 Discounts (DiscountService: validateCoupon, evaluateProductPromotions, evaluateOrderPromotion; integrate into OrderService create/update; apply-coupon route; coupons/promotions CRUD) · 7 Kitchen APIs (GET tickets, PATCH status [service-role, public], PATCH item complete) · 8 Payments (+ Resend receipt, generateQR) · 9 Realtime hooks · 10 Users (Admin API) · 11 Reports · 12 Customers · 13 Dashboard UI · 14 POS UI · 15 KDS UI · 16 polish · 17 (P3) export.
+## Roadmap after Phase 6 (TASKS.md)
+7 Kitchen APIs (GET tickets, PATCH status [service-role, public], PATCH item complete) · 8 Payments (+ Resend receipt, generateQR) · 9 Realtime hooks · 10 Users (Admin API) · 11 Reports · 12 Customers · 13 Dashboard UI · 14 POS UI · 15 KDS UI · 16 polish · 17 (P3) export.
 
-P0 remaining: Orders(5), Kitchen(7), Kitchen→Payment(in 5/7), Payments(8). Do P0 before P1.
+P0 remaining: Kitchen(7), Payments(8). Do P0 before P1.
