@@ -15,10 +15,12 @@ export function ProductsPanel({ products, categories }: Props): React.ReactEleme
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const addItem = usePosStore((s) => s.addItem);
 
+  const activeProducts = products.filter((p) => p.is_active);
+
   const filtered =
     activeCategory === null
-      ? products
-      : products.filter((p) => p.category_id === activeCategory);
+      ? activeProducts
+      : activeProducts.filter((p) => p.category_id === activeCategory);
 
   return (
     <div className="flex h-full flex-col">

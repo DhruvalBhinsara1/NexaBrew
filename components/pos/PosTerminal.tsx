@@ -55,7 +55,7 @@ export function PosTerminal(): React.ReactElement {
       try {
         const [sessRes, prodRes, catRes, floorRes] = await Promise.all([
           fetch("/api/sessions"),
-          fetch("/api/products"),
+          fetch("/api/products?is_active=true"),
           fetch("/api/categories"),
           fetch("/api/floors"),
         ]);
