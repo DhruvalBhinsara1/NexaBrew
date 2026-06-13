@@ -6,7 +6,6 @@ import {
   CreditCard,
   LayoutGrid,
   ShoppingCart,
-  TrendingUp,
 } from "lucide-react";
 import { createServerClient } from "@/lib/supabase/server";
 import { SessionService } from "@/services/SessionService";

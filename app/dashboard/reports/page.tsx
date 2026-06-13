@@ -17,7 +17,6 @@ import {
 import {
   BarChart3,
   Banknote,
-  Clock,
   CreditCard,
   IndianRupee,
   Receipt,
