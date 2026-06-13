@@ -15,6 +15,13 @@ interface ServerTotals {
   total: number;
 }
 
+interface BillItem {
+  id: string;
+  product_name: string;
+  quantity: number;
+  line_total: string | number;
+}
+
 interface Props {
   onTableSelect: () => void;
   onApplyCoupon: () => void;
@@ -51,9 +58,11 @@ export function CartPanel({
   // coupon/promotion discount and the discount-aware tax). Fetch and show those
   // real totals instead of the local estimate.
   const [server, setServer] = useState<ServerTotals | null>(null);
+  const [billItems, setBillItems] = useState<BillItem[]>([]);
   useEffect(() => {
     if (!orderId) {
       setServer(null);
+      setBillItems([]);
       return;
     }
     void fetch(`/api/orders/${orderId}`)
@@ -66,6 +75,7 @@ export function CartPanel({
             tax: Number(d.data.tax_amount),
             total: Number(d.data.total_amount),
           });
+          setBillItems((d.data.items as BillItem[] | undefined) ?? []);
         }
       })
       .catch(() => null);
@@ -142,13 +152,43 @@ export function CartPanel({
 
       {/* Cart items */}
       <div className="flex-1 overflow-y-auto">
-        {cartItems.length === 0 ? (
+        {isActiveOrder && billItems.length > 0 && (
+          <>
+            {/* Committed items already on the bill */}
+            <p className="sticky top-0 z-10 bg-surface-muted/90 px-4 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-zinc-400">
+              On this bill
+            </p>
+            <ul className="divide-y divide-surface-border">
+              {billItems.map((item) => (
+                <li key={item.id} className="flex items-center justify-between px-4 py-2.5">
+                  <span className="text-sm text-zinc-700">
+                    {item.product_name}
+                    <span className="ml-1 text-zinc-400">× {item.quantity}</span>
+                  </span>
+                  <span className="text-sm font-medium text-zinc-600">
+                    {formatCurrency(Number(item.line_total))}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </>
+        )}
+
+        {isActiveOrder && cartItems.length > 0 && (
+          <p className="sticky top-0 z-10 bg-brand-50/90 px-4 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-brand-600">
+            Adding now
+          </p>
+        )}
+
+        {cartItems.length === 0 && !isActiveOrder ? (
           <div className="flex h-full flex-col items-center justify-center gap-2 py-12 text-center">
             <UtensilsCrossed className="h-10 w-10 text-zinc-200" />
-            <p className="text-sm text-zinc-400">
-              {isActiveOrder ? "Add items to append to this bill" : "Cart is empty"}
-            </p>
+            <p className="text-sm text-zinc-400">Cart is empty</p>
             <p className="text-xs text-zinc-300">Click a product to add it</p>
+          </div>
+        ) : cartItems.length === 0 && isActiveOrder ? (
+          <div className="flex flex-col items-center justify-center gap-1 py-6 text-center">
+            <p className="text-xs text-zinc-400">Click a product to add more items</p>
           </div>
         ) : (
           <ul className="divide-y divide-surface-border">

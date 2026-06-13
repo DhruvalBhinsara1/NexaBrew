@@ -46,6 +46,7 @@ export default function SessionsPage(): React.ReactElement {
   const [sessions, setSessions] = useState<SessionWithUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
   const [totalPages, setTotalPages] = useState(1);
   const [hasNextPage, setHasNextPage] = useState(false);
   const [hasPreviousPage, setHasPreviousPage] = useState(false);
@@ -58,7 +59,7 @@ export default function SessionsPage(): React.ReactElement {
       setLoading(true);
       const params = new URLSearchParams();
       params.set("page", String(currentPage));
-      params.set("limit", "20");
+      params.set("limit", String(pageSize));
 
       const data = await apiGet<PaginatedResponse<SessionWithUser>>(
         `/api/sessions?${params.toString()}`
@@ -78,7 +79,7 @@ export default function SessionsPage(): React.ReactElement {
     } finally {
       setLoading(false);
     }
-  }, [toast]);
+  }, [pageSize, toast]);
 
   useEffect(() => {
     void load(1);
@@ -226,18 +227,18 @@ export default function SessionsPage(): React.ReactElement {
                 </table>
               </div>
 
-              {totalPages > 1 && (
-                <div className="border-t border-surface-border p-4">
-                  <Pagination
-                    page={page}
-                    totalPages={totalPages}
-                    hasNextPage={hasNextPage}
-                    hasPreviousPage={hasPreviousPage}
-                    onPageChange={(newPage) => void load(newPage)}
-                    isLoading={loading}
-                  />
-                </div>
-              )}
+              <div className="border-t border-surface-border p-4">
+                <Pagination
+                  page={page}
+                  totalPages={totalPages}
+                  hasNextPage={hasNextPage}
+                  hasPreviousPage={hasPreviousPage}
+                  onPageChange={(newPage) => void load(newPage)}
+                  pageSize={pageSize}
+                  onPageSizeChange={(s) => { setPageSize(s); void load(1); }}
+                  isLoading={loading}
+                />
+              </div>
             </>
           )}
         </CardContent>

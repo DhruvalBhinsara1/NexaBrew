@@ -114,13 +114,11 @@ export default function PosOrdersPage(): React.ReactElement {
   );
 
   // Client-side pagination over the filtered list.
-  const PER_PAGE = 12;
+  const [pageSize, setPageSize] = useState(10);
   const [page, setPage] = useState(1);
-  useEffect(() => {
-    setPage(1);
-  }, [filter, search]);
-  const totalPages = Math.max(1, Math.ceil(filtered.length / PER_PAGE));
-  const paged = filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE);
+  useEffect(() => { setPage(1); }, [filter, search, pageSize]);
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+  const paged = filtered.slice((page - 1) * pageSize, page * pageSize);
 
   return (
     <div className="min-h-screen">
@@ -202,15 +200,15 @@ export default function PosOrdersPage(): React.ReactElement {
           </CardContent>
         </Card>
 
-        {totalPages > 1 && (
-          <Pagination
-            page={page}
-            totalPages={totalPages}
-            hasNextPage={page < totalPages}
-            hasPreviousPage={page > 1}
-            onPageChange={setPage}
-          />
-        )}
+        <Pagination
+          page={page}
+          totalPages={totalPages}
+          hasNextPage={page < totalPages}
+          hasPreviousPage={page > 1}
+          onPageChange={setPage}
+          pageSize={pageSize}
+          onPageSizeChange={(s) => { setPageSize(s); setPage(1); }}
+        />
       </div>
 
       {/* Order detail sheet */}

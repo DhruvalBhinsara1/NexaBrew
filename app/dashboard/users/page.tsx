@@ -38,9 +38,9 @@ export default function UsersPage(): React.ReactElement {
   const [role, setRole] = useState<"admin" | "employee">("employee");
   const [busy, setBusy] = useState(false);
   const [page, setPage] = useState(1);
-  const PER_PAGE = 12;
-  const totalPages = Math.max(1, Math.ceil(users.length / PER_PAGE));
-  const pagedUsers = users.slice((page - 1) * PER_PAGE, page * PER_PAGE);
+  const [pageSize, setPageSize] = useState(10);
+  const totalPages = Math.max(1, Math.ceil(users.length / pageSize));
+  const pagedUsers = users.slice((page - 1) * pageSize, page * pageSize);
 
   const load = useCallback(async () => {
     try {
@@ -140,15 +140,15 @@ export default function UsersPage(): React.ReactElement {
         </CardContent>
       </Card>
 
-      {totalPages > 1 && (
-        <Pagination
-          page={page}
-          totalPages={totalPages}
-          hasNextPage={page < totalPages}
-          hasPreviousPage={page > 1}
-          onPageChange={setPage}
-        />
-      )}
+      <Pagination
+        page={page}
+        totalPages={totalPages}
+        hasNextPage={page < totalPages}
+        hasPreviousPage={page > 1}
+        onPageChange={setPage}
+        pageSize={pageSize}
+        onPageSizeChange={(s) => { setPageSize(s); setPage(1); }}
+      />
 
       <Dialog open={dialog} onOpenChange={setDialog}>
         <DialogContent className="max-w-sm">

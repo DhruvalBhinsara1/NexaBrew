@@ -58,6 +58,7 @@ export default function ProductsPage(): React.ReactElement {
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
   const [totalPages, setTotalPages] = useState(1);
   const [hasNextPage, setHasNextPage] = useState(false);
   const [hasPreviousPage, setHasPreviousPage] = useState(false);
@@ -72,7 +73,7 @@ export default function ProductsPage(): React.ReactElement {
         setLoading(true);
         const params = new URLSearchParams();
         params.set("page", String(currentPage));
-        params.set("limit", "20");
+        params.set("limit", String(pageSize));
         if (categoryFilter !== "all") {
           params.set("category_id", categoryFilter);
         }
@@ -109,12 +110,12 @@ export default function ProductsPage(): React.ReactElement {
         setLoading(false);
       }
     },
-    [categoryFilter, search, toast]
+    [categoryFilter, search, pageSize, toast]
   );
 
   useEffect(() => {
     void load(1);
-  }, [load, categoryFilter, search]);
+  }, [load, categoryFilter, search, pageSize]);
 
   function openCreate(): void {
     setEditing(null);
@@ -275,16 +276,16 @@ export default function ProductsPage(): React.ReactElement {
         </CardContent>
       </Card>
 
-      {totalPages > 1 && (
-        <Pagination
-          page={page}
-          totalPages={totalPages}
-          hasNextPage={hasNextPage}
-          hasPreviousPage={hasPreviousPage}
-          onPageChange={(newPage) => void load(newPage)}
-          isLoading={loading}
-        />
-      )}
+      <Pagination
+        page={page}
+        totalPages={totalPages}
+        hasNextPage={hasNextPage}
+        hasPreviousPage={hasPreviousPage}
+        onPageChange={(newPage) => void load(newPage)}
+        pageSize={pageSize}
+        onPageSizeChange={(s) => { setPageSize(s); void load(1); }}
+        isLoading={loading}
+      />
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-w-md">
