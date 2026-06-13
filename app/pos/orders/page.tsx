@@ -2,13 +2,22 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, Receipt, Search } from "lucide-react";
+import { ArrowLeft, Receipt, Search, Trash2, XCircle } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import {
+  Sheet,
+  SheetContent,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
+import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { useToast } from "@/hooks/use-toast";
-import { apiGet } from "@/lib/api-client";
+import { apiGet, apiSend } from "@/lib/api-client";
 import { formatCurrency } from "@/lib/utils/formatCurrency";
 import type { OrderStatus, OrderWithItems } from "@/types/domain.types";
 
@@ -41,6 +50,8 @@ export default function PosOrdersPage(): React.ReactElement {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<OrderStatus | "all">("all");
   const [search, setSearch] = useState("");
+  const [selected, setSelected] = useState<OrderWithItems | null>(null);
+  const [busy, setBusy] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -51,6 +62,36 @@ export default function PosOrdersPage(): React.ReactElement {
       setLoading(false);
     }
   }, [toast]);
+
+  async function cancelOrder(o: OrderWithItems): Promise<void> {
+    if (!confirm(`Cancel order ${o.order_number}?`)) return;
+    setBusy(true);
+    try {
+      await apiSend(`/api/orders/${o.id}/cancel`, "POST");
+      toast({ title: "Order cancelled" });
+      setSelected(null);
+      await load();
+    } catch (e) {
+      toast({ title: (e as Error).message, variant: "destructive" });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function deleteOrder(o: OrderWithItems): Promise<void> {
+    if (!confirm(`Delete draft order ${o.order_number}? This cannot be undone.`)) return;
+    setBusy(true);
+    try {
+      await apiSend(`/api/orders/${o.id}`, "DELETE");
+      toast({ title: "Order deleted" });
+      setSelected(null);
+      await load();
+    } catch (e) {
+      toast({ title: (e as Error).message, variant: "destructive" });
+    } finally {
+      setBusy(false);
+    }
+  }
 
   useEffect(() => {
     void load();
@@ -124,7 +165,11 @@ export default function PosOrdersPage(): React.ReactElement {
                   </thead>
                   <tbody>
                     {filtered.map((o) => (
-                      <tr key={o.id} className="border-b border-surface-border last:border-0">
+                      <tr
+                        key={o.id}
+                        onClick={() => setSelected(o)}
+                        className="cursor-pointer border-b border-surface-border last:border-0 hover:bg-surface-muted"
+                      >
                         <td className="px-4 py-3 font-medium text-zinc-800">{o.order_number}</td>
                         <td className="px-4 py-3 text-zinc-500">{o.customer?.name ?? "—"}</td>
                         <td className="px-4 py-3 text-center text-zinc-500">{o.items.length}</td>
@@ -145,6 +190,63 @@ export default function PosOrdersPage(): React.ReactElement {
           </CardContent>
         </Card>
       </div>
+
+      {/* Order detail sheet */}
+      <Sheet open={!!selected} onOpenChange={(v) => !v && setSelected(null)}>
+        <SheetContent className="w-full overflow-y-auto sm:max-w-md">
+          {selected && (
+            <>
+              <SheetHeader>
+                <SheetTitle className="flex items-center gap-2">
+                  Order {selected.order_number}
+                  <span className={cn("rounded-full px-2 py-0.5 text-xs font-medium", BADGE[selected.status] ?? "bg-zinc-100")}>
+                    {selected.status.replace(/_/g, " ")}
+                  </span>
+                </SheetTitle>
+              </SheetHeader>
+
+              <div className="mt-4 space-y-1 text-sm text-zinc-500">
+                <p>Table: {selected.table ? `T${selected.table.table_number}` : "—"}</p>
+                <p>Customer: {selected.customer?.name ?? "Walk-in"}</p>
+                <p>Created: {fmt(selected.created_at)}</p>
+              </div>
+
+              <Separator className="my-4" />
+
+              <ul className="space-y-2">
+                {selected.items.map((it) => (
+                  <li key={it.id} className="flex justify-between text-sm">
+                    <span className="text-zinc-700">{it.product_name} × {it.quantity}</span>
+                    <span className="font-medium text-zinc-800">{formatCurrency(Number(it.line_total))}</span>
+                  </li>
+                ))}
+              </ul>
+
+              <Separator className="my-4" />
+
+              <div className="space-y-1 text-sm">
+                <div className="flex justify-between text-zinc-500"><span>Subtotal</span><span>{formatCurrency(Number(selected.subtotal))}</span></div>
+                <div className="flex justify-between text-zinc-500"><span>Discount</span><span>−{formatCurrency(Number(selected.discount_amount))}</span></div>
+                <div className="flex justify-between text-zinc-500"><span>Tax</span><span>{formatCurrency(Number(selected.tax_amount))}</span></div>
+                <div className="flex justify-between text-base font-bold text-zinc-900"><span>Total</span><span>{formatCurrency(Number(selected.total_amount))}</span></div>
+              </div>
+
+              {(selected.status === "draft" || selected.status === "sent_to_kitchen") && (
+                <SheetFooter className="mt-6 flex-col gap-2 sm:flex-col">
+                  {selected.status === "draft" && (
+                    <Button variant="outline" className="w-full" onClick={() => void deleteOrder(selected)} disabled={busy}>
+                      <Trash2 className="mr-2 h-4 w-4" /> Delete Draft
+                    </Button>
+                  )}
+                  <Button variant="destructive" className="w-full" onClick={() => void cancelOrder(selected)} disabled={busy}>
+                    <XCircle className="mr-2 h-4 w-4" /> Cancel Order
+                  </Button>
+                </SheetFooter>
+              )}
+            </>
+          )}
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }

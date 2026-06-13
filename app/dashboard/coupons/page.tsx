@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import {
   Select,
   SelectContent,
@@ -125,6 +126,24 @@ export default function CouponsPage(): React.ReactElement {
     }
   }
 
+  async function toggleCoupon(c: Coupon): Promise<void> {
+    try {
+      await apiSend(`/api/coupons/${c.id}`, "PATCH", { is_active: !c.is_active });
+      await load();
+    } catch (e) {
+      toast({ title: (e as Error).message, variant: "destructive" });
+    }
+  }
+
+  async function togglePromo(p: Promotion): Promise<void> {
+    try {
+      await apiSend(`/api/promotions/${p.id}`, "PATCH", { is_active: !p.is_active });
+      await load();
+    } catch (e) {
+      toast({ title: (e as Error).message, variant: "destructive" });
+    }
+  }
+
   async function deleteCoupon(c: Coupon): Promise<void> {
     if (!confirm(`Delete coupon ${c.code}?`)) return;
     try {
@@ -182,9 +201,7 @@ export default function CouponsPage(): React.ReactElement {
                       {c.used_count}{c.max_uses ? ` / ${c.max_uses}` : ""}
                     </td>
                     <td className="px-4 py-2 text-center">
-                      <span className={`rounded-full px-2 py-0.5 text-xs ${c.is_active ? "bg-green-100 text-green-700" : "bg-zinc-100 text-zinc-400"}`}>
-                        {c.is_active ? "active" : "off"}
-                      </span>
+                      <Switch checked={c.is_active} onCheckedChange={() => void toggleCoupon(c)} />
                     </td>
                     <td className="px-4 py-2 text-right">
                       <button onClick={() => void deleteCoupon(c)} className="rounded p-1.5 text-red-400 hover:bg-red-50">
@@ -218,6 +235,7 @@ export default function CouponsPage(): React.ReactElement {
                   <th className="px-4 py-2 text-left">Applies To</th>
                   <th className="px-4 py-2 text-left">Condition</th>
                   <th className="px-4 py-2 text-left">Discount</th>
+                  <th className="px-4 py-2 text-center">Active</th>
                   <th className="px-4 py-2 text-right">Actions</th>
                 </tr>
               </thead>
@@ -230,6 +248,9 @@ export default function CouponsPage(): React.ReactElement {
                       {p.applies_to === "product" ? `Min qty ${p.min_quantity}` : `Min order ₹${p.min_order_amount}`}
                     </td>
                     <td className="px-4 py-2 text-zinc-600">{discountLabel(p.discount_type, Number(p.discount_value))}</td>
+                    <td className="px-4 py-2 text-center">
+                      <Switch checked={p.is_active} onCheckedChange={() => void togglePromo(p)} />
+                    </td>
                     <td className="px-4 py-2 text-right">
                       <button onClick={() => void deletePromo(p)} className="rounded p-1.5 text-red-400 hover:bg-red-50">
                         <Trash2 className="h-3.5 w-3.5" />
