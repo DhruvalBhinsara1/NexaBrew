@@ -34,10 +34,12 @@ export function CartPanel({
   onSendToKitchen,
   sending,
 }: Props): React.ReactElement {
-  const { cartItems, tableNumber, orderId, orderNumber, orderStatus, couponCode, customerName, setQty, removeItem } =
+  const { cartItems, tableNumber, orderId, orderNumber, orderStatus, orderRefresh, couponCode, customerName, setQty, removeItem } =
     usePosStore();
 
-  const isLocked = !!orderStatus && orderStatus !== "draft";
+  // Once an order exists it's "active" (sent/payment_pending). The cart then
+  // becomes a staging area for items to ADD to the existing bill.
+  const isActiveOrder = !!orderId;
 
   // Once an order exists, the server is the source of truth (it includes the
   // coupon/promotion discount and the discount-aware tax). Fetch and show those
@@ -61,7 +63,7 @@ export function CartPanel({
         }
       })
       .catch(() => null);
-  }, [orderId, orderStatus]);
+  }, [orderId, orderStatus, orderRefresh]);
 
   // Client-side estimate (used only while building the cart, before the order
   // is created — no discount yet).
@@ -87,7 +89,7 @@ export function CartPanel({
           </h2>
           <button
             onClick={onTableSelect}
-            disabled={isLocked}
+            disabled={isActiveOrder}
             className="rounded-md bg-surface-muted px-2 py-1 text-xs font-medium text-zinc-600 hover:bg-brand-50 hover:text-brand-700 disabled:opacity-50"
           >
             {tableNumber ? `T${tableNumber} ✓` : "Select Table"}
@@ -106,7 +108,9 @@ export function CartPanel({
         {cartItems.length === 0 ? (
           <div className="flex h-full flex-col items-center justify-center gap-2 py-12 text-center">
             <UtensilsCrossed className="h-10 w-10 text-zinc-200" />
-            <p className="text-sm text-zinc-400">Cart is empty</p>
+            <p className="text-sm text-zinc-400">
+              {isActiveOrder ? "Add items to append to this bill" : "Cart is empty"}
+            </p>
             <p className="text-xs text-zinc-300">Click a product to add it</p>
           </div>
         ) : (
@@ -122,29 +126,27 @@ export function CartPanel({
                 <p className="shrink-0 text-sm font-semibold text-zinc-800">
                   {formatCurrency(item.unitPrice * item.quantity)}
                 </p>
-                {!isLocked && (
-                  <div className="flex items-center gap-1">
-                    <button
-                      onClick={() => setQty(item.productId, item.quantity - 1)}
-                      className="flex h-6 w-6 items-center justify-center rounded-full border border-surface-border text-zinc-500 hover:bg-surface-muted"
-                    >
-                      <Minus className="h-3 w-3" />
-                    </button>
-                    <span className="w-5 text-center text-sm font-medium">{item.quantity}</span>
-                    <button
-                      onClick={() => setQty(item.productId, item.quantity + 1)}
-                      className="flex h-6 w-6 items-center justify-center rounded-full border border-surface-border text-zinc-500 hover:bg-surface-muted"
-                    >
-                      <Plus className="h-3 w-3" />
-                    </button>
-                    <button
-                      onClick={() => removeItem(item.productId)}
-                      className="ml-1 flex h-6 w-6 items-center justify-center rounded-full text-red-400 hover:bg-red-50"
-                    >
-                      <Trash2 className="h-3 w-3" />
-                    </button>
-                  </div>
-                )}
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => setQty(item.productId, item.quantity - 1)}
+                    className="flex h-6 w-6 items-center justify-center rounded-full border border-surface-border text-zinc-500 hover:bg-surface-muted"
+                  >
+                    <Minus className="h-3 w-3" />
+                  </button>
+                  <span className="w-5 text-center text-sm font-medium">{item.quantity}</span>
+                  <button
+                    onClick={() => setQty(item.productId, item.quantity + 1)}
+                    className="flex h-6 w-6 items-center justify-center rounded-full border border-surface-border text-zinc-500 hover:bg-surface-muted"
+                  >
+                    <Plus className="h-3 w-3" />
+                  </button>
+                  <button
+                    onClick={() => removeItem(item.productId)}
+                    className="ml-1 flex h-6 w-6 items-center justify-center rounded-full text-red-400 hover:bg-red-50"
+                  >
+                    <Trash2 className="h-3 w-3" />
+                  </button>
+                </div>
               </li>
             ))}
           </ul>
@@ -153,44 +155,59 @@ export function CartPanel({
 
       {/* Order summary */}
       <div className="border-t border-surface-border px-4 pb-4 pt-3">
-        <div className="space-y-1.5 text-sm">
-          <div className="flex justify-between text-zinc-500">
-            <span>Subtotal</span>
-            <span>{formatCurrency(subtotal)}</span>
-          </div>
-          <div className="flex justify-between text-zinc-500">
-            <span>Tax</span>
-            <span>{formatCurrency(tax)}</span>
-          </div>
-          {/* Real discount once the order exists; otherwise a pending note */}
-          {discount > 0 ? (
-            <div className="flex items-center justify-between text-green-600">
-              <span className="flex items-center gap-1 text-xs">
-                <Ticket className="h-3 w-3" />
-                {couponCode || "Discount"}
-              </span>
-              <span>−{formatCurrency(discount)}</span>
+        {isActiveOrder ? (
+          // Active order: show the confirmed bill, plus any staged additions.
+          <div className="space-y-1.5 text-sm">
+            <div className="flex justify-between text-zinc-500">
+              <span>Bill so far</span>
+              <span>{formatCurrency(total)}</span>
             </div>
-          ) : (
-            couponCode && (
+            {discount > 0 && (
+              <div className="flex items-center justify-between text-green-600">
+                <span className="flex items-center gap-1 text-xs">
+                  <Ticket className="h-3 w-3" />
+                  {couponCode || "Discount"}
+                </span>
+                <span>−{formatCurrency(discount)}</span>
+              </div>
+            )}
+            {cartItems.length > 0 && (
+              <div className="flex justify-between font-medium text-brand-600">
+                <span>Adding (est.)</span>
+                <span>+{formatCurrency(round2(estSubtotal + estTax))}</span>
+              </div>
+            )}
+          </div>
+        ) : (
+          // New order: client-side estimate.
+          <div className="space-y-1.5 text-sm">
+            <div className="flex justify-between text-zinc-500">
+              <span>Subtotal</span>
+              <span>{formatCurrency(subtotal)}</span>
+            </div>
+            <div className="flex justify-between text-zinc-500">
+              <span>Tax</span>
+              <span>{formatCurrency(tax)}</span>
+            </div>
+            {couponCode && (
               <div className="flex items-center justify-between text-green-600">
                 <span className="flex items-center gap-1 text-xs">
                   <Ticket className="h-3 w-3" />
                   {couponCode}
                 </span>
-                <span className="text-xs">{server ? "not applicable" : "applied on send"}</span>
+                <span className="text-xs">applied on send</span>
               </div>
-            )
-          )}
-          <Separator className="my-2" />
-          <div className="flex justify-between text-base font-bold text-zinc-900">
-            <span>Total</span>
-            <span>{formatCurrency(total)}</span>
+            )}
+            <Separator className="my-2" />
+            <div className="flex justify-between text-base font-bold text-zinc-900">
+              <span>Total</span>
+              <span>{formatCurrency(total)}</span>
+            </div>
           </div>
-        </div>
+        )}
 
-        {!isLocked && (
-          <div className="mt-3 space-y-2">
+        <div className="mt-3 space-y-2">
+          {!isActiveOrder && (
             <div className="grid grid-cols-2 gap-2">
               <Button variant="outline" size="sm" onClick={onAssignCustomer}>
                 <User className="mr-2 h-3.5 w-3.5" />
@@ -201,15 +218,15 @@ export function CartPanel({
                 {couponCode ? couponCode : "Coupon"}
               </Button>
             </div>
-            <SlideTextButton
-              onClick={onSendToKitchen}
-              disabled={cartItems.length === 0 || sending}
-              loading={sending}
-            >
-              Send to Kitchen
-            </SlideTextButton>
-          </div>
-        )}
+          )}
+          <SlideTextButton
+            onClick={onSendToKitchen}
+            disabled={cartItems.length === 0 || sending}
+            loading={sending}
+          >
+            {isActiveOrder ? "Add to Bill & Send to Kitchen" : "Send to Kitchen"}
+          </SlideTextButton>
+        </div>
       </div>
     </div>
   );

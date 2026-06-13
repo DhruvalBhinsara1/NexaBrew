@@ -23,6 +23,12 @@ export const UpdateOrderSchema = z
   });
 export type UpdateOrderInput = z.infer<typeof UpdateOrderSchema>;
 
+// Add items to an existing, unpaid order (sent_to_kitchen / payment_pending).
+export const AddOrderItemsSchema = z.object({
+  items: z.array(OrderItemInputSchema).min(1, "Add at least one item"),
+});
+export type AddOrderItemsInput = z.infer<typeof AddOrderItemsSchema>;
+
 export const OrderStatusFilter = z.enum([
   "draft",
   "sent_to_kitchen",

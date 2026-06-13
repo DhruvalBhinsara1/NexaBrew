@@ -48,7 +48,7 @@ interface Props {
 }
 
 export function PaymentPanel({ onPaymentComplete, toast }: Props): React.ReactElement {
-  const { orderId, orderStatus, orderNumber, reset } = usePosStore();
+  const { orderId, orderStatus, orderNumber, orderRefresh, reset } = usePosStore();
 
   const [method, setMethod] = useState<PaymentMethod>("razorpay");
   const [tendered, setTendered] = useState("");
@@ -66,7 +66,7 @@ export function PaymentPanel({ onPaymentComplete, toast }: Props): React.ReactEl
         if (d.data) setOrderTotal(Number(d.data.total_amount));
       })
       .catch(() => null);
-  }, [orderId]);
+  }, [orderId, orderRefresh]);
 
   // ─── Razorpay checkout flow ────────────────────────────────────────────────
 

@@ -41,8 +41,10 @@ interface PosStore {
   orderId: string | null;
   orderNumber: string | null;
   orderStatus: string | null;
+  orderRefresh: number; // bump to force the cart/payment panels to refetch totals
   setOrder: (id: string, num: string, status: string) => void;
   updateStatus: (status: string) => void;
+  bumpOrder: () => void;
 
   // Reset everything (after payment)
   reset: () => void;
@@ -91,8 +93,10 @@ export const usePosStore = create<PosStore>((set) => ({
   orderId: null,
   orderNumber: null,
   orderStatus: null,
+  orderRefresh: 0,
   setOrder: (id, num, status) => set({ orderId: id, orderNumber: num, orderStatus: status }),
   updateStatus: (status) => set({ orderStatus: status }),
+  bumpOrder: () => set((s) => ({ orderRefresh: s.orderRefresh + 1 })),
 
   reset: () =>
     set({

@@ -274,6 +274,112 @@ export const OrderService = {
     return this.getById(supabase, id);
   },
 
+  /**
+   * Add items to an existing unpaid order (sent_to_kitchen | payment_pending)
+   * — "add to the same bill". Items are merged/upserted (existing order_items
+   * rows are never deleted, to keep kitchen_ticket_items FKs valid), the bill
+   * is recomputed (coupon preserved), the added items are sent to the kitchen
+   * as a new ticket, and the order returns to sent_to_kitchen.
+   */
+  async addItems(
+    supabase: Supa,
+    id: string,
+    newItems: { product_id: string; quantity: number }[]
+  ): Promise<OrderWithItems> {
+    const order = await this.getById(supabase, id);
+    if (order.status !== "sent_to_kitchen" && order.status !== "payment_pending") {
+      throw new AppError(
+        "Items can only be added to an active, unpaid order",
+        "ORDER_NOT_APPENDABLE",
+        409
+      );
+    }
+
+    // Merge existing + new quantities by product, then re-price/-discount the
+    // whole set (snapshot dedups by product and refetches current prices).
+    const merged = new Map<string, number>();
+    for (const it of order.items) merged.set(it.product_id, (merged.get(it.product_id) ?? 0) + it.quantity);
+    for (const it of newItems) merged.set(it.product_id, (merged.get(it.product_id) ?? 0) + it.quantity);
+    const mergedItems = Array.from(merged, ([product_id, quantity]) => ({ product_id, quantity }));
+
+    const snapshot = await snapshotItems(supabase, mergedItems);
+    const discountState = await buildDiscountState(supabase, snapshot, order.coupon?.code ?? null);
+
+    // Upsert by product_id — update existing rows (keeps their ids), insert new.
+    const existingByProduct = new Map(order.items.map((i) => [i.product_id, i]));
+    for (const item of discountState.items) {
+      const existing = existingByProduct.get(item.product_id);
+      if (existing) {
+        const { error } = await supabase
+          .from("order_items")
+          .update({
+            quantity: item.quantity,
+            unit_price: item.unit_price,
+            tax_rate: item.tax_rate,
+            discount_amount: item.discount_amount,
+            line_total: item.line_total,
+            promotion_id: item.promotion_id,
+          })
+          .eq("id", existing.id);
+        if (error) throw mapDatabaseError(error, "ORDER_ITEMS_UPDATE_FAILED");
+      } else {
+        const { error } = await supabase
+          .from("order_items")
+          .insert({ ...item, order_id: id });
+        if (error) throw mapDatabaseError(error, "ORDER_ITEMS_UPDATE_FAILED");
+      }
+    }
+
+    // Recompute order aggregate + return to the kitchen.
+    const { error: updErr } = await supabase
+      .from("orders")
+      .update({
+        subtotal: discountState.subtotal,
+        discount_amount: discountState.discount_amount,
+        tax_amount: discountState.tax_amount,
+        total_amount: discountState.total_amount,
+        coupon_id: discountState.coupon_id,
+        promotion_id: discountState.promotion_id,
+        status: "sent_to_kitchen",
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", id);
+    if (updErr) throw mapDatabaseError(updErr, "ORDER_UPDATE_FAILED");
+
+    // Send the ADDED items to the kitchen as a new ticket (kitchen-display only).
+    const newProductIds = newItems.map((i) => i.product_id);
+    const { data: products } = await supabase
+      .from("products")
+      .select("id, is_kitchen_display")
+      .in("id", newProductIds);
+    const kitchenIds = new Set((products ?? []).filter((p) => p.is_kitchen_display).map((p) => p.id));
+
+    const updated = await this.getById(supabase, id);
+    const orderItemByProduct = new Map(updated.items.map((i) => [i.product_id, i]));
+    const ticketItems = newItems
+      .filter((i) => kitchenIds.has(i.product_id))
+      .map((i) => {
+        const oi = orderItemByProduct.get(i.product_id);
+        return oi ? { order_item_id: oi.id, product_name: oi.product_name, quantity: i.quantity } : null;
+      })
+      .filter((x): x is { order_item_id: string; product_name: string; quantity: number } => x !== null);
+
+    if (ticketItems.length > 0) {
+      const { data: ticket, error: ticketErr } = await supabase
+        .from("kitchen_tickets")
+        .insert({ order_id: id, ticket_number: order.order_number, status: "to_cook" })
+        .select("id")
+        .single();
+      if (ticketErr) throw mapDatabaseError(ticketErr, "KITCHEN_TICKET_CREATE_FAILED");
+      const { error: itemsErr } = await supabase
+        .from("kitchen_ticket_items")
+        .insert(ticketItems.map((t) => ({ ...t, ticket_id: ticket.id })));
+      if (itemsErr) throw mapDatabaseError(itemsErr, "KITCHEN_TICKET_ITEMS_CREATE_FAILED");
+    }
+
+    return this.getById(supabase, id);
+  },
+
   async remove(supabase: Supa, id: string): Promise<void> {
     const order = await this.getById(supabase, id);
     if (order.status !== "draft") {

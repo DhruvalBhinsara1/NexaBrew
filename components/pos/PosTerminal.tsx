@@ -45,7 +45,7 @@ export function PosTerminal(): React.ReactElement {
     cartItems, couponCode, clearCart,
     customerId,
     orderId,
-    setOrder, updateStatus,
+    setOrder, updateStatus, bumpOrder,
   } = usePosStore();
 
   // Load initial data
@@ -138,7 +138,28 @@ export function PosTerminal(): React.ReactElement {
 
     setSending(true);
     try {
-      // 1. Create/get draft order
+      const itemsPayload = cartItems.map((c) => ({ product_id: c.productId, quantity: c.quantity }));
+
+      // EXISTING active order → add items to the same bill.
+      if (orderId) {
+        const addRes = await fetch(`/api/orders/${orderId}/add-items`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ items: itemsPayload }),
+        });
+        const addData = await addRes.json();
+        if (!addRes.ok) {
+          showToast(addData.error ?? "Failed to add items.", "error");
+          return;
+        }
+        updateStatus("sent_to_kitchen");
+        clearCart();
+        bumpOrder();
+        showToast("Items added to the bill and sent to kitchen!", "success");
+        return;
+      }
+
+      // NEW order → create → coupon → send to kitchen.
       const orderRes = await fetch("/api/orders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -146,7 +167,7 @@ export function PosTerminal(): React.ReactElement {
           session_id: session.id,
           table_id: tableId ?? undefined,
           customer_id: customerId ?? undefined,
-          items: cartItems.map((c) => ({ product_id: c.productId, quantity: c.quantity })),
+          items: itemsPayload,
         }),
       });
       const orderData = await orderRes.json();
@@ -156,7 +177,6 @@ export function PosTerminal(): React.ReactElement {
       }
       const order = orderData.data as { id: string; order_number: string; status: string };
 
-      // 2. Apply coupon if one is set
       if (couponCode) {
         await fetch(`/api/orders/${order.id}/apply-coupon`, {
           method: "POST",
@@ -166,10 +186,7 @@ export function PosTerminal(): React.ReactElement {
         // Coupon errors are non-fatal — warn but continue
       }
 
-      // 3. Send to kitchen
-      const kitchenRes = await fetch(`/api/orders/${order.id}/send-to-kitchen`, {
-        method: "POST",
-      });
+      const kitchenRes = await fetch(`/api/orders/${order.id}/send-to-kitchen`, { method: "POST" });
       const kitchenData = await kitchenRes.json();
       if (!kitchenRes.ok) {
         showToast(kitchenData.error ?? "Failed to send to kitchen.", "error");
@@ -177,6 +194,7 @@ export function PosTerminal(): React.ReactElement {
       }
 
       setOrder(order.id, order.order_number, "sent_to_kitchen");
+      clearCart();
       showToast(`Order #${order.order_number} sent to kitchen!`, "success");
     } catch {
       showToast("Something went wrong. Please try again.", "error");
