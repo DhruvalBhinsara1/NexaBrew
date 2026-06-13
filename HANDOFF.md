@@ -10,7 +10,7 @@ Project root: `/Users/dhruvalbhinsara/NexaBrew`
 
 ---
 
-## Progress: Phases 0–12 COMPLETE (backend). Phase 13 next (Dashboard UI).
+## Progress: Phases 0–16 COMPLETE. Phase 17 (P3 optional) or live verification next.
 
 | Phase | Status |
 |---|---|
@@ -27,7 +27,11 @@ Project root: `/Users/dhruvalbhinsara/NexaBrew`
 | 10 — Users (Admin API) | ✅ done, `tsc` + lint clean |
 | 11 — Reports | ✅ done, `tsc` + lint + build green |
 | 12 — Customers | ✅ done, `tsc` + lint + build green |
-| 13–17 | not started |
+| 13 — Dashboard UI | ✅ done, `tsc` + `next build` green |
+| 14 — POS Terminal UI | ✅ done, `tsc` + `next build` green |
+| 15 — KDS UI | ✅ done, `tsc` + `next build` green |
+| 16 — Polish (EmptyState/ErrorState) | ✅ done |
+| 17 — P3 Optional (PDF/XLS export) | not started (P3 only if time) |
 
 ### Device-switch handoff — 2026-06-13
 
@@ -333,7 +337,58 @@ Notes:
 - Delete blocked if customer has orders -> 409 CUSTOMER_HAS_ORDERS.
 Verified: npx tsc --noEmit + npm run lint + npm run build all green.
 
-## NEXT: Phase 13 -- Dashboard UI
+## Phase 13 — Dashboard UI (completed)
 
-Replace app/dashboard/page.tsx placeholder with the full admin Dashboard UI.
-Key widgets: open session card, revenue KPIs, table occupancy grid, recent orders table, quick-links to POS/KDS/Reports.
+Implemented:
+- `components/dashboard/DashboardSidebar.tsx` — client sidebar with Lucide icons, `usePathname` active state, all nav items per DESIGN.md, LogoutButton
+- `app/dashboard/layout.tsx` — sticky sidebar + scrollable main area
+- `app/dashboard/page.tsx` — server component; parallel-fetches session, today's report, floors, recent orders
+
+Features:
+- Session status banner (green = open, amber = no session) with link to Sessions page
+- 4 KPI cards: Orders Today, Revenue Today, Avg Order Value, Tables Occupied
+- Table occupancy grid (floor-by-floor, brand-500 = occupied, muted = available)
+- Recent orders table (last 10, all statuses, color-coded badges)
+- Quick-links row: Reports, Products, Sessions, Users
+
+Verified: `npx tsc --noEmit` zero errors + `npm run build` clean (29 routes).
+
+## Phase 14 — POS Terminal UI (completed)
+
+Implemented:
+- `store/usePosStore.ts` — Zustand store: cart items, table, session, order state
+- `app/pos/layout.tsx` — thin layout (no sidebar) for POS pages
+- `components/pos/TableSelectorDialog.tsx` — floor/table picker dialog (shadcn Tabs + grid)
+- `components/pos/CouponDialog.tsx` — coupon code entry (applied at send-to-kitchen time)
+- `components/pos/ProductsPanel.tsx` — category tab filter + product grid (flex 2)
+- `components/pos/CartPanel.tsx` — cart items, qty +/−, running total, action buttons (flex 1.2)
+- `components/pos/PaymentPanel.tsx` — cash/card/UPI payment form; QR fetched from API; realtime-aware (flex 1)
+- `components/pos/PosTerminal.tsx` — main client component; fetches session+products+categories+floors; sets up Supabase realtime channel on orderId for payment_pending transition
+- `app/pos/terminal/page.tsx` — thin server page rendering `<PosTerminal />`
+
+Flow: add items → select table → send to kitchen → wait for KDS (realtime updates panel) → process payment → reset.
+
+## Phase 15 — KDS UI (completed)
+
+Implemented:
+- `app/kds/page.tsx` — full-screen dark 3-column kanban
+  - Realtime via `useRealtimeKitchenTickets` (anon key, public RLS)
+  - Columns: To Cook (amber) | Preparing (blue) | Completed (green, clears after 5 min)
+  - Tap ticket card → advance status (PATCH /api/kitchen/tickets/[id] — public route)
+  - Tap item within card → mark complete (PATCH /api/kitchen/tickets/[id]/items/[itemId] — public route)
+  - Live clock in header
+
+## Phase 16 — Polish (completed)
+
+Implemented:
+- `components/shared/EmptyState.tsx` — icon + title + subtitle + optional CTA
+- `components/shared/ErrorState.tsx` — error icon + message + retry button
+
+Verified: `npx tsc --noEmit` zero errors + `npm run build` clean (29 routes, all green).
+
+## NEXT: Remaining work
+
+All P0 + P1 features are complete. Suggested next steps:
+1. Live end-to-end demo run (open session → POS order → KDS → payment)
+2. Live payment verification (Resend API key for receipt email)
+3. Phase 17 — P3 PDF/XLS export (only if time permits)

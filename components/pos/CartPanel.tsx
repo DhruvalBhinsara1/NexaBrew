@@ -1,0 +1,169 @@
+"use client";
+
+import { Minus, Plus, Ticket, Trash2, UtensilsCrossed } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
+import { usePosStore } from "@/store/usePosStore";
+import { formatCurrency } from "@/lib/utils/formatCurrency";
+import { SlideTextButton } from "@/components/kokonutui";
+
+interface Props {
+  onTableSelect: () => void;
+  onApplyCoupon: () => void;
+  onSendToKitchen: () => void;
+  sending: boolean;
+}
+
+function round2(n: number): number {
+  return Math.round((n + Number.EPSILON) * 100) / 100;
+}
+
+export function CartPanel({
+  onTableSelect,
+  onApplyCoupon,
+  onSendToKitchen,
+  sending,
+}: Props): React.ReactElement {
+  const { cartItems, tableNumber, orderNumber, orderStatus, couponCode, setQty, removeItem } =
+    usePosStore();
+
+  const isLocked = !!orderStatus && orderStatus !== "draft";
+
+  // Client-side total preview (no order-level discount — applied server-side)
+  const subtotal = round2(
+    cartItems.reduce((s, c) => s + c.unitPrice * c.quantity, 0)
+  );
+  const tax = round2(
+    cartItems.reduce((s, c) => s + c.unitPrice * c.quantity * (c.taxRate / 100), 0)
+  );
+  const total = round2(subtotal + tax);
+
+  return (
+    <div className="flex h-full flex-col border-l border-surface-border bg-white">
+      {/* Header */}
+      <div className="border-b border-surface-border px-4 py-3">
+        <div className="flex items-center justify-between">
+          <h2 className="font-semibold text-zinc-800">
+            {orderNumber
+              ? `Order #${orderNumber}`
+              : tableNumber
+                ? `Table ${tableNumber}`
+                : "New Order"}
+          </h2>
+          <button
+            onClick={onTableSelect}
+            disabled={isLocked}
+            className="rounded-md bg-surface-muted px-2 py-1 text-xs font-medium text-zinc-600 hover:bg-brand-50 hover:text-brand-700 disabled:opacity-50"
+          >
+            {tableNumber ? `T${tableNumber} ✓` : "Select Table"}
+          </button>
+        </div>
+        {orderStatus && (
+          <p className="mt-1 text-xs text-zinc-400">
+            Status:{" "}
+            <span className="font-medium text-brand-600">{orderStatus.replace(/_/g, " ")}</span>
+          </p>
+        )}
+      </div>
+
+      {/* Cart items */}
+      <div className="flex-1 overflow-y-auto">
+        {cartItems.length === 0 ? (
+          <div className="flex h-full flex-col items-center justify-center gap-2 py-12 text-center">
+            <UtensilsCrossed className="h-10 w-10 text-zinc-200" />
+            <p className="text-sm text-zinc-400">Cart is empty</p>
+            <p className="text-xs text-zinc-300">Click a product to add it</p>
+          </div>
+        ) : (
+          <ul className="divide-y divide-surface-border">
+            {cartItems.map((item) => (
+              <li key={item.productId} className="flex items-center gap-3 px-4 py-3">
+                <div className="flex-1 min-w-0">
+                  <p className="truncate text-sm font-medium text-zinc-800">{item.name}</p>
+                  <p className="text-xs text-zinc-400">
+                    {formatCurrency(item.unitPrice)} × {item.quantity}
+                  </p>
+                </div>
+                <p className="shrink-0 text-sm font-semibold text-zinc-800">
+                  {formatCurrency(item.unitPrice * item.quantity)}
+                </p>
+                {!isLocked && (
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => setQty(item.productId, item.quantity - 1)}
+                      className="flex h-6 w-6 items-center justify-center rounded-full border border-surface-border text-zinc-500 hover:bg-surface-muted"
+                    >
+                      <Minus className="h-3 w-3" />
+                    </button>
+                    <span className="w-5 text-center text-sm font-medium">{item.quantity}</span>
+                    <button
+                      onClick={() => setQty(item.productId, item.quantity + 1)}
+                      className="flex h-6 w-6 items-center justify-center rounded-full border border-surface-border text-zinc-500 hover:bg-surface-muted"
+                    >
+                      <Plus className="h-3 w-3" />
+                    </button>
+                    <button
+                      onClick={() => removeItem(item.productId)}
+                      className="ml-1 flex h-6 w-6 items-center justify-center rounded-full text-red-400 hover:bg-red-50"
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </button>
+                  </div>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+
+      {/* Order summary */}
+      <div className="border-t border-surface-border px-4 pb-4 pt-3">
+        <div className="space-y-1.5 text-sm">
+          <div className="flex justify-between text-zinc-500">
+            <span>Subtotal</span>
+            <span>{formatCurrency(subtotal)}</span>
+          </div>
+          <div className="flex justify-between text-zinc-500">
+            <span>Tax</span>
+            <span>{formatCurrency(tax)}</span>
+          </div>
+          {couponCode && (
+            <div className="flex items-center justify-between text-green-600">
+              <span className="flex items-center gap-1 text-xs">
+                <Ticket className="h-3 w-3" />
+                {couponCode}
+              </span>
+              <span className="text-xs">Applied on checkout</span>
+            </div>
+          )}
+          <Separator className="my-2" />
+          <div className="flex justify-between text-base font-bold text-zinc-900">
+            <span>Total</span>
+            <span>{formatCurrency(total)}</span>
+          </div>
+        </div>
+
+        {!isLocked && (
+          <div className="mt-3 space-y-2">
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full"
+              onClick={onApplyCoupon}
+            >
+              <Ticket className="mr-2 h-3.5 w-3.5" />
+              {couponCode ? `Coupon: ${couponCode}` : "Apply Coupon"}
+            </Button>
+            <SlideTextButton
+              onClick={onSendToKitchen}
+              disabled={cartItems.length === 0 || sending}
+              loading={sending}
+            >
+              Send to Kitchen
+            </SlideTextButton>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
