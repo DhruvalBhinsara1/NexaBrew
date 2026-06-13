@@ -27,11 +27,21 @@ Project root: `/Users/dhruvalbhinsara/NexaBrew`
 | 10 — Users (Admin API) | ✅ done, `tsc` + lint clean |
 | 11 — Reports | ✅ done, `tsc` + lint + build green |
 | 12 — Customers | ✅ done, `tsc` + lint + build green |
-| 13 — Dashboard UI | ✅ done, `tsc` + `next build` green |
-| 14 — POS Terminal UI | ✅ done, `tsc` + `next build` green |
-| 15 — KDS UI | ✅ done, `tsc` + `next build` green |
+| 13 — Dashboard UI (overview + sidebar) | ✅ done |
+| 13b — Dashboard CRUD pages (8) | ✅ done — sessions/products/categories/floors/payment-methods/coupons/users/reports |
+| 14 — POS Terminal UI | ✅ done |
+| 14b — POS sub-pages (orders + customers) | ✅ done, incl. order detail sheet + cancel |
+| 15 — KDS UI | ✅ done |
 | 16 — Polish (EmptyState/ErrorState) | ✅ done |
+| Payments | ✅ Razorpay gateway integrated (checkout + signature verify) |
 | 17 — P3 Optional (PDF/XLS export) | not started (P3 only if time) |
+
+### Known remaining gaps (2026-06-13)
+
+- **Reports**: period presets (Today/Week/Month) only — no custom date-range picker or employee/session filter yet.
+- **Coupons/promotions**: create + active-toggle + delete done; no full value-edit dialog.
+- **Live click-through**: every page compiles + routes resolve, but the new dashboard/POS UI wiring has not been manually driven against the live DB with a logged-in admin. Recommend one demo pass.
+- Razorpay live payment verified only at signature-logic level; not yet run through a real test-mode checkout end to end.
 
 ### Device-switch handoff — 2026-06-13
 
