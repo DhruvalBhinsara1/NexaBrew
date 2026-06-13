@@ -6,18 +6,11 @@ import Link from "next/link";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 
+import { Coffee } from "lucide-react";
 import { createBrowserClient } from "@/lib/supabase/client";
 import { SignupSchema, type SignupInput } from "@/schemas/auth.schema";
 import { useToast } from "@/hooks/use-toast";
 import { SlideTextButton } from "@/components/kokonutui";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import {
   Form,
   FormControl,
@@ -79,82 +72,74 @@ export default function SignupPage(): React.ReactElement {
   }
 
   return (
-    <Card className="border-wise-border shadow-sm">
-      <CardHeader className="space-y-1">
-        <CardTitle className="text-2xl font-bold tracking-tight text-wise-ink">
-          Create your account
-        </CardTitle>
-        <CardDescription>Browse the menu and track your orders</CardDescription>
-      </CardHeader>
+    <div className="w-full">
+      <div className="mb-8 flex items-center gap-2.5">
+        <span className="flex h-9 w-9 items-center justify-center rounded-wise bg-wise-primary text-wise-ink">
+          <Coffee className="h-5 w-5" />
+        </span>
+        <span className="font-display text-lg font-extrabold tracking-tight text-wise-ink">NexaBrew</span>
+      </div>
+
+      <h1 className="font-display text-4xl font-extrabold leading-[1.05] tracking-tight text-wise-ink">
+        Create your account.
+      </h1>
+      <p className="mt-3 text-base text-wise-body">
+        Browse the menu and track your orders live.
+      </p>
+
       <Form {...form}>
-        <form method="post" onSubmit={form.handleSubmit(onSubmit)}>
-          <CardContent className="space-y-4">
-            <FormField
-              control={form.control}
-              name="name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Name</FormLabel>
-                  <FormControl>
-                    <Input autoComplete="name" placeholder="Your name" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="email"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Email</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="email"
-                      autoComplete="email"
-                      placeholder="you@nexabrew.com"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="password"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Password</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="password"
-                      autoComplete="new-password"
-                      placeholder="At least 6 characters"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </CardContent>
-          <CardFooter className="flex flex-col gap-4">
-            <SlideTextButton type="submit" loading={submitting}>
-              Create Account
-            </SlideTextButton>
-            <p className="text-center text-sm text-muted-foreground">
-              Already have an account?{" "}
-              <Link
-                href="/login"
-                className="font-medium text-wise-ink-deep hover:underline"
-              >
-                Sign in
-              </Link>
-            </p>
-          </CardFooter>
+        <form method="post" onSubmit={form.handleSubmit(onSubmit)} className="mt-8 space-y-5">
+          <FormField
+            control={form.control}
+            name="name"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className="text-wise-ink">Name</FormLabel>
+                <FormControl>
+                  <Input autoComplete="name" placeholder="Your name" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="email"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className="text-wise-ink">Email</FormLabel>
+                <FormControl>
+                  <Input type="email" autoComplete="email" placeholder="you@nexabrew.com" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="password"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className="text-wise-ink">Password</FormLabel>
+                <FormControl>
+                  <Input type="password" autoComplete="new-password" placeholder="At least 6 characters" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <SlideTextButton type="submit" loading={submitting}>
+            Create Account
+          </SlideTextButton>
         </form>
       </Form>
-    </Card>
+
+      <p className="mt-8 text-sm text-wise-body">
+        Already have an account?{" "}
+        <Link href="/login" className="font-semibold text-wise-ink-deep hover:underline">
+          Sign in
+        </Link>
+      </p>
+    </div>
   );
 }

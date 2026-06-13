@@ -6,18 +6,11 @@ import Link from "next/link";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 
+import { Coffee } from "lucide-react";
 import { createBrowserClient } from "@/lib/supabase/client";
 import { LoginSchema, type LoginInput } from "@/schemas/auth.schema";
 import { useToast } from "@/hooks/use-toast";
 import { SlideTextButton } from "@/components/kokonutui";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import {
   Form,
   FormControl,
@@ -27,6 +20,12 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+
+const DEMO_ACCOUNTS = [
+  { label: "Admin", email: "admin@nexabrew.com" },
+  { label: "Cashier", email: "alice@nexabrew.com" },
+  { label: "Kitchen", email: "kitchen@nexabrew.com" },
+];
 
 export default function LoginPage(): React.ReactElement {
   const router = useRouter();
@@ -78,69 +77,82 @@ export default function LoginPage(): React.ReactElement {
   }
 
   return (
-    <Card className="border-wise-border shadow-sm">
-      <CardHeader className="space-y-1">
-        <CardTitle className="text-2xl font-bold tracking-tight text-wise-ink">
-          Welcome back
-        </CardTitle>
-        <CardDescription>Sign in to your NexaBrew account</CardDescription>
-      </CardHeader>
+    <div className="w-full">
+      {/* Brand lockup */}
+      <div className="mb-8 flex items-center gap-2.5">
+        <span className="flex h-9 w-9 items-center justify-center rounded-wise bg-wise-primary text-wise-ink">
+          <Coffee className="h-5 w-5" />
+        </span>
+        <span className="font-display text-lg font-extrabold tracking-tight text-wise-ink">NexaBrew</span>
+      </div>
+
+      <h1 className="font-display text-4xl font-extrabold leading-[1.05] tracking-tight text-wise-ink">
+        Welcome back.
+      </h1>
+      <p className="mt-3 text-base text-wise-body">
+        Sign in to run orders, the kitchen, and the till.
+      </p>
+
       <Form {...form}>
-        <form method="post" onSubmit={form.handleSubmit(onSubmit)}>
-          <CardContent className="space-y-4">
-            <FormField
-              control={form.control}
-              name="email"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Email</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="email"
-                      autoComplete="email"
-                      placeholder="you@nexabrew.com"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="password"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Password</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="password"
-                      autoComplete="current-password"
-                      placeholder="••••••••"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </CardContent>
-          <CardFooter className="flex flex-col gap-4">
-            <SlideTextButton type="submit" loading={submitting}>
-              Sign In
-            </SlideTextButton>
-            <p className="text-center text-sm text-muted-foreground">
-              No account?{" "}
-              <Link
-                href="/signup"
-                className="font-medium text-wise-ink-deep hover:underline"
-              >
-                Create one
-              </Link>
-            </p>
-          </CardFooter>
+        <form method="post" onSubmit={form.handleSubmit(onSubmit)} className="mt-8 space-y-5">
+          <FormField
+            control={form.control}
+            name="email"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className="text-wise-ink">Email</FormLabel>
+                <FormControl>
+                  <Input type="email" autoComplete="email" placeholder="you@nexabrew.com" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="password"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className="text-wise-ink">Password</FormLabel>
+                <FormControl>
+                  <Input type="password" autoComplete="current-password" placeholder="••••••••" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <SlideTextButton type="submit" loading={submitting}>
+            Sign In
+          </SlideTextButton>
         </form>
       </Form>
-    </Card>
+
+      {/* Demo quick-fill */}
+      <div className="mt-7">
+        <p className="text-xs font-medium uppercase tracking-wider text-wise-mute">Try a demo account</p>
+        <div className="mt-2.5 flex flex-wrap gap-2">
+          {DEMO_ACCOUNTS.map((acc) => (
+            <button
+              key={acc.email}
+              type="button"
+              onClick={() => {
+                form.setValue("email", acc.email, { shouldValidate: true });
+                form.setValue("password", "Password@123", { shouldValidate: true });
+              }}
+              className="rounded-wisePill border border-wise-border bg-white px-3.5 py-1.5 text-sm font-medium text-wise-body transition-colors hover:border-wise-primary hover:bg-wise-primary-pale hover:text-wise-ink-deep"
+            >
+              {acc.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <p className="mt-8 text-sm text-wise-body">
+        No account?{" "}
+        <Link href="/signup" className="font-semibold text-wise-ink-deep hover:underline">
+          Create one
+        </Link>
+      </p>
+    </div>
   );
 }

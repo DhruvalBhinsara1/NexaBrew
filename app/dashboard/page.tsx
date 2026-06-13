@@ -30,14 +30,6 @@ function formatTime(iso: string): string {
   });
 }
 
-function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString("en-IN", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  });
-}
-
 function todayISO(): string {
   return new Date().toISOString().slice(0, 10);
 }
@@ -74,6 +66,28 @@ const STATUS_BADGE: Record<string, string> = {
   paid: "bg-green-100 text-green-700",
   cancelled: "bg-red-100 text-red-600",
 };
+
+/** Wide lime area-sparkline for the dark hero (server-rendered SVG). */
+function HeroSparkline({ data }: { data: number[] }): React.ReactElement {
+  const w = 560, h = 64, pad = 4;
+  const max = Math.max(...data, 1);
+  const step = (w - pad * 2) / Math.max(1, data.length - 1);
+  const pts = data.map((v, i) => [pad + i * step, h - pad - (v / max) * (h - pad * 2)] as const);
+  const line = pts.map(([x, y], i) => `${i === 0 ? "M" : "L"}${x.toFixed(1)},${y.toFixed(1)}`).join(" ");
+  const area = `${line} L${pts[pts.length - 1][0].toFixed(1)},${h} L${pts[0][0].toFixed(1)},${h} Z`;
+  return (
+    <svg viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none" className="h-14 w-full" aria-hidden="true">
+      <defs>
+        <linearGradient id="heroSpark" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#9fe870" stopOpacity="0.4" />
+          <stop offset="100%" stopColor="#9fe870" stopOpacity="0" />
+        </linearGradient>
+      </defs>
+      <path d={area} fill="url(#heroSpark)" />
+      <path d={line} fill="none" stroke="#9fe870" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
 
 function RecentOrdersTable({ orders }: { orders: RecentOrder[] }): React.ReactElement {
   if (orders.length === 0) {
@@ -193,120 +207,88 @@ export default async function DashboardPage(): Promise<React.ReactElement> {
   });
 
   return (
-    <div className="p-6 space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="font-display text-2xl font-extrabold tracking-tight text-wise-ink">Dashboard</h1>
-        <p className="text-sm text-wise-mute mt-0.5">
-          {new Date().toLocaleDateString("en-IN", {
-            weekday: "long",
-            day: "2-digit",
-            month: "long",
-            year: "numeric",
-          })}
-        </p>
-      </div>
+    <div className="space-y-5 p-6">
+      {/* ── Hero: revenue statement (Wise polarity-flip — ink + lime) ── */}
+      <section className="relative overflow-hidden rounded-wiseCard bg-wise-ink px-6 py-7 shadow-wiseCard sm:px-8">
+        <div className="pointer-events-none absolute -right-20 -top-24 h-72 w-72 rounded-full bg-wise-primary/10 blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-28 -left-16 h-64 w-64 rounded-full bg-wise-primary/5 blur-3xl" />
 
-      {/* Session status banner */}
-      <Card
-        className={cn(
-          "border-l-4 shadow-sm",
-          activeSession
-            ? "border-l-green-500 bg-green-50 border-green-200"
-            : "border-l-amber-500 bg-amber-50 border-amber-200"
-        )}
-      >
-        <CardContent className="flex items-center justify-between py-4">
-          <div>
-            {activeSession ? (
-              <>
-                <p className="font-semibold text-green-800">
-                  Session open since {formatTime(activeSession.opened_at)}
-                </p>
-                <p className="text-sm text-green-700 mt-0.5">
-                  Opened by {activeSession.opened_by_user?.name ?? "unknown"} ·{" "}
-                  {formatDate(activeSession.opened_at)}
-                </p>
-              </>
-            ) : (
-              <>
-                <p className="font-semibold text-amber-800">No active session</p>
-                <p className="text-sm text-amber-700 mt-0.5">
-                  Open a session to start taking orders.
-                </p>
-              </>
-            )}
+        <div className="relative flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
+          <div className="min-w-0">
+            <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-white/45">
+              <span className="h-1.5 w-1.5 rounded-full bg-wise-primary motion-safe:animate-pulse" />
+              Revenue today ·{" "}
+              {new Date().toLocaleDateString("en-IN", { weekday: "long", day: "2-digit", month: "long" })}
+            </div>
+            <p className="mt-2 font-display text-5xl font-extrabold leading-none tracking-tight text-wise-primary sm:text-6xl">
+              {formatCurrency(todayRevenue)}
+            </p>
+            <div className="mt-5 flex flex-wrap gap-x-7 gap-y-2 text-sm text-white/60">
+              <span><span className="font-semibold text-white">{todayOrderCount}</span> paid orders</span>
+              <span><span className="font-semibold text-white">{todayOrderCount > 0 ? formatCurrency(avgOrderValue) : "—"}</span> avg order</span>
+              <span><span className="font-semibold text-white">{occupiedCount}/{totalTables}</span> tables seated</span>
+            </div>
           </div>
-          <Link
-            href="/dashboard/sessions"
-            className="flex items-center gap-1 rounded-md bg-white px-3 py-1.5 text-sm font-medium text-wise-body shadow-sm border border-wise-border hover:bg-wise-canvas-soft transition-colors"
-          >
-            Manage sessions <ArrowRight className="h-3 w-3" />
-          </Link>
-        </CardContent>
-      </Card>
 
-      {/* KPI row */}
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <KpiTrendCard
-          title="Orders Today"
-          value={String(todayOrderCount)}
-          sub="paid orders"
-          icon="cart"
-          href="/pos/orders"
-          color="#2ead4b"
-          chartType="bar"
-          series={ordersSeries}
-          format="int"
-          popoverTitle="Orders trend"
-        />
-        <KpiTrendCard
-          title="Revenue Today"
-          value={formatCurrency(todayRevenue)}
-          sub="after discounts + tax"
-          icon="trending"
-          href="/dashboard/reports"
-          color="#16a34a"
-          chartType="area"
-          series={revenueSeries}
-          format="currency"
-          popoverTitle="Revenue trend"
-        />
-        <KpiTrendCard
-          title="Avg Order Value"
-          value={todayOrderCount > 0 ? formatCurrency(avgOrderValue) : "—"}
-          sub={todayOrderCount > 0 ? `over ${todayOrderCount} orders` : "no paid orders yet"}
-          icon="bar"
-          href="/dashboard/reports"
-          color="#7c3aed"
-          chartType="area"
-          series={aovSeries}
-          format="currency"
-          popoverTitle="Avg order value"
-        />
-        <TablesOccupiedCard
-          occupiedCount={occupiedCount}
-          totalTables={totalTables}
-          floors={floors}
-          lockedTableIds={lockedTables.map((l) => l.tableId)}
-          href="/dashboard/floors"
-        />
-      </div>
-
-      {/* Occupancy + Recent orders */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        {/* Table occupancy */}
-        <Card className="border-wise-border bg-white shadow-sm">
-          <CardHeader className="flex flex-row items-center justify-between pb-3">
-            <CardTitle className="text-base font-semibold text-wise-ink">
-              Table Occupancy
-            </CardTitle>
+          {/* Session status pill */}
+          <div className="flex shrink-0 items-center gap-3 rounded-wisePill border border-white/15 bg-white/[0.06] px-4 py-2.5">
+            <span className={cn("h-2 w-2 rounded-full", activeSession ? "bg-wise-primary motion-safe:animate-pulse" : "bg-wise-warning")} />
+            <div className="text-sm leading-tight">
+              {activeSession ? (
+                <>
+                  <span className="font-semibold text-white">Session open</span>
+                  <span className="block text-xs text-white/50">since {formatTime(activeSession.opened_at)} · {activeSession.opened_by_user?.name ?? "—"}</span>
+                </>
+              ) : (
+                <>
+                  <span className="font-semibold text-white">No active session</span>
+                  <span className="block text-xs text-white/50">open one to take orders</span>
+                </>
+              )}
+            </div>
             <Link
-              href="/dashboard/floors"
-              className="text-xs text-wise-ink-deep hover:underline"
+              href="/dashboard/sessions"
+              className="ml-1 rounded-wisePill bg-wise-primary px-3 py-1.5 text-xs font-semibold text-wise-ink transition-colors hover:bg-wise-primary-active"
             >
               Manage
             </Link>
+          </div>
+        </div>
+
+        {/* Week revenue sparkline strip */}
+        <div className="relative mt-6 -mb-1 opacity-90">
+          <HeroSparkline data={revenueSeries.map((p) => p.value)} />
+          <div className="mt-1 flex justify-between text-[10px] font-medium uppercase tracking-wide text-white/30">
+            {revenueSeries.map((p, i) => <span key={i}>{p.label}</span>)}
+          </div>
+        </div>
+      </section>
+
+      {/* ── Secondary KPIs (hover trend popovers) ── */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <KpiTrendCard
+          title="Orders Today" value={String(todayOrderCount)} sub="paid orders"
+          icon="cart" href="/pos/orders" color="#2ead4b" chartType="bar"
+          series={ordersSeries} format="int" popoverTitle="Orders trend"
+        />
+        <KpiTrendCard
+          title="Avg Order Value" value={todayOrderCount > 0 ? formatCurrency(avgOrderValue) : "—"}
+          sub={todayOrderCount > 0 ? `over ${todayOrderCount} orders` : "no paid orders yet"}
+          icon="bar" href="/dashboard/reports" color="#7c3aed" chartType="area"
+          series={aovSeries} format="currency" popoverTitle="Avg order value"
+        />
+        <TablesOccupiedCard
+          occupiedCount={occupiedCount} totalTables={totalTables} floors={floors}
+          lockedTableIds={lockedTables.map((l) => l.tableId)} href="/dashboard/floors"
+        />
+      </div>
+
+      {/* ── Occupancy + Recent orders ── */}
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
+        <Card className="border-wise-border bg-white shadow-wiseCard">
+          <CardHeader className="flex flex-row items-center justify-between pb-3">
+            <CardTitle className="text-base font-semibold text-wise-ink">Table Occupancy</CardTitle>
+            <Link href="/dashboard/floors" className="text-xs font-medium text-wise-ink-deep hover:underline">Manage</Link>
           </CardHeader>
           <CardContent>
             {floors.length === 0 ? (
@@ -317,22 +299,14 @@ export default async function DashboardPage(): Promise<React.ReactElement> {
           </CardContent>
         </Card>
 
-        {/* Recent orders */}
-        <Card className="border-wise-border bg-white shadow-sm lg:col-span-2">
+        <Card className="border-wise-border bg-white shadow-wiseCard lg:col-span-2">
           <CardHeader className="flex flex-row items-center justify-between pb-3">
-            <CardTitle className="text-base font-semibold text-wise-ink">
-              Recent Orders
-            </CardTitle>
+            <CardTitle className="text-base font-semibold text-wise-ink">Recent Orders</CardTitle>
             <div className="flex items-center gap-3">
-              <Link
-                href="/pos/orders"
-                className="flex items-center gap-1 text-xs font-medium text-wise-ink-deep hover:underline"
-              >
+              <Link href="/pos/orders" className="flex items-center gap-1 text-xs font-medium text-wise-ink-deep hover:underline">
                 All Orders &amp; Payments <ArrowRight className="h-3 w-3" />
               </Link>
-              <Link href="/kds" className="text-xs text-wise-body hover:underline">
-                Kitchen Display
-              </Link>
+              <Link href="/kds" className="text-xs text-wise-body hover:underline">Kitchen Display</Link>
             </div>
           </CardHeader>
           <CardContent>
@@ -341,21 +315,27 @@ export default async function DashboardPage(): Promise<React.ReactElement> {
         </Card>
       </div>
 
-      {/* Quick links */}
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+      {/* ── Quick links ── */}
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         {[
-          { label: "View Reports", href: "/dashboard/reports", icon: BarChart3, color: "text-purple-600" },
-          { label: "Manage Products", href: "/dashboard/products", icon: CreditCard, color: "text-blue-600" },
-          { label: "View Sessions", href: "/dashboard/sessions", icon: ShoppingCart, color: "text-green-600" },
-          { label: "Manage Users", href: "/dashboard/users", icon: LayoutGrid, color: "text-orange-600" },
-        ].map(({ label, href, icon: Icon, color }) => (
+          { label: "Reports", sub: "Sales & analytics", href: "/dashboard/reports", icon: BarChart3 },
+          { label: "Products", sub: "Menu & pricing", href: "/dashboard/products", icon: CreditCard },
+          { label: "Sessions", sub: "Cash drawer", href: "/dashboard/sessions", icon: ShoppingCart },
+          { label: "Users", sub: "Staff accounts", href: "/dashboard/users", icon: LayoutGrid },
+        ].map(({ label, sub, href, icon: Icon }) => (
           <Link
             key={href}
             href={href}
-            className="flex items-center gap-3 rounded-xl border border-wise-border bg-white p-4 shadow-sm hover:bg-wise-canvas-soft transition-colors"
+            className="group flex items-center gap-3 rounded-wiseCard border border-wise-border bg-white p-4 shadow-wiseCard transition-all duration-200 hover:-translate-y-0.5 hover:border-wise-primary"
           >
-            <Icon className={cn("h-5 w-5", color)} />
-            <span className="text-sm font-medium text-wise-body">{label}</span>
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-wise bg-wise-primary-pale text-wise-ink-deep transition-colors group-hover:bg-wise-primary group-hover:text-wise-ink">
+              <Icon className="h-5 w-5" />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-sm font-semibold text-wise-ink">{label}</span>
+              <span className="block truncate text-xs text-wise-mute">{sub}</span>
+            </span>
+            <ArrowRight className="h-4 w-4 shrink-0 text-wise-mute transition-all group-hover:translate-x-0.5 group-hover:text-wise-ink-deep" />
           </Link>
         ))}
       </div>
