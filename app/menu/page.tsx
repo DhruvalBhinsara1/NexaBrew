@@ -517,12 +517,15 @@ export default function MenuPage(): React.ReactElement {
           total={payOrder.total}
           open={!!payOrder}
           onClose={() => {
-            // Dismissed without paying — cart stays open for editing.
-            // pendingOrderId is kept so the NEXT "Place & pay online" tap
-            // cancels this draft before creating a fresh order.
+            // Immediately cancel the unpaid draft order so it doesn't linger
+            // as a stale entry in My Orders. Cart stays intact for editing.
+            if (pendingOrderId) {
+              void fetch(`/api/orders/${pendingOrderId}/cancel`, { method: "POST" });
+              setPendingOrderId(null);
+            }
             setPayOrder(null);
             setCartOpen(true);
-            showToast("Edit your cart and tap \"Place & pay online\" when ready.");
+            showToast("Order cancelled — edit your cart and try again.");
           }}
           onlineOnly
           onPaid={() => {
