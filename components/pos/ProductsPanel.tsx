@@ -74,26 +74,29 @@ export function ProductsPanel({ products, categories }: Props): React.ReactEleme
                     taxRate: Number(product.tax_rate),
                   })
                 }
-                className="group relative overflow-hidden rounded-xl border border-wise-border bg-white text-left shadow-sm transition-all hover:border-wise-primary hover:shadow-md active:scale-95"
+                className="group relative overflow-hidden rounded-wise border border-wise-border bg-white text-left shadow-wiseCard transition-all duration-150 hover:-translate-y-0.5 hover:border-wise-primary active:scale-95"
               >
                 {/* Category color bar */}
                 <div
-                  className="h-1 w-full"
-                  style={{ backgroundColor: product.category?.color ?? "#e2e8f0" }}
+                  className="h-1.5 w-full"
+                  style={{ backgroundColor: product.category?.color ?? "#9fe870" }}
                 />
-                <div className="p-3">
+                <div className="p-3 pb-12">
                   <p className="line-clamp-2 text-sm font-semibold text-wise-ink">
                     {product.name}
                   </p>
                   {product.category && (
                     <p className="mt-0.5 text-xs text-wise-mute">{product.category.name}</p>
                   )}
-                  <p className="mt-2 text-base font-bold text-wise-ink-deep">
-                    ₹{Number(product.price).toFixed(0)}
-                  </p>
                 </div>
-                <div className="absolute bottom-2 right-2 flex h-6 w-6 items-center justify-center rounded-full bg-wise-primary opacity-0 transition-opacity group-hover:opacity-100">
-                  <Plus className="h-3.5 w-3.5 text-white" />
+                {/* Price + always-visible add affordance (POS is touch-first) */}
+                <div className="absolute inset-x-0 bottom-0 flex items-center justify-between px-3 pb-3">
+                  <span className="text-base font-bold text-wise-ink-deep">
+                    ₹{Number(product.price).toFixed(0)}
+                  </span>
+                  <span className="flex h-7 w-7 items-center justify-center rounded-full bg-wise-primary text-wise-ink shadow-sm transition-transform group-hover:scale-110 group-active:scale-90">
+                    <Plus className="h-4 w-4" />
+                  </span>
                 </div>
               </button>
             ))}
