@@ -1,4 +1,5 @@
 import QRCode from "qrcode";
+import nodemailer from "nodemailer";
 import { Resend } from "resend";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/types/database.types";
@@ -380,28 +381,52 @@ export const PaymentService = {
     email?: string
   ): Promise<{ receipt: OrderReceipt; email: string; id: string | null }> {
     const receipt = await this.getReceipt(supabase, orderId);
-    // Demo override: while Resend is in test mode (no verified domain), it only
-    // delivers to the account owner. If RECEIPT_EMAIL_OVERRIDE_TO is set, route
-    // every receipt there so billing-success emails arrive during the demo.
-    const override = process.env.RECEIPT_EMAIL_OVERRIDE_TO?.trim();
+
+    const gmailUser = process.env.GMAIL_USER?.trim();
+    const gmailPass = process.env.GMAIL_APP_PASSWORD?.trim();
+    const useGmail = Boolean(gmailUser && gmailPass);
+
+    // Recipient resolution. Gmail SMTP can deliver to ANY address, so it goes
+    // straight to the customer. The RECEIPT_EMAIL_OVERRIDE_TO demo override only
+    // applies on the Resend fallback (Resend's sandbox is owner-only).
+    const override = useGmail ? undefined : process.env.RECEIPT_EMAIL_OVERRIDE_TO?.trim();
     const to = override || email || receipt.customer?.email;
     if (!to) throw new AppError("Receipt email is required", "RECEIPT_EMAIL_REQUIRED", 400);
+
+    const subject = `NexaBrew receipt ${receipt.order_number}`;
+    const text = receiptText(receipt);
+    const html = receiptHtml(receipt);
+
+    // ── Preferred transport: Gmail SMTP (delivers to any customer) ──────────
+    if (useGmail) {
+      const transporter = nodemailer.createTransport({
+        service: "gmail",
+        auth: { user: gmailUser, pass: gmailPass },
+      });
+      try {
+        const info = await transporter.sendMail({
+          from: `NexaBrew <${gmailUser}>`,
+          to,
+          subject,
+          text,
+          html,
+        });
+        return { receipt, email: to, id: info.messageId ?? null };
+      } catch (err) {
+        throw new AppError((err as Error).message, "RECEIPT_EMAIL_FAILED", 502);
+      }
+    }
+
+    // ── Fallback: Resend ────────────────────────────────────────────────────
     if (!emailConfigured()) {
       throw new AppError("Receipt email is not configured", "RECEIPT_EMAIL_NOT_CONFIGURED", 501);
     }
-
     // Configurable sender — once a domain is verified in Resend, set
     // RECEIPT_EMAIL_FROM (e.g. "NexaBrew <receipts@yourdomain.com>") with no code change.
     const from = process.env.RECEIPT_EMAIL_FROM?.trim() || "NexaBrew <onboarding@resend.dev>";
 
     const resend = new Resend(process.env.RESEND_API_KEY);
-    const { data, error } = await resend.emails.send({
-      from,
-      to,
-      subject: `NexaBrew receipt ${receipt.order_number}`,
-      text: receiptText(receipt),
-      html: receiptHtml(receipt),
-    });
+    const { data, error } = await resend.emails.send({ from, to, subject, text, html });
     if (error) {
       throw new AppError(error.message, "RECEIPT_EMAIL_FAILED", 502);
     }
