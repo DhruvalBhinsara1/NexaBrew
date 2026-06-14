@@ -14,6 +14,7 @@ import { EmptyState } from "@/components/shared/EmptyState";
 import { useToast } from "@/hooks/use-toast";
 import { apiGet } from "@/lib/api-client";
 import { formatCurrency } from "@/lib/utils/formatCurrency";
+import { categoryImageUrl } from "@/lib/categoryImages";
 import type { Category, FloorWithTables, OrderWithItems, ProductWithCategory } from "@/types/domain.types";
 
 type CustomerOrder = OrderWithItems & { kitchen_tickets?: { status: string }[] };
@@ -301,9 +302,14 @@ export default function MenuPage(): React.ReactElement {
                 <button
                   key={c.id}
                   onClick={() => setActiveCat(c.id)}
-                  className={cn("flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium transition-colors", activeCat === c.id ? "bg-wise-primary text-wise-ink" : "bg-white border border-wise-border text-wise-body hover:border-wise-primary")}
+                  className={cn("flex items-center gap-2 rounded-full py-1 pl-1 pr-3.5 text-sm font-medium transition-colors", activeCat === c.id ? "bg-wise-primary text-wise-ink" : "bg-white border border-wise-border text-wise-body hover:border-wise-primary")}
                 >
-                  <span className="h-2 w-2 rounded-full" style={{ backgroundColor: c.color ?? "#9fe870" }} />
+                  {categoryImageUrl(c.name) ? (
+                    // eslint-disable-next-line @next/next/no-img-element -- external CDN thumbnail, next/image not worth the remote-domain config here
+                    <img src={categoryImageUrl(c.name)!} alt="" className="h-6 w-6 rounded-full object-cover ring-1 ring-black/5" />
+                  ) : (
+                    <span className="ml-1 h-2.5 w-2.5 rounded-full" style={{ backgroundColor: c.color ?? "#9fe870" }} />
+                  )}
                   {c.name}
                 </button>
               ))}
@@ -315,6 +321,7 @@ export default function MenuPage(): React.ReactElement {
               <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
                 {filtered.map((p) => {
                   const color = p.category?.color ?? "#9fe870";
+                  const img = categoryImageUrl(p.category?.name);
                   const qty = cart[p.id]?.qty ?? 0;
                   return (
                     <Card
@@ -326,7 +333,23 @@ export default function MenuPage(): React.ReactElement {
                           className="relative flex h-24 items-end justify-end overflow-hidden p-2"
                           style={{ background: `linear-gradient(135deg, ${color}, ${color}cc)` }}
                         >
-                          <span className="absolute left-3 top-3 font-display text-2xl font-extrabold text-white/90">
+                          {img && (
+                            <>
+                              {/* eslint-disable-next-line @next/next/no-img-element -- external CDN photo, decorative */}
+                              <img
+                                src={img}
+                                alt=""
+                                aria-hidden
+                                className="absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                              />
+                              {/* Tonal brand overlay keeps the letter + badges readable over the photo */}
+                              <div
+                                className="absolute inset-0"
+                                style={{ background: `linear-gradient(135deg, ${color}d9, ${color}59)` }}
+                              />
+                            </>
+                          )}
+                          <span className="absolute left-3 top-3 font-display text-2xl font-extrabold text-white drop-shadow-sm">
                             {p.name.charAt(0).toUpperCase()}
                           </span>
                           {qty > 0 && (
