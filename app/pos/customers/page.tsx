@@ -15,8 +15,6 @@ import { useToast } from "@/hooks/use-toast";
 import { apiGet, apiSend } from "@/lib/api-client";
 import type { Customer } from "@/types/domain.types";
 
-const PER_PAGE = 9;
-
 export default function PosCustomersPage(): React.ReactElement {
   const { toast } = useToast();
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -28,6 +26,7 @@ export default function PosCustomersPage(): React.ReactElement {
   const [phone, setPhone] = useState("");
   const [busy, setBusy] = useState(false);
   const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   const load = useCallback(async (q?: string) => {
     try {
@@ -53,11 +52,16 @@ export default function PosCustomersPage(): React.ReactElement {
     return () => clearTimeout(t);
   }, [search, load]);
 
-  const totalPages = Math.max(1, Math.ceil(customers.length / PER_PAGE));
+  const totalPages = Math.max(1, Math.ceil(customers.length / pageSize));
   const paged = useMemo(
-    () => customers.slice((page - 1) * PER_PAGE, page * PER_PAGE),
-    [customers, page]
+    () => customers.slice((page - 1) * pageSize, page * pageSize),
+    [customers, page, pageSize]
   );
+
+  // Keep the current page in range when the size shrinks or the list changes.
+  useEffect(() => {
+    if (page > totalPages) setPage(totalPages);
+  }, [page, totalPages]);
 
   async function handleCreate(): Promise<void> {
     setBusy(true);
@@ -163,15 +167,16 @@ export default function PosCustomersPage(): React.ReactElement {
                 ))}
               </div>
 
-              {totalPages > 1 && (
-                <Pagination
-                  page={page}
-                  totalPages={totalPages}
-                  hasNextPage={page < totalPages}
-                  hasPreviousPage={page > 1}
-                  onPageChange={setPage}
-                />
-              )}
+              <Pagination
+                page={page}
+                totalPages={totalPages}
+                hasNextPage={page < totalPages}
+                hasPreviousPage={page > 1}
+                onPageChange={setPage}
+                pageSize={pageSize}
+                onPageSizeChange={(s) => { setPageSize(s); setPage(1); }}
+                isLoading={loading}
+              />
             </>
           )}
         </div>
