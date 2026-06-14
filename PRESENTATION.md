@@ -1,4 +1,4 @@
-# NexaBrew — Jury Presentation Cheat-Sheet
+----
 
 Quick map of "where is the code for X?" → exact file:line. `Cmd/Ctrl+Click` paths in most editors to jump.
 
@@ -6,7 +6,7 @@ Quick map of "where is the code for X?" → exact file:line. `Cmd/Ctrl+Click` pa
 
 ---
 
-## 🎯 The "classics" they always ask
+## Questions asked till now
 
 ### Pagination
 - Reusable UI component (5/10/20/50 page-size selector, prev/next) — `components/ui/pagination.tsx:19`
