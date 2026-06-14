@@ -6,7 +6,6 @@ import type {
   OrderReceipt,
   OrderWithItems,
   Payment,
-  PaymentMethodType,
   PaymentResult,
   UpiQrPayload,
 } from "@/types/domain.types";
@@ -381,15 +380,23 @@ export const PaymentService = {
     email?: string
   ): Promise<{ receipt: OrderReceipt; email: string; id: string | null }> {
     const receipt = await this.getReceipt(supabase, orderId);
-    const to = email ?? receipt.customer?.email;
+    // Demo override: while Resend is in test mode (no verified domain), it only
+    // delivers to the account owner. If RECEIPT_EMAIL_OVERRIDE_TO is set, route
+    // every receipt there so billing-success emails arrive during the demo.
+    const override = process.env.RECEIPT_EMAIL_OVERRIDE_TO?.trim();
+    const to = override || email || receipt.customer?.email;
     if (!to) throw new AppError("Receipt email is required", "RECEIPT_EMAIL_REQUIRED", 400);
     if (!emailConfigured()) {
       throw new AppError("Receipt email is not configured", "RECEIPT_EMAIL_NOT_CONFIGURED", 501);
     }
 
+    // Configurable sender — once a domain is verified in Resend, set
+    // RECEIPT_EMAIL_FROM (e.g. "NexaBrew <receipts@yourdomain.com>") with no code change.
+    const from = process.env.RECEIPT_EMAIL_FROM?.trim() || "NexaBrew <onboarding@resend.dev>";
+
     const resend = new Resend(process.env.RESEND_API_KEY);
     const { data, error } = await resend.emails.send({
-      from: "NexaBrew <onboarding@resend.dev>",
+      from,
       to,
       subject: `NexaBrew receipt ${receipt.order_number}`,
       text: receiptText(receipt),

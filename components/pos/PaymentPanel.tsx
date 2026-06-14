@@ -65,7 +65,6 @@ export function PaymentPanel({
   const [tendered, setTendered] = useState("");
   const [orderTotal, setOrderTotal] = useState<number | null>(null);
   const [orderCustomerName, setOrderCustomerName] = useState<string | null>(null);
-  const [orderCustomerEmail, setOrderCustomerEmail] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [paid, setPaid] = useState(false);
   const [rzpScriptReady, setRzpScriptReady] = useState(false);
@@ -79,7 +78,6 @@ export function PaymentPanel({
         if (d.data) {
           setOrderTotal(Number(d.data.total_amount));
           setOrderCustomerName(d.data.customer?.name ?? null);
-          setOrderCustomerEmail(d.data.customer?.email ?? null);
         }
       })
       .catch(() => null);
@@ -200,11 +198,17 @@ export function PaymentPanel({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({}),
       });
-      if (res.ok && orderCustomerEmail) {
-        toast(`📧 Receipt sent to ${orderCustomerEmail}`, "success");
+      const json = await res.json().catch(() => ({}));
+      if (res.ok) {
+        const sentTo = json.data?.email as string | undefined;
+        toast(sentTo ? `📧 Receipt emailed to ${sentTo}` : "📧 Receipt emailed", "success");
+      } else if (res.status === 400) {
+        // No recipient on file (walk-in / no customer email) — skip quietly.
+      } else {
+        toast(json.error ?? "Receipt email couldn't be sent.", "error");
       }
     } catch {
-      // silently swallow — email is non-critical
+      // network hiccup — email is non-critical, don't block the cashier.
     }
   }
 
@@ -213,7 +217,6 @@ export function PaymentPanel({
     setTendered("");
     setOrderTotal(null);
     setOrderCustomerName(null);
-    setOrderCustomerEmail(null);
     reset();
     onPaymentComplete();
   }

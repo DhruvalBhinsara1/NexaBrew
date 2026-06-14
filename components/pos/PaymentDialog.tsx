@@ -139,6 +139,7 @@ export function PaymentDialog({
           setPaid(true);
           setLoading(false);
           toast("Payment successful!", "success");
+          void sendReceiptEmail();
           onPaid();
         },
       });
@@ -164,11 +165,32 @@ export function PaymentDialog({
       }
       setPaid(true);
       toast("Cash payment recorded!", "success");
+      void sendReceiptEmail();
       onPaid();
     } catch {
       toast("Payment failed.", "error");
     } finally {
       setLoading(false);
+    }
+  }
+
+  // Fire-and-forget receipt email after a successful payment.
+  async function sendReceiptEmail(): Promise<void> {
+    try {
+      const res = await fetch(`/api/orders/${orderId}/receipt/email`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (res.ok) {
+        const sentTo = json.data?.email as string | undefined;
+        toast(sentTo ? `📧 Receipt emailed to ${sentTo}` : "📧 Receipt emailed", "success");
+      } else if (res.status !== 400) {
+        toast(json.error ?? "Receipt email couldn't be sent.", "error");
+      }
+    } catch {
+      // network hiccup — email is non-critical.
     }
   }
 
