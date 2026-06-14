@@ -23,18 +23,12 @@ import { useToast } from "@/hooks/use-toast";
 import { apiGet, apiSend } from "@/lib/api-client";
 import { cn } from "@/lib/utils";
 import { formatCurrency } from "@/lib/utils/formatCurrency";
+import { formatDateTimeIST } from "@/lib/utils/datetime";
 import type { OrderWithItems } from "@/types/domain.types";
 import type { PaginatedResponse } from "@/types/pagination.types";
 
 function fmt(iso: string | null): string {
-    if (!iso) return "—";
-    return new Date(iso).toLocaleString("en-IN", {
-        day: "2-digit",
-        month: "short",
-        hour: "2-digit",
-        minute: "2-digit",
-        hour12: true,
-    });
+    return formatDateTimeIST(iso);
 }
 
 const STATUS_COLORS: Record<string, string> = {

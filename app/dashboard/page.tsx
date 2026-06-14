@@ -19,33 +19,29 @@ import { TablesOccupiedCard } from "@/components/dashboard/TablesOccupiedCard";
 import { KpiTrendCard, type TrendPoint } from "@/components/dashboard/KpiTrendCard";
 import type { SessionWithUser, FloorWithTables } from "@/types/domain.types";
 import type { DailyRevenueRow } from "@/services/ReportService";
+import { IST_TZ, formatTimeIST, istToday, lastNIstDates } from "@/lib/utils/datetime";
 
 // ─── helpers ────────────────────────────────────────────────────────────────
+// All date/time keys + labels are IST-anchored so this Server Component (Vercel
+// runs in UTC) matches the client-rendered screens and the cafe's real day.
 
 function formatTime(iso: string): string {
-  return new Date(iso).toLocaleTimeString("en-IN", {
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: true,
-  });
+  return formatTimeIST(iso);
 }
 
 function todayISO(): string {
-  return new Date().toISOString().slice(0, 10);
+  return istToday();
 }
 
-/** Last `n` calendar dates ending today, as YYYY-MM-DD (oldest first). */
+/** Last `n` IST calendar dates ending today, as YYYY-MM-DD (oldest first). */
 function lastNDates(n: number): string[] {
-  const out: string[] = [];
-  const now = Date.now();
-  for (let i = n - 1; i >= 0; i--) {
-    out.push(new Date(now - i * 86_400_000).toISOString().slice(0, 10));
-  }
-  return out;
+  return lastNIstDates(n);
 }
 
 function shortDay(iso: string): string {
-  return new Date(iso + "T00:00:00").toLocaleDateString("en-IN", { weekday: "short" }).slice(0, 2);
+  return new Date(iso + "T12:00:00+05:30")
+    .toLocaleDateString("en-IN", { weekday: "short", timeZone: IST_TZ })
+    .slice(0, 2);
 }
 
 // ─── sub-components (inline to avoid over-engineering) ──────────────────────
@@ -218,7 +214,7 @@ export default async function DashboardPage(): Promise<React.ReactElement> {
             <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-white/45">
               <span className="h-1.5 w-1.5 rounded-full bg-wise-primary motion-safe:animate-pulse" />
               Revenue today ·{" "}
-              {new Date().toLocaleDateString("en-IN", { weekday: "long", day: "2-digit", month: "long" })}
+              {new Date().toLocaleDateString("en-IN", { weekday: "long", day: "2-digit", month: "long", timeZone: IST_TZ })}
             </div>
             <p className="mt-2 font-display text-5xl font-extrabold leading-none tracking-tight text-wise-primary sm:text-6xl">
               {formatCurrency(todayRevenue)}

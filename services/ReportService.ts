@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/types/database.types";
 import { AppError } from "@/lib/utils/app-error";
+import { istDateKey, istRangeToUtc } from "@/lib/utils/datetime";
 import type { DateRangeInput } from "@/schemas/report.schema";
 
 type Supa = SupabaseClient<Database>;
@@ -9,8 +10,13 @@ function round2(n: number): number {
   return Math.round((n + Number.EPSILON) * 100) / 100;
 }
 
+/**
+ * The `from`/`to` query params are IST calendar dates (the cafe's day). Convert
+ * them to the matching UTC instants so the `timestamptz` window lines up with
+ * how staff actually experience the day — not the server's UTC midnight.
+ */
 function toTimestampRange(from: string, to: string): { from: string; to: string } {
-  return { from: `${from}T00:00:00.000Z`, to: `${to}T23:59:59.999Z` };
+  return istRangeToUtc(from, to);
 }
 
 // ─── Shape definitions ────────────────────────────────────────────────────────
@@ -133,10 +139,10 @@ export const ReportService = {
 
     if (error) throw new AppError(error.message, "REPORT_DAILY_FAILED", 500);
 
-    // Group in-application by calendar date
+    // Group in-application by IST calendar date (the cafe's day boundary).
     const map = new Map<string, DailyRevenueRow>();
     for (const row of data ?? []) {
-      const date = row.created_at.slice(0, 10);
+      const date = istDateKey(row.created_at);
       const existing = map.get(date) ?? {
         date,
         order_count: 0,

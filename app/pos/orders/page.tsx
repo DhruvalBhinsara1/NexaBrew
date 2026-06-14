@@ -22,6 +22,7 @@ import { ReceiptDialog } from "@/components/pos/ReceiptDialog";
 import { useToast } from "@/hooks/use-toast";
 import { apiGet, apiSend } from "@/lib/api-client";
 import { formatCurrency } from "@/lib/utils/formatCurrency";
+import { formatDateTimeIST } from "@/lib/utils/datetime";
 import type { OrderStatus, OrderWithItems } from "@/types/domain.types";
 
 const STATUSES: { value: OrderStatus | "all"; label: string }[] = [
@@ -42,9 +43,7 @@ const BADGE: Record<string, string> = {
 };
 
 function fmt(iso: string): string {
-  return new Date(iso).toLocaleString("en-IN", {
-    day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit", hour12: true,
-  });
+  return formatDateTimeIST(iso);
 }
 
 export default function PosOrdersPage(): React.ReactElement {

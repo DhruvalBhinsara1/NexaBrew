@@ -35,6 +35,7 @@ import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { apiGet } from "@/lib/api-client";
 import { formatCurrency } from "@/lib/utils/formatCurrency";
+import { IST_TZ, addIstDays, formatDateTimeIST, istDateKey, istToday } from "@/lib/utils/datetime";
 import type {
   DailyRevenueRow,
   EmployeeSalesRow,
@@ -55,12 +56,9 @@ const PERIOD_LABEL: Record<Period, string> = {
 };
 
 function rangeFor(period: Exclude<Period, "custom">): { from: string; to: string } {
-  const today = new Date();
-  const to = today.toISOString().slice(0, 10);
-  const start = new Date(today);
-  if (period === "week") start.setDate(today.getDate() - 6);
-  if (period === "month") start.setDate(today.getDate() - 29);
-  return { from: start.toISOString().slice(0, 10), to };
+  const to = istToday();
+  const span = period === "week" ? 6 : period === "month" ? 29 : 0;
+  return { from: addIstDays(to, -span), to };
 }
 
 function csvCell(v: string | number): string {
@@ -93,9 +91,7 @@ function shortLabel(iso: string): string {
 }
 
 function fmtTime(iso: string): string {
-  return new Date(iso).toLocaleString("en-IN", {
-    day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit", hour12: true,
-  });
+  return formatDateTimeIST(iso);
 }
 
 const PAY_META: Record<string, { label: string; color: string; icon: React.ElementType }> = {
@@ -252,7 +248,7 @@ export default function ReportsPage(): React.ReactElement {
   const history = orders
     .filter((o) => o.status === "paid")
     .filter((o) => {
-      const d = o.created_at.slice(0, 10);
+      const d = istDateKey(o.created_at);
       return d >= range.from && d <= range.to;
     })
     .sort((a, b) => b.created_at.localeCompare(a.created_at));
@@ -323,7 +319,7 @@ export default function ReportsPage(): React.ReactElement {
         <div className="ml-auto flex flex-wrap items-center gap-2">
           {[
             { v: employeeId, set: setEmployeeId, ph: "All employees", opts: empOptions.map((e) => ({ id: e.id, label: e.name })) },
-            { v: sessionId, set: setSessionId, ph: "All sessions", opts: sessionOptions.map((s) => ({ id: s.id, label: `${new Date(s.opened_at).toLocaleDateString("en-IN", { day: "2-digit", month: "short" })} · ${s.opened_by_user?.name ?? "—"}` })) },
+            { v: sessionId, set: setSessionId, ph: "All sessions", opts: sessionOptions.map((s) => ({ id: s.id, label: `${new Date(s.opened_at).toLocaleDateString("en-IN", { day: "2-digit", month: "short", timeZone: IST_TZ })} · ${s.opened_by_user?.name ?? "—"}` })) },
             { v: productId, set: setProductId, ph: "All products", opts: productOptions.map((p) => ({ id: p.id, label: p.name })) },
           ].map((f, i) => (
             <select
