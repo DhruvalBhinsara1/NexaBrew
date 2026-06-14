@@ -303,7 +303,7 @@ export default async function DashboardPage(): Promise<React.ReactElement> {
           <CardHeader className="flex flex-row items-center justify-between pb-3">
             <CardTitle className="text-base font-semibold text-wise-ink">Recent Orders</CardTitle>
             <div className="flex items-center gap-3">
-              <Link href="/pos/orders" className="flex items-center gap-1 text-xs font-medium text-wise-ink-deep hover:underline">
+              <Link href="/dashboard/orders" className="flex items-center gap-1 text-xs font-medium text-wise-ink-deep hover:underline">
                 All Orders &amp; Payments <ArrowRight className="h-3 w-3" />
               </Link>
               <Link href="/kds" className="text-xs text-wise-body hover:underline">Kitchen Display</Link>

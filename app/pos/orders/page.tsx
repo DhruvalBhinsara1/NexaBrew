@@ -131,7 +131,10 @@ export default function PosOrdersPage(): React.ReactElement {
           </Link>
           <span className="font-semibold text-wise-ink">Orders</span>
         </div>
-        <Link href="/pos/customers" className="text-sm text-wise-ink-deep hover:underline">Customers</Link>
+        <div className="flex items-center gap-4">
+          <Link href="/dashboard" className="text-sm text-wise-body hover:text-wise-ink">Dashboard</Link>
+          <Link href="/pos/customers" className="text-sm text-wise-ink-deep hover:underline">Customers</Link>
+        </div>
       </header>
 
       <div className="space-y-4 p-6">

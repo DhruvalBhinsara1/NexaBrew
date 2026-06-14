@@ -7,6 +7,7 @@ import {
   ChefHat,
   CreditCard,
   Loader2,
+  X,
 } from "lucide-react";
 import Script from "next/script";
 import { Input } from "@/components/ui/input";
@@ -254,9 +255,20 @@ export function PaymentPanel({
             <p className="mt-1 text-xs text-green-700 font-medium">Customer: {orderCustomerName}</p>
           )}
         </div>
-        <SlideTextButton tone="green" onClick={handleNewOrder} className="mt-4">
-          Start New Order
-        </SlideTextButton>
+        <div className="mt-4 flex w-full flex-col gap-2">
+          <SlideTextButton tone="green" onClick={handleNewOrder}>
+            Start New Order
+          </SlideTextButton>
+          {onOpenBills && openBillCount > 0 && (
+            <button
+              type="button"
+              onClick={onOpenBills}
+              className="text-xs font-medium text-wise-ink-deep hover:underline"
+            >
+              Settle another bill ({openBillCount} open)
+            </button>
+          )}
+        </div>
       </div>
     );
   }
@@ -287,7 +299,20 @@ export function PaymentPanel({
 
       <div className="flex h-full flex-col border-l border-wise-border bg-white">
         <div className="border-b border-wise-border px-4 py-3">
-          <h2 className="font-semibold text-wise-ink">Payment</h2>
+          <div className="flex items-start justify-between">
+            <h2 className="font-semibold text-wise-ink">Payment</h2>
+            {onOpenBills && (
+              <button
+                type="button"
+                onClick={onOpenBills}
+                title="Switch to another open bill"
+                className="-mr-1 -mt-1 flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-wise-body hover:bg-wise-canvas-soft hover:text-wise-ink"
+              >
+                <X className="h-3.5 w-3.5" />
+                Open bills{openBillCount > 0 ? ` (${openBillCount})` : ""}
+              </button>
+            )}
+          </div>
           {orderTotal !== null && (
             <p className="text-2xl font-bold text-wise-ink-deep">{formatCurrency(orderTotal)}</p>
           )}
