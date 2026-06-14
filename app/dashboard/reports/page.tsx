@@ -1,5 +1,6 @@
 "use client";
 
+import * as XLSX from "xlsx";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Area,
@@ -191,44 +192,168 @@ export default function ReportsPage(): React.ReactElement {
     setProductId("");
   }
 
-  function exportCsv(): void {
-    const lines: string[] = [];
-    lines.push(`NexaBrew Report,${range.from} to ${range.to}`);
-    lines.push("");
-    lines.push("Daily Revenue");
-    lines.push(["Date", "Orders", "Subtotal", "Discount", "Tax", "Revenue"].join(","));
-    daily.forEach((r) => lines.push([r.date, r.order_count, r.subtotal, r.discount_amount, r.tax_amount, r.total_revenue].map(csvCell).join(",")));
-    lines.push("");
-    lines.push("Top Products");
-    lines.push(["Product", "Qty", "Revenue"].join(","));
-    topProducts.forEach((p) => lines.push([p.product_name, p.quantity_sold, p.revenue].map(csvCell).join(",")));
-    lines.push("");
-    lines.push("Top Categories");
-    lines.push(["Category", "Qty", "Revenue"].join(","));
-    topCategories.forEach((c) => lines.push([c.category_name, c.quantity_sold, c.revenue].map(csvCell).join(",")));
-    lines.push("");
-    lines.push("Top Orders");
-    lines.push(["Order", "Date", "Customer", "Total"].join(","));
-    topOrders.forEach((o) => lines.push([o.order_number, o.created_at, o.customer_name ?? "Walk-in", o.total_amount].map(csvCell).join(",")));
-    lines.push("");
-    lines.push("Sales by Employee");
-    lines.push(["Employee", "Orders", "Revenue"].join(","));
-    employees.forEach((e) => lines.push([e.employee_name, e.order_count, e.total_revenue].map(csvCell).join(",")));
-    lines.push("");
-    lines.push("Payment Mix");
-    lines.push(["Method", "Orders", "Amount"].join(","));
-    payments.forEach((p) => lines.push([p.payment_method_type, p.order_count, p.total_amount].map(csvCell).join(",")));
+  function exportExcel(): void {
+    const wb = XLSX.utils.book_new();
+    const generatedAt = new Date().toLocaleString("en-IN", {
+      timeZone: "Asia/Kolkata",
+      day: "2-digit", month: "short", year: "numeric",
+      hour: "2-digit", minute: "2-digit", hour12: true,
+    });
 
-    const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `nexabrew-report-${range.from}_to_${range.to}.csv`;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
+    // ── 1. Summary ──────────────────────────────────────────────────────────
+    const totalRev = daily.reduce((s, r) => s + r.total_revenue, 0);
+    const totalOrd = daily.reduce((s, r) => s + r.order_count, 0);
+    const totalDisc = daily.reduce((s, r) => s + r.discount_amount, 0);
+    const totalTax = daily.reduce((s, r) => s + r.tax_amount, 0);
+    const totalSub = daily.reduce((s, r) => s + r.subtotal, 0);
+    const avgOrdVal = totalOrd > 0 ? totalRev / totalOrd : 0;
+    const payTotal2 = payments.reduce((s, p) => s + p.total_amount, 0);
+    const activeEmployees = employees.filter((e) => e.order_count > 0).length;
+
+    const summaryData = [
+      ["NexaBrew — Business Report", ""],
+      ["Report Period", `${range.from}  →  ${range.to}`],
+      ["Generated At", generatedAt],
+      ["Active Filters", activeFilters ? [employeeId && "Employee", sessionId && "Session", productId && "Product"].filter(Boolean).join(", ") : "None"],
+      ["", ""],
+      ["── Revenue KPIs", ""],
+      ["Total Revenue (₹)", totalRev],
+      ["Gross Subtotal (₹)", totalSub],
+      ["Total Discounts Given (₹)", totalDisc],
+      ["Total Tax Collected (₹)", totalTax],
+      ["", ""],
+      ["── Orders", ""],
+      ["Total Paid Orders", totalOrd],
+      ["Average Order Value (₹)", Number(avgOrdVal.toFixed(2))],
+      ["Largest Single Order (₹)", topOrders.length ? Math.max(...topOrders.map((o) => Number(o.total_amount))) : 0],
+      ["", ""],
+      ["── Products", ""],
+      ["Top Product", topProducts[0]?.product_name ?? "—"],
+      ["Top Product Units Sold", topProducts[0]?.quantity_sold ?? 0],
+      ["Top Product Revenue (₹)", topProducts[0]?.revenue ?? 0],
+      ["", ""],
+      ["── Payments", ""],
+      ["Total Payments Collected (₹)", payTotal2],
+      ["Payment Methods Used", payments.length],
+      ["Top Payment Method", payments.reduce<PaymentBreakdownRow | null>((a, b) => (b.total_amount > (a?.total_amount ?? 0) ? b : a), null)?.payment_method_type ?? "—"],
+      ["", ""],
+      ["── Staff", ""],
+      ["Active Employees", activeEmployees],
+      ["Top Employee", employees[0]?.employee_name ?? "—"],
+      ["Top Employee Orders", employees[0]?.order_count ?? 0],
+      ["Top Employee Revenue (₹)", employees[0]?.total_revenue ?? 0],
+    ];
+    const wsSummary = XLSX.utils.aoa_to_sheet(summaryData);
+    wsSummary["!cols"] = [{ wch: 34 }, { wch: 24 }];
+    XLSX.utils.book_append_sheet(wb, wsSummary, "Summary");
+
+    // ── 2. Daily Revenue ─────────────────────────────────────────────────────
+    const dailyHeaders = ["Date", "Day", "Paid Orders", "Gross Subtotal (₹)", "Discounts (₹)", "Tax (₹)", "Net Revenue (₹)", "Avg Order Value (₹)"];
+    const dailyRows = daily.map((r) => [
+      r.date,
+      new Date(r.date + "T12:00:00Z").toLocaleDateString("en-IN", { weekday: "long", timeZone: "UTC" }),
+      r.order_count,
+      Number(Number(r.subtotal).toFixed(2)),
+      Number(Number(r.discount_amount).toFixed(2)),
+      Number(Number(r.tax_amount).toFixed(2)),
+      Number(Number(r.total_revenue).toFixed(2)),
+      r.order_count > 0 ? Number((r.total_revenue / r.order_count).toFixed(2)) : 0,
+    ]);
+    // Totals row
+    dailyRows.push([
+      "TOTAL", "",
+      totalOrd,
+      Number(totalSub.toFixed(2)),
+      Number(totalDisc.toFixed(2)),
+      Number(totalTax.toFixed(2)),
+      Number(totalRev.toFixed(2)),
+      Number(avgOrdVal.toFixed(2)),
+    ]);
+    const wsDaily = XLSX.utils.aoa_to_sheet([dailyHeaders, ...dailyRows]);
+    wsDaily["!cols"] = [{ wch: 13 }, { wch: 12 }, { wch: 13 }, { wch: 20 }, { wch: 16 }, { wch: 12 }, { wch: 18 }, { wch: 20 }];
+    XLSX.utils.book_append_sheet(wb, wsDaily, "Daily Revenue");
+
+    // ── 3. Product Performance ───────────────────────────────────────────────
+    const prodTotalRev = topProducts.reduce((s, p) => s + p.revenue, 0);
+    const prodHeaders = ["Rank", "Product", "Units Sold", "Revenue (₹)", "Revenue Share (%)", "Avg Unit Price (₹)"];
+    const prodRows = topProducts.map((p, i) => [
+      i + 1,
+      p.product_name,
+      p.quantity_sold,
+      Number(p.revenue.toFixed(2)),
+      prodTotalRev > 0 ? Number(((p.revenue / prodTotalRev) * 100).toFixed(1)) : 0,
+      p.quantity_sold > 0 ? Number((p.revenue / p.quantity_sold).toFixed(2)) : 0,
+    ]);
+    const wsProd = XLSX.utils.aoa_to_sheet([prodHeaders, ...prodRows]);
+    wsProd["!cols"] = [{ wch: 6 }, { wch: 28 }, { wch: 12 }, { wch: 14 }, { wch: 18 }, { wch: 18 }];
+    XLSX.utils.book_append_sheet(wb, wsProd, "Product Performance");
+
+    // ── 4. Category Analysis ─────────────────────────────────────────────────
+    const catTotalRev = topCategories.reduce((s, c) => s + c.revenue, 0);
+    const catHeaders = ["Category", "Units Sold", "Revenue (₹)", "Revenue Share (%)"];
+    const catRows = topCategories.map((c) => [
+      c.category_name,
+      c.quantity_sold,
+      Number(c.revenue.toFixed(2)),
+      catTotalRev > 0 ? Number(((c.revenue / catTotalRev) * 100).toFixed(1)) : 0,
+    ]);
+    const wsCat = XLSX.utils.aoa_to_sheet([catHeaders, ...catRows]);
+    wsCat["!cols"] = [{ wch: 24 }, { wch: 12 }, { wch: 14 }, { wch: 18 }];
+    XLSX.utils.book_append_sheet(wb, wsCat, "Category Analysis");
+
+    // ── 5. Employee Performance ──────────────────────────────────────────────
+    const empTotalRev = employees.reduce((s, e) => s + e.total_revenue, 0);
+    const empHeaders = ["Employee", "Paid Orders", "Revenue (₹)", "Revenue Share (%)", "Avg Order Value (₹)"];
+    const empRows = employees.map((e) => [
+      e.employee_name,
+      e.order_count,
+      Number(e.total_revenue.toFixed(2)),
+      empTotalRev > 0 ? Number(((e.total_revenue / empTotalRev) * 100).toFixed(1)) : 0,
+      e.order_count > 0 ? Number((e.total_revenue / e.order_count).toFixed(2)) : 0,
+    ]);
+    const wsEmp = XLSX.utils.aoa_to_sheet([empHeaders, ...empRows]);
+    wsEmp["!cols"] = [{ wch: 24 }, { wch: 13 }, { wch: 14 }, { wch: 18 }, { wch: 20 }];
+    XLSX.utils.book_append_sheet(wb, wsEmp, "Employee Performance");
+
+    // ── 6. Payment Mix ───────────────────────────────────────────────────────
+    const payHeaders = ["Payment Method", "Transactions", "Amount Collected (₹)", "Share of Revenue (%)", "Avg Transaction (₹)"];
+    const payRows = payments.map((p) => [
+      p.payment_method_type.toUpperCase(),
+      p.order_count,
+      Number(p.total_amount.toFixed(2)),
+      payTotal2 > 0 ? Number(((p.total_amount / payTotal2) * 100).toFixed(1)) : 0,
+      p.order_count > 0 ? Number((p.total_amount / p.order_count).toFixed(2)) : 0,
+    ]);
+    const wsPay = XLSX.utils.aoa_to_sheet([payHeaders, ...payRows]);
+    wsPay["!cols"] = [{ wch: 18 }, { wch: 14 }, { wch: 22 }, { wch: 22 }, { wch: 20 }];
+    XLSX.utils.book_append_sheet(wb, wsPay, "Payment Mix");
+
+    // ── 7. Order History ─────────────────────────────────────────────────────
+    const ordHeaders = ["Order #", "Date", "Time (IST)", "Customer", "Table", "Items", "Subtotal (₹)", "Discount (₹)", "Tax (₹)", "Total (₹)", "Status"];
+    const ordRows = history.map((o) => {
+      const dt = new Date(o.created_at);
+      return [
+        o.order_number,
+        dt.toLocaleDateString("en-IN", { timeZone: "Asia/Kolkata", day: "2-digit", month: "short", year: "numeric" }),
+        dt.toLocaleTimeString("en-IN", { timeZone: "Asia/Kolkata", hour: "2-digit", minute: "2-digit", hour12: true }),
+        o.customer?.name ?? "Walk-in",
+        o.table?.table_number ?? "—",
+        o.items.length,
+        Number(Number(o.subtotal).toFixed(2)),
+        Number(Number(o.discount_amount).toFixed(2)),
+        Number(Number(o.tax_amount).toFixed(2)),
+        Number(Number(o.total_amount).toFixed(2)),
+        o.status,
+      ];
+    });
+    const wsOrd = XLSX.utils.aoa_to_sheet([ordHeaders, ...ordRows]);
+    wsOrd["!cols"] = [{ wch: 12 }, { wch: 14 }, { wch: 12 }, { wch: 20 }, { wch: 8 }, { wch: 8 }, { wch: 14 }, { wch: 14 }, { wch: 10 }, { wch: 12 }, { wch: 12 }];
+    XLSX.utils.book_append_sheet(wb, wsOrd, "Order History");
+
+    // ── Download ─────────────────────────────────────────────────────────────
+    XLSX.writeFile(wb, `NexaBrew_Report_${range.from}_to_${range.to}.xlsx`);
   }
+
 
   const totalOrders = daily.reduce((s, r) => s + r.order_count, 0);
   const totalRevenue = daily.reduce((s, r) => s + r.total_revenue, 0);
@@ -281,8 +406,8 @@ export default function ReportsPage(): React.ReactElement {
         subtitle={`${range.from} → ${range.to}`}
         action={
           <div className="no-print flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={exportCsv} disabled={loading}>
-              <Download className="mr-1.5 h-4 w-4" /> CSV
+            <Button variant="outline" size="sm" onClick={exportExcel} disabled={loading}>
+              <Download className="mr-1.5 h-4 w-4" /> Excel
             </Button>
             <Button variant="outline" size="sm" onClick={() => window.print()} disabled={loading}>
               <Printer className="mr-1.5 h-4 w-4" /> PDF
