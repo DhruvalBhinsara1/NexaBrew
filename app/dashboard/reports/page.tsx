@@ -1026,7 +1026,7 @@ export default function ReportsPage(): React.ReactElement {
         </Card>
 
         {/* ── Peak Hours + Day of Week ──────────────────────────────────────── */}
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2 lg:items-start">
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="flex items-center gap-2 text-sm">
@@ -1034,11 +1034,11 @@ export default function ReportsPage(): React.ReactElement {
                 Peak Hours (IST)
               </CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-4 pt-0 pb-3">
               {loading ? (
-                <div className="h-48 animate-pulse rounded-lg bg-wise-canvas-soft" />
+                <div className="h-40 animate-pulse rounded-lg bg-wise-canvas-soft" />
               ) : (
-                <ResponsiveContainer width="100%" height={192}>
+                <ResponsiveContainer width="100%" height={160}>
                   <ComposedChart data={hourlyData} margin={{ top: 4, right: 4, bottom: 0, left: -16 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#d7ddd2" vertical={false} />
                     <XAxis dataKey="hour" tick={{ fontSize: 9 }} interval={3} tickLine={false} />
@@ -1069,11 +1069,11 @@ export default function ReportsPage(): React.ReactElement {
                 Day of Week
               </CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-4 pt-0 pb-3">
               {loading ? (
-                <div className="h-48 animate-pulse rounded-lg bg-wise-canvas-soft" />
+                <div className="h-40 animate-pulse rounded-lg bg-wise-canvas-soft" />
               ) : (
-                <ResponsiveContainer width="100%" height={192}>
+                <ResponsiveContainer width="100%" height={160}>
                   <ComposedChart data={dowData} margin={{ top: 4, right: 4, bottom: 0, left: -16 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#d7ddd2" vertical={false} />
                     <XAxis dataKey="day" tick={{ fontSize: 11 }} tickLine={false} />
@@ -1113,11 +1113,11 @@ export default function ReportsPage(): React.ReactElement {
           </CardHeader>
           <CardContent className="pt-0">
             {loading ? (
-              <div className="space-y-2">{Array.from({ length: 5 }).map((_, i) => <div key={i} className="h-10 animate-pulse rounded bg-wise-canvas-soft" />)}</div>
+              <div className="space-y-2 p-4">{Array.from({ length: 4 }).map((_, i) => <div key={i} className="h-8 animate-pulse rounded bg-wise-canvas-soft" />)}</div>
             ) : customerInsights.length === 0 ? (
-              <p className="py-8 text-center text-sm text-wise-mute">No customer orders in this period</p>
+              <p className="py-4 text-center text-sm text-wise-mute">No customer orders in this period</p>
             ) : (
-              <div className="overflow-x-auto">
+              <div className="max-h-72 overflow-y-auto">
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-wise-border">
@@ -1150,7 +1150,7 @@ export default function ReportsPage(): React.ReactElement {
         </Card>
 
         {/* ── Table Utilization + Coupon Impact ─────────────────────────────── */}
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2 lg:items-start">
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="flex items-center gap-2 text-sm">
@@ -1160,7 +1160,7 @@ export default function ReportsPage(): React.ReactElement {
             </CardHeader>
             <CardContent className="pt-0">
               {tableInsights.length === 0 ? (
-                <p className="py-8 text-center text-sm text-wise-mute">No table orders in this period</p>
+                <p className="py-4 text-center text-sm text-wise-mute">No table orders in this period</p>
               ) : (
                 <div className="space-y-2">
                   {tableInsights.map((t) => {
@@ -1191,7 +1191,7 @@ export default function ReportsPage(): React.ReactElement {
             </CardHeader>
             <CardContent className="pt-0">
               {couponInsights.length === 0 ? (
-                <p className="py-8 text-center text-sm text-wise-mute">No coupons used in this period</p>
+                <p className="py-4 text-center text-sm text-wise-mute">No coupons used in this period</p>
               ) : (
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
