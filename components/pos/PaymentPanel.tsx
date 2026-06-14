@@ -7,6 +7,7 @@ import {
   ChefHat,
   CreditCard,
   Loader2,
+  Printer,
   X,
 } from "lucide-react";
 import Script from "next/script";
@@ -195,6 +196,127 @@ export function PaymentPanel({
     onPaymentComplete();
   }
 
+  // ─── Print / download receipt ──────────────────────────────────────────────
+
+  async function handlePrint(): Promise<void> {
+    if (!orderId) return;
+    try {
+      const res = await fetch(`/api/orders/${orderId}/receipt`);
+      if (!res.ok) throw new Error("Receipt not available");
+      const { data } = (await res.json()) as {
+        data: {
+          order_number: string;
+          paid_at: string | null;
+          table: { table_number: number } | null;
+          customer: { name: string; email: string } | null;
+          employee: { name: string } | null;
+          items: { product_name: string; quantity: number; unit_price: number; line_total: number }[];
+          subtotal: number;
+          discount_amount: number;
+          tax_amount: number;
+          total_amount: number;
+          payment: { payment_method_type: string };
+        };
+      };
+
+      const fmt = (n: number) =>
+        new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR" }).format(n);
+
+      const paidAt = data.paid_at
+        ? new Date(data.paid_at).toLocaleString("en-IN", {
+            day: "2-digit", month: "short", year: "numeric",
+            hour: "2-digit", minute: "2-digit", hour12: true,
+          })
+        : "";
+
+      const rows = data.items
+        .map(
+          (it) =>
+            `<tr>
+              <td style="padding:4px 0;">${it.product_name}</td>
+              <td style="text-align:center;padding:4px 8px;">${it.quantity}</td>
+              <td style="text-align:right;padding:4px 0;">${fmt(Number(it.line_total))}</td>
+            </tr>`
+        )
+        .join("");
+
+      const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Receipt ${data.order_number}</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Courier New', Courier, monospace;
+      font-size: 13px;
+      color: #111;
+      background: #fff;
+      padding: 20px;
+      max-width: 320px;
+      margin: 0 auto;
+    }
+    h1 { font-size: 18px; text-align: center; margin-bottom: 2px; letter-spacing: 1px; }
+    .sub { font-size: 11px; text-align: center; color: #555; margin-bottom: 12px; }
+    .divider { border: none; border-top: 1px dashed #aaa; margin: 10px 0; }
+    table { width: 100%; border-collapse: collapse; }
+    thead th { border-bottom: 1px solid #ccc; padding: 4px 0; font-size: 11px; text-transform: uppercase; }
+    .totals td { padding: 3px 0; }
+    .totals .label { color: #555; }
+    .grand { font-size: 16px; font-weight: bold; border-top: 2px solid #111; padding-top: 6px !important; }
+    .footer { margin-top: 16px; text-align: center; font-size: 11px; color: #888; }
+    @media print {
+      @page { margin: 0; size: 80mm auto; }
+      body { padding: 10px; max-width: 100%; }
+    }
+  </style>
+</head>
+<body>
+  <h1>NexaBrew</h1>
+  <p class="sub">Parul University, Vadodara</p>
+  <hr class="divider" />
+  <p style="font-size:12px;margin-bottom:2px;"><strong>Order:</strong> ${data.order_number}</p>
+  ${data.table ? `<p style="font-size:12px;margin-bottom:2px;"><strong>Table:</strong> ${data.table.table_number}</p>` : ""}
+  ${data.customer?.name ? `<p style="font-size:12px;margin-bottom:2px;"><strong>Customer:</strong> ${data.customer.name}</p>` : ""}
+  ${data.employee?.name ? `<p style="font-size:12px;margin-bottom:2px;"><strong>Served by:</strong> ${data.employee.name}</p>` : ""}
+  ${paidAt ? `<p style="font-size:12px;margin-bottom:2px;"><strong>Date:</strong> ${paidAt}</p>` : ""}
+  <hr class="divider" />
+  <table>
+    <thead>
+      <tr>
+        <th style="text-align:left;">Item</th>
+        <th style="text-align:center;">Qty</th>
+        <th style="text-align:right;">Amount</th>
+      </tr>
+    </thead>
+    <tbody>${rows}</tbody>
+  </table>
+  <hr class="divider" />
+  <table class="totals">
+    <tr><td class="label">Subtotal</td><td style="text-align:right;">${fmt(data.subtotal)}</td></tr>
+    ${data.discount_amount > 0 ? `<tr><td class="label">Discount</td><td style="text-align:right;">- ${fmt(data.discount_amount)}</td></tr>` : ""}
+    ${data.tax_amount > 0 ? `<tr><td class="label">Tax</td><td style="text-align:right;">${fmt(data.tax_amount)}</td></tr>` : ""}
+    <tr class="grand"><td><strong>Total</strong></td><td style="text-align:right;"><strong>${fmt(data.total_amount)}</strong></td></tr>
+    <tr><td class="label" style="padding-top:4px;">Paid via</td><td style="text-align:right;padding-top:4px;">${data.payment.payment_method_type.toUpperCase()}</td></tr>
+  </table>
+  <hr class="divider" />
+  <p class="footer">Thank you for visiting NexaBrew!<br/>nxbrew.vercel.app</p>
+  <script>window.onload = function () { window.print(); }<\/script>
+</body>
+</html>`;
+
+      const win = window.open("", "_blank", "width=420,height=680");
+      if (!win) {
+        toast("Allow pop-ups to print the bill", "error");
+        return;
+      }
+      win.document.write(html);
+      win.document.close();
+    } catch {
+      toast("Could not load receipt — try again", "error");
+    }
+  }
+
   // ─── Panel states ──────────────────────────────────────────────────────────
 
   if (!orderStatus || orderStatus === "draft") {
@@ -256,6 +378,16 @@ export function PaymentPanel({
           )}
         </div>
         <div className="mt-4 flex w-full flex-col gap-2">
+          {/* Print / download bill */}
+          <button
+            type="button"
+            onClick={() => void handlePrint()}
+            className="flex w-full items-center justify-center gap-2 rounded-lg border-2 border-green-600 bg-white py-2.5 text-sm font-semibold text-green-700 transition-colors hover:bg-green-600 hover:text-white"
+          >
+            <Printer className="h-4 w-4" />
+            Print / Download Bill
+          </button>
+
           <SlideTextButton tone="green" onClick={handleNewOrder}>
             Start New Order
           </SlideTextButton>
