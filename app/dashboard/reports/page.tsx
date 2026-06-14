@@ -66,10 +66,6 @@ function rangeFor(period: Exclude<Period, "custom">): { from: string; to: string
   return { from: addIstDays(to, -span), to };
 }
 
-function csvCell(v: string | number): string {
-  const s = String(v);
-  return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
-}
 
 /** Continuous date list from..to (inclusive), YYYY-MM-DD.
  *  UTC-anchored so keys match the daily-summary dates (created_at UTC) exactly,
