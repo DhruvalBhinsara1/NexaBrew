@@ -2,13 +2,17 @@ import { NextResponse } from "next/server";
 import { withAuth } from "@/lib/auth/withAuth";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { ReportService } from "@/services/ReportService";
-import { DateRangeSchema, reportFiltersFrom } from "@/schemas/report.schema";
+import { TopProductsQuerySchema, reportFiltersFrom } from "@/schemas/report.schema";
 
 export const GET = withAuth(
   async (req) => {
     const sp = req.nextUrl.searchParams;
-    const range = DateRangeSchema.parse({ from: sp.get("from"), to: sp.get("to") });
-    const data = await ReportService.paymentBreakdown(supabaseAdmin, range, reportFiltersFrom(sp));
+    const { from, to, limit } = TopProductsQuerySchema.parse({
+      from: sp.get("from"),
+      to: sp.get("to"),
+      limit: sp.get("limit") ?? undefined,
+    });
+    const data = await ReportService.topCategories(supabaseAdmin, { from, to }, limit, reportFiltersFrom(sp));
     return NextResponse.json({ data });
   },
   { roles: ["admin"] }

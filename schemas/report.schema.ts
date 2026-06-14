@@ -13,6 +13,19 @@ export const DateRangeSchema = z
   });
 export type DateRangeInput = z.infer<typeof DateRangeSchema>;
 
+/** Parse the optional cross-report filters (employee / session / product). */
+export function reportFiltersFrom(sp: URLSearchParams): {
+  employeeId?: string;
+  sessionId?: string;
+  productId?: string;
+} {
+  return {
+    employeeId: sp.get("employee_id") || undefined,
+    sessionId: sp.get("session_id") || undefined,
+    productId: sp.get("product_id") || undefined,
+  };
+}
+
 export const TopProductsQuerySchema = DateRangeSchema.and(
   z.object({
     limit: z

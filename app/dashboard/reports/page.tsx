@@ -18,6 +18,9 @@ import {
   BarChart3,
   Banknote,
   CreditCard,
+  Download,
+  Layers,
+  Printer,
   Receipt,
   ShoppingCart,
   Smartphone,
@@ -26,6 +29,7 @@ import {
   Trophy,
 } from "lucide-react";
 import { PageHeader } from "@/components/dashboard/PageHeader";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
@@ -35,19 +39,33 @@ import type {
   DailyRevenueRow,
   EmployeeSalesRow,
   PaymentBreakdownRow,
+  TopCategoryRow,
+  TopOrderRow,
   TopProductRow,
 } from "@/services/ReportService";
-import type { OrderWithItems } from "@/types/domain.types";
+import type { OrderWithItems, ProductWithCategory, SessionWithUser, User } from "@/types/domain.types";
 
-type Period = "today" | "week" | "month";
+type Period = "today" | "week" | "month" | "custom";
 
-function rangeFor(period: Period): { from: string; to: string } {
+const PERIOD_LABEL: Record<Period, string> = {
+  today: "Today",
+  week: "This Week",
+  month: "This Month",
+  custom: "Custom range",
+};
+
+function rangeFor(period: Exclude<Period, "custom">): { from: string; to: string } {
   const today = new Date();
   const to = today.toISOString().slice(0, 10);
   const start = new Date(today);
   if (period === "week") start.setDate(today.getDate() - 6);
   if (period === "month") start.setDate(today.getDate() - 29);
   return { from: start.toISOString().slice(0, 10), to };
+}
+
+function csvCell(v: string | number): string {
+  const s = String(v);
+  return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 }
 
 /** Continuous date list from..to (inclusive), YYYY-MM-DD.
@@ -90,28 +108,72 @@ const PAY_META: Record<string, { label: string; color: string; icon: React.Eleme
 export default function ReportsPage(): React.ReactElement {
   const { toast } = useToast();
   const [period, setPeriod] = useState<Period>("week");
+  const [customFrom, setCustomFrom] = useState(() => rangeFor("week").from);
+  const [customTo, setCustomTo] = useState(() => rangeFor("week").to);
+
+  // Cross-report filters
+  const [employeeId, setEmployeeId] = useState("");
+  const [sessionId, setSessionId] = useState("");
+  const [productId, setProductId] = useState("");
+
+  // Filter option lists (loaded once)
+  const [empOptions, setEmpOptions] = useState<User[]>([]);
+  const [sessionOptions, setSessionOptions] = useState<SessionWithUser[]>([]);
+  const [productOptions, setProductOptions] = useState<ProductWithCategory[]>([]);
+
   const [daily, setDaily] = useState<DailyRevenueRow[]>([]);
   const [topProducts, setTopProducts] = useState<TopProductRow[]>([]);
+  const [topCategories, setTopCategories] = useState<TopCategoryRow[]>([]);
+  const [topOrders, setTopOrders] = useState<TopOrderRow[]>([]);
   const [employees, setEmployees] = useState<EmployeeSalesRow[]>([]);
   const [payments, setPayments] = useState<PaymentBreakdownRow[]>([]);
   const [orders, setOrders] = useState<OrderWithItems[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const range = useMemo(() => rangeFor(period), [period]);
+  const range = useMemo(
+    () => (period === "custom" ? { from: customFrom, to: customTo } : rangeFor(period)),
+    [period, customFrom, customTo]
+  );
+
+  const filterQs = useMemo(() => {
+    const p = new URLSearchParams();
+    if (employeeId) p.set("employee_id", employeeId);
+    if (sessionId) p.set("session_id", sessionId);
+    if (productId) p.set("product_id", productId);
+    const s = p.toString();
+    return s ? `&${s}` : "";
+  }, [employeeId, sessionId, productId]);
+
+  // Load filter option lists once
+  useEffect(() => {
+    void Promise.all([
+      apiGet<User[]>("/api/users").catch(() => []),
+      apiGet<SessionWithUser[]>("/api/sessions").catch(() => []),
+      apiGet<ProductWithCategory[]>("/api/products").catch(() => []),
+    ]).then(([u, s, pr]) => {
+      setEmpOptions((u ?? []).filter((x) => x.role !== "customer" && x.role !== "kitchen"));
+      setSessionOptions(s ?? []);
+      setProductOptions(pr ?? []);
+    });
+  }, []);
 
   const load = useCallback(async () => {
     setLoading(true);
-    const qs = `from=${range.from}&to=${range.to}`;
+    const qs = `from=${range.from}&to=${range.to}${filterQs}`;
     try {
-      const [d, tp, emp, pay, ord] = await Promise.all([
+      const [d, tp, tc, to, emp, pay, ord] = await Promise.all([
         apiGet<DailyRevenueRow[]>(`/api/reports/daily?${qs}`),
         apiGet<TopProductRow[]>(`/api/reports/top-products?${qs}&limit=10`),
+        apiGet<TopCategoryRow[]>(`/api/reports/top-categories?${qs}&limit=8`),
+        apiGet<TopOrderRow[]>(`/api/reports/top-orders?${qs}&limit=8`),
         apiGet<EmployeeSalesRow[]>(`/api/reports/employees?${qs}`),
         apiGet<PaymentBreakdownRow[]>(`/api/reports/payments?${qs}`),
         apiGet<OrderWithItems[]>(`/api/orders`),
       ]);
       setDaily(d);
       setTopProducts(tp);
+      setTopCategories(tc);
+      setTopOrders(to);
       setEmployees(emp);
       setPayments(pay);
       setOrders(ord);
@@ -120,11 +182,57 @@ export default function ReportsPage(): React.ReactElement {
     } finally {
       setLoading(false);
     }
-  }, [range.from, range.to, toast]);
+  }, [range.from, range.to, filterQs, toast]);
 
   useEffect(() => {
     void load();
   }, [load]);
+
+  const activeFilters = !!(employeeId || sessionId || productId);
+  function clearFilters(): void {
+    setEmployeeId("");
+    setSessionId("");
+    setProductId("");
+  }
+
+  function exportCsv(): void {
+    const lines: string[] = [];
+    lines.push(`NexaBrew Report,${range.from} to ${range.to}`);
+    lines.push("");
+    lines.push("Daily Revenue");
+    lines.push(["Date", "Orders", "Subtotal", "Discount", "Tax", "Revenue"].join(","));
+    daily.forEach((r) => lines.push([r.date, r.order_count, r.subtotal, r.discount_amount, r.tax_amount, r.total_revenue].map(csvCell).join(",")));
+    lines.push("");
+    lines.push("Top Products");
+    lines.push(["Product", "Qty", "Revenue"].join(","));
+    topProducts.forEach((p) => lines.push([p.product_name, p.quantity_sold, p.revenue].map(csvCell).join(",")));
+    lines.push("");
+    lines.push("Top Categories");
+    lines.push(["Category", "Qty", "Revenue"].join(","));
+    topCategories.forEach((c) => lines.push([c.category_name, c.quantity_sold, c.revenue].map(csvCell).join(",")));
+    lines.push("");
+    lines.push("Top Orders");
+    lines.push(["Order", "Date", "Customer", "Total"].join(","));
+    topOrders.forEach((o) => lines.push([o.order_number, o.created_at, o.customer_name ?? "Walk-in", o.total_amount].map(csvCell).join(",")));
+    lines.push("");
+    lines.push("Sales by Employee");
+    lines.push(["Employee", "Orders", "Revenue"].join(","));
+    employees.forEach((e) => lines.push([e.employee_name, e.order_count, e.total_revenue].map(csvCell).join(",")));
+    lines.push("");
+    lines.push("Payment Mix");
+    lines.push(["Method", "Orders", "Amount"].join(","));
+    payments.forEach((p) => lines.push([p.payment_method_type, p.order_count, p.total_amount].map(csvCell).join(",")));
+
+    const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `nexabrew-report-${range.from}_to_${range.to}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  }
 
   const totalOrders = daily.reduce((s, r) => s + r.order_count, 0);
   const totalRevenue = daily.reduce((s, r) => s + r.total_revenue, 0);
@@ -170,28 +278,73 @@ export default function ReportsPage(): React.ReactElement {
 
   return (
     <div className="space-y-6 p-6">
+      <style>{`@media print { aside, .no-print { display: none !important; } body { background: #fff; } }`}</style>
+
       <PageHeader
         title="Reports"
         subtitle={`${range.from} → ${range.to}`}
         action={
-          <div className="flex rounded-lg border border-wise-border bg-white p-0.5 shadow-sm">
-            {(["today", "week", "month"] as Period[]).map((p) => (
-              <button
-                key={p}
-                onClick={() => setPeriod(p)}
-                className={cn(
-                  "cursor-pointer rounded-md px-3 py-1.5 text-sm font-medium capitalize transition-all duration-200",
-                  period === p
-                    ? "bg-wise-primary text-wise-ink shadow-sm"
-                    : "text-wise-body hover:bg-wise-canvas-soft hover:text-wise-ink"
-                )}
-              >
-                {p === "today" ? "Today" : p === "week" ? "This Week" : "This Month"}
-              </button>
-            ))}
+          <div className="no-print flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={exportCsv} disabled={loading}>
+              <Download className="mr-1.5 h-4 w-4" /> CSV
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => window.print()} disabled={loading}>
+              <Printer className="mr-1.5 h-4 w-4" /> PDF
+            </Button>
           </div>
         }
       />
+
+      {/* Filter toolbar */}
+      <div className="no-print flex flex-wrap items-center gap-3 rounded-wiseCard border border-wise-border bg-white p-3 shadow-wiseCard">
+        <div className="flex rounded-lg border border-wise-border p-0.5">
+          {(["today", "week", "month", "custom"] as Period[]).map((p) => (
+            <button
+              key={p}
+              onClick={() => setPeriod(p)}
+              className={cn(
+                "cursor-pointer rounded-md px-3 py-1.5 text-sm font-medium transition-all duration-200",
+                period === p ? "bg-wise-primary text-wise-ink shadow-sm" : "text-wise-body hover:bg-wise-canvas-soft hover:text-wise-ink"
+              )}
+            >
+              {PERIOD_LABEL[p]}
+            </button>
+          ))}
+        </div>
+
+        {period === "custom" && (
+          <div className="flex items-center gap-2 text-sm">
+            <input type="date" value={customFrom} max={customTo} onChange={(e) => setCustomFrom(e.target.value)} className="rounded-wise border border-wise-border bg-white px-2.5 py-1.5 text-wise-ink focus:border-wise-primary focus:outline-none focus:ring-2 focus:ring-ring/40" />
+            <span className="text-wise-mute">→</span>
+            <input type="date" value={customTo} min={customFrom} onChange={(e) => setCustomTo(e.target.value)} className="rounded-wise border border-wise-border bg-white px-2.5 py-1.5 text-wise-ink focus:border-wise-primary focus:outline-none focus:ring-2 focus:ring-ring/40" />
+          </div>
+        )}
+
+        <div className="ml-auto flex flex-wrap items-center gap-2">
+          {[
+            { v: employeeId, set: setEmployeeId, ph: "All employees", opts: empOptions.map((e) => ({ id: e.id, label: e.name })) },
+            { v: sessionId, set: setSessionId, ph: "All sessions", opts: sessionOptions.map((s) => ({ id: s.id, label: `${new Date(s.opened_at).toLocaleDateString("en-IN", { day: "2-digit", month: "short" })} · ${s.opened_by_user?.name ?? "—"}` })) },
+            { v: productId, set: setProductId, ph: "All products", opts: productOptions.map((p) => ({ id: p.id, label: p.name })) },
+          ].map((f, i) => (
+            <select
+              key={i}
+              value={f.v}
+              onChange={(e) => f.set(e.target.value)}
+              className="rounded-wise border border-wise-border bg-white px-2.5 py-1.5 text-sm text-wise-ink focus:border-wise-primary focus:outline-none focus:ring-2 focus:ring-ring/40"
+            >
+              <option value="">{f.ph}</option>
+              {f.opts.map((o) => (
+                <option key={o.id} value={o.id}>{o.label}</option>
+              ))}
+            </select>
+          ))}
+          {activeFilters && (
+            <button onClick={clearFilters} className="rounded-wisePill px-2.5 py-1.5 text-sm font-medium text-wise-ink-deep hover:bg-wise-primary-pale">
+              Clear
+            </button>
+          )}
+        </div>
+      </div>
 
       {/* Hero: total revenue for the period (matches dashboard) */}
       <section className="relative overflow-hidden rounded-wiseCard bg-wise-ink px-6 py-7 shadow-wiseCard sm:px-8">
@@ -199,7 +352,7 @@ export default function ReportsPage(): React.ReactElement {
         <div className="relative">
           <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-white/45">
             <span className="h-1.5 w-1.5 rounded-full bg-wise-primary motion-safe:animate-pulse" />
-            Total revenue · {period === "today" ? "Today" : period === "week" ? "This Week" : "This Month"}
+            Total revenue · {PERIOD_LABEL[period]}{activeFilters ? " · filtered" : ""}
           </div>
           <p className="mt-2 font-display text-5xl font-extrabold leading-none tracking-tight text-wise-primary sm:text-6xl">
             {loading ? "—" : formatCurrency(totalRevenue)}
@@ -364,6 +517,95 @@ export default function ReportsPage(): React.ReactElement {
                   </div>
                 </div>
               ))
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Top categories + Top orders (spec §2.9) */}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        {/* Top Categories — chart + ranked list */}
+        <Card className="border-wise-border shadow-sm">
+          <CardHeader className="flex flex-row items-center gap-2 pb-2">
+            <Layers className="h-4 w-4 text-wise-ink-deep" />
+            <CardTitle className="text-base">Top Categories</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {loading ? (
+              <div className="h-44 w-full animate-pulse rounded-lg bg-wise-canvas-soft" />
+            ) : topCategories.length === 0 ? (
+              <EmptyState icon={Layers} text="No category sales yet." compact />
+            ) : (
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+                <div className="relative shrink-0">
+                  <ResponsiveContainer width={150} height={150}>
+                    <PieChart>
+                      <Pie data={topCategories} dataKey="revenue" nameKey="category_name" innerRadius={45} outerRadius={70} paddingAngle={2} stroke="none">
+                        {topCategories.map((c) => (
+                          <Cell key={c.category_id} fill={c.color ?? "#9fe870"} />
+                        ))}
+                      </Pie>
+                      <Tooltip content={<CategoryTooltip />} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                  <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
+                    <span className="text-[10px] uppercase tracking-wide text-wise-mute">Cats</span>
+                    <span className="text-sm font-bold text-wise-ink">{topCategories.length}</span>
+                  </div>
+                </div>
+                <div className="min-w-0 flex-1 space-y-2">
+                  {topCategories.map((c) => {
+                    const max = Math.max(...topCategories.map((x) => x.revenue), 1);
+                    return (
+                      <div key={c.category_id} className="flex items-center gap-2.5 text-sm">
+                        <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: c.color ?? "#9fe870" }} />
+                        <span className="w-24 shrink-0 truncate text-wise-ink">{c.category_name}</span>
+                        <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-wise-canvas-soft">
+                          <div className="h-full rounded-full bg-wise-primary" style={{ width: `${(c.revenue / max) * 100}%` }} />
+                        </div>
+                        <span className="w-16 shrink-0 text-right font-semibold text-wise-ink">{formatCurrency(c.revenue)}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Top Orders — highest-value */}
+        <Card className="border-wise-border shadow-sm">
+          <CardHeader className="flex flex-row items-center gap-2 pb-2">
+            <Receipt className="h-4 w-4 text-wise-ink-deep" />
+            <CardTitle className="text-base">Top Orders</CardTitle>
+          </CardHeader>
+          <CardContent className="p-0">
+            {loading ? (
+              <div className="space-y-2 p-4"><SkeletonRows /></div>
+            ) : topOrders.length === 0 ? (
+              <EmptyState icon={Receipt} text="No orders in this range." compact />
+            ) : (
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-wise-border text-xs uppercase tracking-wider text-wise-mute">
+                    <th className="px-4 py-2 text-left">Order</th>
+                    <th className="px-4 py-2 text-left">Customer</th>
+                    <th className="px-4 py-2 text-right">Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {topOrders.map((o) => (
+                    <tr key={o.order_id} className="border-b border-wise-border transition-colors last:border-0 hover:bg-wise-canvas-soft">
+                      <td className="px-4 py-2.5 font-medium text-wise-ink">
+                        {o.order_number}
+                        <span className="ml-1.5 text-xs text-wise-mute">{fmtTime(o.created_at)}</span>
+                      </td>
+                      <td className="px-4 py-2.5 text-wise-body">{o.customer_name ?? "Walk-in"}</td>
+                      <td className="px-4 py-2.5 text-right font-semibold text-wise-ink">{formatCurrency(o.total_amount)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             )}
           </CardContent>
         </Card>
@@ -606,6 +848,21 @@ function PayTooltip({ active, payload }: PayTooltipProps): React.ReactElement | 
     <div className="rounded-lg border border-wise-border bg-white px-3 py-2 text-xs shadow-lg">
       <p className="font-semibold text-wise-body">{meta?.label ?? p.payment_method_type}</p>
       <p className="text-wise-body">{formatCurrency(p.total_amount)} · {p.order_count} orders</p>
+    </div>
+  );
+}
+
+interface CategoryTooltipProps {
+  active?: boolean;
+  payload?: Array<{ payload: TopCategoryRow }>;
+}
+function CategoryTooltip({ active, payload }: CategoryTooltipProps): React.ReactElement | null {
+  if (!active || !payload?.length) return null;
+  const c = payload[0].payload;
+  return (
+    <div className="rounded-lg border border-wise-border bg-white px-3 py-2 text-xs shadow-lg">
+      <p className="font-semibold text-wise-ink">{c.category_name}</p>
+      <p className="text-wise-body">{formatCurrency(c.revenue)} · {c.quantity_sold} sold</p>
     </div>
   );
 }

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { withAuth } from "@/lib/auth/withAuth";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { ReportService } from "@/services/ReportService";
-import { TopProductsQuerySchema } from "@/schemas/report.schema";
+import { TopProductsQuerySchema, reportFiltersFrom } from "@/schemas/report.schema";
 
 export const GET = withAuth(
   async (req) => {
@@ -12,7 +12,7 @@ export const GET = withAuth(
       to: sp.get("to"),
       limit: sp.get("limit") ?? undefined,
     });
-    const data = await ReportService.topProducts(supabaseAdmin, { from, to }, limit);
+    const data = await ReportService.topProducts(supabaseAdmin, { from, to }, limit, reportFiltersFrom(sp));
     return NextResponse.json({ data });
   },
   { roles: ["admin"] }
