@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState, memo } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, memo } from "react";
 import { useRouter } from "next/navigation";
 import {
   CheckCircle2,
@@ -286,6 +286,9 @@ function KdsColumn({
 export default function KdsPage(): React.ReactElement {
   const router = useRouter();
   const { data: tickets, loading } = useRealtimeKitchenTickets();
+  // Latest tickets snapshot for stable callbacks (avoids stale closures).
+  const ticketsRef = useRef(tickets);
+  ticketsRef.current = tickets;
   const [timeStr, setTimeStr] = useState("");
   const [now, setNow] = useState(() => Date.now());
   const [search, setSearch] = useState("");
@@ -356,8 +359,20 @@ export default function KdsPage(): React.ReactElement {
   }, []);
 
   const handleCompleteItem = useCallback(async (ticketId: string, itemId: string): Promise<void> => {
+    const ticket = ticketsRef.current.find((t) => t.id === ticketId);
+    // Was this the last item still cooking? (every other item already done)
+    const wasLastItem =
+      !!ticket &&
+      ticket.status !== "completed" &&
+      ticket.items.every((it) => it.id === itemId || it.is_completed);
+
     await fetch(`/api/kitchen/tickets/${ticketId}/items/${itemId}`, { method: "PATCH" });
-  }, []);
+
+    // All items struck → move the whole ticket to the next column.
+    if (wasLastItem && ticket) {
+      await handleAdvance(ticketId, ticket.status);
+    }
+  }, [handleAdvance]);
 
   async function handleLogout(): Promise<void> {
     await createBrowserClient().auth.signOut();

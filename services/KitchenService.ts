@@ -159,6 +159,13 @@ export const KitchenService = {
     }
 
     if (newStatus !== "completed") {
+      // Entering a fresh working stage: reset item check-offs so the cook
+      // ticks them off again here. Striking the last item then advances the
+      // ticket once more. Non-fatal — a failed reset just leaves items as-is.
+      await supabase
+        .from("kitchen_ticket_items")
+        .update({ is_completed: false })
+        .eq("ticket_id", ticketId);
       return { ticket: ticket as KitchenTicket };
     }
 
