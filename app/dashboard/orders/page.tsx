@@ -150,34 +150,33 @@ export default function OrdersPage(): React.ReactElement {
             {/* Filters & Orders */}
             <Card className="border-wise-border">
                 <CardContent className="p-0">
-                    {orders.length === 0 && !loading ? (
-                        <EmptyState icon={ShoppingCart} title="No orders yet" subtitle="Orders will appear here once created." />
+                    {/* Search — always visible so a no-result query never hides it */}
+                    <div className="border-b border-wise-border p-4">
+                        <Label htmlFor="search-orders" className="text-xs font-medium text-wise-body">
+                            Search by Order Number
+                        </Label>
+                        <Input
+                            id="search-orders"
+                            placeholder="e.g., ORD-001"
+                            value={search}
+                            onChange={(e) => setSearch(e.target.value)}
+                            className="mt-1.5"
+                        />
+                    </div>
+
+                    {loading ? (
+                        <div className="flex items-center justify-center gap-2 py-8 text-wise-mute">
+                            <Loader2 className="h-4 w-4 animate-spin" /> Loading…
+                        </div>
+                    ) : orders.length === 0 ? (
+                        <EmptyState
+                            icon={ShoppingCart}
+                            title={search ? "No matching orders" : "No orders yet"}
+                            subtitle={search ? `Nothing matches “${search}”. Try another order number.` : "Orders will appear here once created."}
+                            action={search ? { label: "Clear search", onClick: () => setSearch("") } : undefined}
+                        />
                     ) : (
                         <>
-                            {/* Search */}
-                            <div className="border-b border-wise-border p-4">
-                                <Label htmlFor="search-orders" className="text-xs font-medium text-wise-body">
-                                    Search by Order Number
-                                </Label>
-                                <Input
-                                    id="search-orders"
-                                    placeholder="e.g., ORD-001"
-                                    value={search}
-                                    onChange={(e) => setSearch(e.target.value)}
-                                    className="mt-1.5"
-                                />
-                            </div>
-
-                            {/* Loading State */}
-                            {loading && (
-                                <div className="flex items-center justify-center gap-2 py-8 text-wise-mute">
-                                    <Loader2 className="h-4 w-4 animate-spin" /> Loading…
-                                </div>
-                            )}
-
-                            {/* Table */}
-                            {!loading && orders.length > 0 && (
-                                <>
                                     <div className="overflow-x-auto">
                                         <table className="w-full text-sm">
                                             <thead>
@@ -234,8 +233,6 @@ export default function OrdersPage(): React.ReactElement {
                                             isLoading={loading}
                                         />
                                     </div>
-                                </>
-                            )}
                         </>
                     )}
                 </CardContent>
