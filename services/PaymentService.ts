@@ -91,43 +91,167 @@ function receiptText(receipt: OrderReceipt): string {
 }
 
 function receiptHtml(receipt: OrderReceipt): string {
+  const fmt = (n: number) =>
+    new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR" }).format(n);
+
+  const paidAt = receipt.paid_at
+    ? new Date(receipt.paid_at).toLocaleString("en-IN", {
+        day: "2-digit",
+        month: "long",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: true,
+        timeZone: "Asia/Kolkata",
+      })
+    : "";
+
+  const customerName = receipt.customer?.name ?? null;
+  const greeting = customerName ? `Thanks, ${customerName}!` : "Payment Confirmed!";
+
   const rows = receipt.items
     .map(
-      (item) => `
+      (item, i) => `
         <tr>
-          <td>${item.product_name}</td>
-          <td style="text-align:center">${item.quantity}</td>
-          <td style="text-align:right">${formatCurrency(Number(item.line_total))}</td>
+          <td style="padding:10px 0;font-size:14px;color:#0e0f0c;border-bottom:1px solid #d7ddd2;${i === 0 ? "border-top:1px solid #d7ddd2;" : ""}">${item.product_name}</td>
+          <td style="padding:10px 8px;font-size:14px;color:#454745;text-align:center;border-bottom:1px solid #d7ddd2;${i === 0 ? "border-top:1px solid #d7ddd2;" : ""}">×${item.quantity}</td>
+          <td style="padding:10px 0;font-size:14px;color:#0e0f0c;text-align:right;font-weight:600;border-bottom:1px solid #d7ddd2;${i === 0 ? "border-top:1px solid #d7ddd2;" : ""}">${fmt(Number(item.line_total))}</td>
         </tr>`
     )
     .join("");
 
-  return `
-    <div style="font-family:Arial,sans-serif;color:#18181b;max-width:560px;margin:0 auto">
-      <h1 style="margin:0 0 8px">NexaBrew Receipt</h1>
-      <p style="margin:0 0 4px;color:#52525b">Order ${receipt.order_number}</p>
-      ${
-        receipt.customer?.name
-          ? `<p style="margin:0 0 24px;color:#52525b">Customer: <strong>${receipt.customer.name}</strong></p>`
-          : `<div style="margin-bottom:24px;"></div>`
-      }
-      <table style="width:100%;border-collapse:collapse;margin-bottom:20px">
-        <thead>
+  const metaRows = [
+    receipt.table ? `<tr><td style="padding:4px 0;font-size:13px;color:#868685;">Table</td><td style="padding:4px 0;font-size:13px;color:#0e0f0c;font-weight:600;text-align:right;">${receipt.table.table_number}</td></tr>` : "",
+    customerName ? `<tr><td style="padding:4px 0;font-size:13px;color:#868685;">Customer</td><td style="padding:4px 0;font-size:13px;color:#0e0f0c;font-weight:600;text-align:right;">${customerName}</td></tr>` : "",
+    receipt.employee?.name ? `<tr><td style="padding:4px 0;font-size:13px;color:#868685;">Served by</td><td style="padding:4px 0;font-size:13px;color:#0e0f0c;font-weight:600;text-align:right;">${receipt.employee.name}</td></tr>` : "",
+    paidAt ? `<tr><td style="padding:4px 0;font-size:13px;color:#868685;">Date &amp; Time</td><td style="padding:4px 0;font-size:13px;color:#0e0f0c;font-weight:600;text-align:right;">${paidAt}</td></tr>` : "",
+    `<tr><td style="padding:4px 0;font-size:13px;color:#868685;">Payment</td><td style="padding:4px 0;font-size:13px;color:#0e0f0c;font-weight:600;text-align:right;">${receipt.payment.payment_method_type.toUpperCase()}</td></tr>`,
+    receipt.payment.transaction_reference ? `<tr><td style="padding:4px 0;font-size:13px;color:#868685;">Reference</td><td style="padding:4px 0;font-size:13px;color:#0e0f0c;font-weight:600;text-align:right;">${receipt.payment.transaction_reference}</td></tr>` : "",
+  ].filter(Boolean).join("");
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>NexaBrew Receipt — ${receipt.order_number}</title>
+</head>
+<body style="margin:0;padding:0;background:#e8ebe6;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,Arial,sans-serif;">
+  <!-- Outer wrapper -->
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#e8ebe6;padding:40px 16px;">
+    <tr>
+      <td align="center">
+        <table width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;">
+
+          <!-- ── Header ── -->
           <tr>
-            <th style="text-align:left;border-bottom:1px solid #e4e4e7;padding:8px 0">Item</th>
-            <th style="text-align:center;border-bottom:1px solid #e4e4e7;padding:8px 0">Qty</th>
-            <th style="text-align:right;border-bottom:1px solid #e4e4e7;padding:8px 0">Amount</th>
+            <td style="background:#0e0f0c;border-radius:20px 20px 0 0;padding:28px 36px 24px;">
+              <!-- Logo row -->
+              <table cellpadding="0" cellspacing="0">
+                <tr>
+                  <td style="vertical-align:middle;">
+                    <span style="display:inline-block;background:#9fe870;border-radius:10px;width:38px;height:38px;line-height:38px;text-align:center;font-size:20px;">☕</span>
+                  </td>
+                  <td style="padding-left:10px;vertical-align:middle;">
+                    <span style="font-size:20px;font-weight:800;color:#ffffff;letter-spacing:-0.5px;">NexaBrew</span>
+                  </td>
+                </tr>
+              </table>
+              <p style="margin:16px 0 0;font-size:12px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:#9fe870;">Payment Receipt</p>
+            </td>
           </tr>
-        </thead>
-        <tbody>${rows}</tbody>
-      </table>
-      <p>Subtotal: <strong>${formatCurrency(receipt.subtotal)}</strong></p>
-      <p>Discount: <strong>${formatCurrency(receipt.discount_amount)}</strong></p>
-      <p>Tax: <strong>${formatCurrency(receipt.tax_amount)}</strong></p>
-      <p style="font-size:20px">Total: <strong>${formatCurrency(receipt.total_amount)}</strong></p>
-      <p style="color:#52525b">Payment: ${receipt.payment.payment_method_type.toUpperCase()}</p>
-    </div>`;
+
+          <!-- ── White card body ── -->
+          <tr>
+            <td style="background:#ffffff;padding:32px 36px;">
+
+              <!-- Greeting -->
+              <h1 style="margin:0 0 6px;font-size:26px;font-weight:800;color:#0e0f0c;letter-spacing:-0.5px;">${greeting}</h1>
+              <p style="margin:0 0 28px;font-size:14px;color:#868685;">Order <strong style="color:#163300;">${receipt.order_number}</strong> is fully settled. Your receipt is below.</p>
+
+              <!-- Order meta chip row -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="background:#e8ebe6;border-radius:14px;padding:16px 20px;margin-bottom:28px;">
+                <tr>
+                  <td>
+                    <table width="100%" cellpadding="0" cellspacing="0">
+                      ${metaRows}
+                    </table>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- Items -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:20px;">
+                <thead>
+                  <tr>
+                    <th style="text-align:left;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:#868685;padding-bottom:8px;">Item</th>
+                    <th style="text-align:center;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:#868685;padding-bottom:8px;">Qty</th>
+                    <th style="text-align:right;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:#868685;padding-bottom:8px;">Amount</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${rows}
+                </tbody>
+              </table>
+
+              <!-- Totals -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:28px;">
+                <tr>
+                  <td style="padding:5px 0;font-size:13px;color:#454745;">Subtotal</td>
+                  <td style="padding:5px 0;font-size:13px;color:#0e0f0c;text-align:right;">${fmt(receipt.subtotal)}</td>
+                </tr>
+                ${receipt.discount_amount > 0 ? `
+                <tr>
+                  <td style="padding:5px 0;font-size:13px;color:#454745;">Discount</td>
+                  <td style="padding:5px 0;font-size:13px;color:#2ead4b;text-align:right;font-weight:600;">− ${fmt(receipt.discount_amount)}</td>
+                </tr>` : ""}
+                ${receipt.tax_amount > 0 ? `
+                <tr>
+                  <td style="padding:5px 0;font-size:13px;color:#454745;">Tax</td>
+                  <td style="padding:5px 0;font-size:13px;color:#0e0f0c;text-align:right;">${fmt(receipt.tax_amount)}</td>
+                </tr>` : ""}
+                <!-- Grand total row -->
+                <tr>
+                  <td colspan="2" style="padding-top:4px;">
+                    <table width="100%" cellpadding="0" cellspacing="0">
+                      <tr>
+                        <td style="background:#0e0f0c;border-radius:12px;padding:14px 20px;">
+                          <table width="100%" cellpadding="0" cellspacing="0">
+                            <tr>
+                              <td style="font-size:15px;font-weight:700;color:#9fe870;">Total Paid</td>
+                              <td style="font-size:22px;font-weight:800;color:#9fe870;text-align:right;letter-spacing:-0.5px;">${fmt(receipt.total_amount)}</td>
+                            </tr>
+                          </table>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- CTA -->
+              <p style="margin:0;font-size:13px;color:#868685;text-align:center;">We hope to see you again soon ✨</p>
+            </td>
+          </tr>
+
+          <!-- ── Footer ── -->
+          <tr>
+            <td style="background:#0e0f0c;border-radius:0 0 20px 20px;padding:20px 36px;text-align:center;">
+              <p style="margin:0;font-size:13px;font-weight:600;color:#9fe870;">NexaBrew Café</p>
+              <p style="margin:4px 0 0;font-size:11px;color:rgba(255,255,255,0.35);">Parul University, Vadodara · nxbrew.vercel.app</p>
+            </td>
+          </tr>
+
+          <!-- Spacer -->
+          <tr><td style="height:32px;"></td></tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
 }
+
 
 async function loadReceiptOrder(
   supabase: Supa,

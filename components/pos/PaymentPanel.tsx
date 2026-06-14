@@ -65,11 +65,12 @@ export function PaymentPanel({
   const [tendered, setTendered] = useState("");
   const [orderTotal, setOrderTotal] = useState<number | null>(null);
   const [orderCustomerName, setOrderCustomerName] = useState<string | null>(null);
+  const [orderCustomerEmail, setOrderCustomerEmail] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [paid, setPaid] = useState(false);
   const [rzpScriptReady, setRzpScriptReady] = useState(false);
 
-  // Fetch the live order total once order is known
+  // Fetch the live order total + customer info once order is known
   useEffect(() => {
     if (!orderId) return;
     fetch(`/api/orders/${orderId}`)
@@ -78,6 +79,7 @@ export function PaymentPanel({
         if (d.data) {
           setOrderTotal(Number(d.data.total_amount));
           setOrderCustomerName(d.data.customer?.name ?? null);
+          setOrderCustomerEmail(d.data.customer?.email ?? null);
         }
       })
       .catch(() => null);
@@ -148,6 +150,7 @@ export function PaymentPanel({
           setPaid(true);
           setLoading(false);
           toast("Payment successful!", "success");
+          void sendReceiptEmail(orderId);
         },
       };
 
@@ -180,10 +183,28 @@ export function PaymentPanel({
       }
       setPaid(true);
       toast("Cash payment recorded!", "success");
+      void sendReceiptEmail(orderId);
     } catch {
       toast("Payment failed. Please try again.", "error");
     } finally {
       setLoading(false);
+    }
+  }
+
+  // ─── Auto-send receipt email (fire-and-forget) ────────────────────────────
+
+  async function sendReceiptEmail(id: string): Promise<void> {
+    try {
+      const res = await fetch(`/api/orders/${id}/receipt/email`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      });
+      if (res.ok && orderCustomerEmail) {
+        toast(`📧 Receipt sent to ${orderCustomerEmail}`, "success");
+      }
+    } catch {
+      // silently swallow — email is non-critical
     }
   }
 
@@ -192,6 +213,7 @@ export function PaymentPanel({
     setTendered("");
     setOrderTotal(null);
     setOrderCustomerName(null);
+    setOrderCustomerEmail(null);
     reset();
     onPaymentComplete();
   }
