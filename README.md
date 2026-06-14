@@ -2,6 +2,10 @@
 
 **Live at → [nxbrew.vercel.app](https://nxbrew.vercel.app)**
 
+or
+
+**Live at → [nexabrew.vercel.app](https://nexabrew.vercel.app)**
+
 NexaBrew is a full-stack café management platform built for modern coffee shops. It handles everything from customer self-ordering and online payment to kitchen display, POS terminal, session management, and detailed sales analytics — all in one place.
 
 ---
@@ -18,12 +22,15 @@ NexaBrew gives a café three things in a single web app:
 | **Management Dashboard** | Admin / owner | `/dashboard` |
 
 ### Customer flow
+
 Customers scan a QR code (or visit the URL directly), browse the menu, add items to their cart, choose a table or counter pickup, apply a coupon, and pay online via Razorpay (UPI, card, netbanking) — or pay at the counter. Their cart is saved in the browser so closing the payment screen never wipes their order.
 
 ### Staff flow
+
 The POS terminal lets staff take walk-in orders, assign tables, apply discounts, send to kitchen, and collect payment (cash, card, UPI). The Kitchen Display refreshes in real time — staff tap a ticket to advance it from *To Cook → Preparing → Completed*, and individual items can be marked done independently.
 
 ### Admin flow
+
 The dashboard gives the owner full control: manage products, categories, floors & tables, payment methods, coupons, users, and sessions. The Reports page shows revenue, order counts, average order value, top products, and per-session breakdowns with live charts.
 
 ---
@@ -89,6 +96,7 @@ The app is deployed on **Vercel** with automatic deployments on every push to `m
 **Alternate URL:** [https://nexabrew.vercel.app](https://nexabrew.vercel.app)
 
 To redeploy manually:
+
 ```bash
 npx -y vercel --prod
 ```
