@@ -456,9 +456,61 @@ Implemented:
 
 Verified: `npx tsc --noEmit` zero errors + `npm run build` clean (29 routes, all green).
 
-## NEXT: Remaining work
+## Spec coverage & remaining work (audited 2026-06-14 vs "Odoo Cafe POS" PDF)
 
-All P0 + P1 features are complete. Suggested next steps:
-1. Live end-to-end demo run (open session → POS order → KDS → payment)
-2. Live payment verification (Resend API key for receipt email)
-3. Phase 17 — P3 PDF/XLS export (only if time permits)
+**Verdict: the necessary/core POS is built and live (~90% of the spec), plus
+several extras beyond it.** Below is the precise gap list.
+
+### ✅ Done (spec-required, verified in code)
+Auth + role routing · Product CRUD · Category CRUD with color propagation ·
+Payment-method toggles + UPI-ID/QR route · Floor & table management · Coupon
+codes · **Automated promotions** (product min-qty / order min-amount, applied in
+`OrderPricing`) · User mgmt (list/add/archive) · POS open/close session ·
+3-panel Order View (product cards, category tabs, search, qty, send-to-kitchen,
+customer assign, discount popup, subtotal/tax/discount/total) · Cash payment
+with change-due · Receipt print + email route · Orders list + detail + draft
+delete · Table view with active-order highlighting · Customer CRUD · KDS
+realtime (To Cook/Preparing/Completed, item strikethrough, search,
+kitchen-display-only products) · Reports (Total Orders / Revenue / AOV, sales
+trend, top products, sales-by-employee, payment mix) · Deployed to Vercel.
+
+### ⛏️ Left / partial vs spec
+**P1 — spec-required, not yet built:**
+1. Reports: **Top Categories** chart + table, and **Top Orders** table (§2.9).
+2. Reports: **Employee / Session / Product** filters (only Period exists).
+3. Reports: **Custom date range** (only Today/Week/Month presets).
+4. Reports: **PDF / XLS export** (§2.9).
+
+**P2 — partial / polish:**
+5. Product form: **Description** field + **create-category-on-the-fly** (schema
+   has `description`; the admin form doesn't expose it).
+6. Payment dialog: explicit **Card (transaction reference)** + **UPI-QR
+   confirm/cancel** screens (backend `upi-qr` route exists; dialog currently
+   offers Razorpay + Cash — Razorpay covers card/UPI online but isn't the
+   literal spec flow).
+7. **Edit Draft order** → reload into the cart for editing (§3.6).
+8. POS session niceties: **Floor pop-up auto-opens on session start**, show
+   **last-closing-sale amount** on Open Session, **closing summary** on close.
+9. User mgmt: confirm **Change Password** + **Delete** actions (Archive done).
+10. KDS: **category filter** (product search already present).
+11. **Booking** nav item (spec lists it; scope undefined — likely table
+    reservations — not built).
+
+**Ops:**
+- Vercel **Deployment Protection is ON → site returns 401**. Disable in Vercel
+  project settings to make `nxbrew.vercel.app` publicly reachable.
+- `RESEND_API_KEY` unset → receipt emails fail silently until added.
+- Push local commits; resolve the two stray uncommitted files
+  (`services/SessionService.ts`, `app/api/sessions/route.ts`).
+
+### 🎁 Built beyond the spec (bonus)
+Razorpay online payments · full "Wise" design overhaul + coffee puns +
+micro-interactions · **customer self-ordering** (cart, table pick,
+counter/online checkout — not in the spec) · checkout price breakdown ·
+draft-per-table "add to bill" · dashboard hover floor-plan + trend popovers.
+
+### 💡 Could be added next (enhancements)
+The 4 P1 reports gaps above · reports trend arrows (▲▼ vs prior period) ·
+inventory/stock + low-stock alerts · split bills / tips / refunds-voids ·
+customer loyalty & points · ESC/POS thermal receipts + real email · PWA/offline
+terminal · per-product tax configs.
