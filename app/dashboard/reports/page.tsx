@@ -18,16 +18,20 @@ import {
 import {
   BarChart3,
   Banknote,
+  Clock,
   CreditCard,
   Download,
   Layers,
+  MapPin,
   Printer,
   Receipt,
   ShoppingCart,
   Smartphone,
   Sparkles,
+  Tag,
   TrendingUp,
   Trophy,
+  Users,
 } from "lucide-react";
 import { PageHeader } from "@/components/dashboard/PageHeader";
 import { Button } from "@/components/ui/button";
@@ -101,6 +105,16 @@ const PAY_META: Record<string, { label: string; color: string; icon: React.Eleme
   upi: { label: "UPI", color: "#7c3aed", icon: Smartphone },
   razorpay: { label: "Razorpay", color: "#163300", icon: CreditCard },
 };
+
+/** Convert ISO timestamp to IST hour 0-23 */
+function istHour(iso: string): number {
+  return new Date(new Date(iso).getTime() + 5.5 * 3600000).getUTCHours();
+}
+/** Convert ISO timestamp to IST day-of-week index 0 (Sun) – 6 (Sat) */
+function istDow(iso: string): number {
+  return new Date(new Date(iso).getTime() + 5.5 * 3600000).getUTCDay();
+}
+const DOW_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 export default function ReportsPage(): React.ReactElement {
   const { toast } = useToast();
@@ -350,6 +364,100 @@ export default function ReportsPage(): React.ReactElement {
     wsOrd["!cols"] = [{ wch: 12 }, { wch: 14 }, { wch: 12 }, { wch: 20 }, { wch: 8 }, { wch: 8 }, { wch: 14 }, { wch: 14 }, { wch: 10 }, { wch: 12 }, { wch: 12 }];
     XLSX.utils.book_append_sheet(wb, wsOrd, "Order History");
 
+    // ── 8. Hourly Heatmap ────────────────────────────────────────────────────
+    const hourlyHeaders = ["Hour (IST)", "Orders", "Revenue (₹)", "Avg Order Value (₹)", "% of Day Revenue"];
+    const hourlyTotalRev = hourlyData.reduce((s, h) => s + h.revenue, 0);
+    const hourlyRows = hourlyData.map((h) => [
+      h.hour,
+      h.orders,
+      Number(h.revenue.toFixed(2)),
+      h.orders > 0 ? Number((h.revenue / h.orders).toFixed(2)) : 0,
+      hourlyTotalRev > 0 ? Number(((h.revenue / hourlyTotalRev) * 100).toFixed(1)) : 0,
+    ]);
+    const wsHourly = XLSX.utils.aoa_to_sheet([hourlyHeaders, ...hourlyRows]);
+    wsHourly["!cols"] = [{ wch: 13 }, { wch: 10 }, { wch: 14 }, { wch: 20 }, { wch: 18 }];
+    XLSX.utils.book_append_sheet(wb, wsHourly, "Hourly Heatmap");
+
+    // ── 9. Day of Week ───────────────────────────────────────────────────────
+    const dowHeaders = ["Day", "Orders", "Revenue (₹)", "Avg Order Value (₹)"];
+    const dowRows = dowData.map((d) => [
+      d.day,
+      d.orders,
+      Number(d.revenue.toFixed(2)),
+      d.orders > 0 ? Number((d.revenue / d.orders).toFixed(2)) : 0,
+    ]);
+    const wsDow = XLSX.utils.aoa_to_sheet([dowHeaders, ...dowRows]);
+    wsDow["!cols"] = [{ wch: 12 }, { wch: 10 }, { wch: 14 }, { wch: 20 }];
+    XLSX.utils.book_append_sheet(wb, wsDow, "Day of Week");
+
+    // ── 10. Customer Loyalty ─────────────────────────────────────────────────
+    const custHeaders = ["Customer", "Email", "Orders", "Total Spent (₹)", "Avg Order (₹)", "First Visit", "Last Visit", "New vs Repeat"];
+    const custRows = customerInsights.map((c) => [
+      c.name,
+      c.email,
+      c.orders,
+      Number(c.revenue.toFixed(2)),
+      Number((c.revenue / c.orders).toFixed(2)),
+      new Date(c.firstOrder).toLocaleDateString("en-IN", { timeZone: "Asia/Kolkata", day: "2-digit", month: "short", year: "numeric" }),
+      new Date(c.lastOrder).toLocaleDateString("en-IN", { timeZone: "Asia/Kolkata", day: "2-digit", month: "short", year: "numeric" }),
+      c.orders > 1 ? "Repeat" : "New",
+    ]);
+    const wsCust = XLSX.utils.aoa_to_sheet([custHeaders, ...custRows]);
+    wsCust["!cols"] = [{ wch: 22 }, { wch: 28 }, { wch: 9 }, { wch: 16 }, { wch: 14 }, { wch: 14 }, { wch: 14 }, { wch: 14 }];
+    XLSX.utils.book_append_sheet(wb, wsCust, "Customer Loyalty");
+
+    // ── 11. Table Utilization ────────────────────────────────────────────────
+    const tblHeaders = ["Table", "Orders", "Revenue (₹)", "Avg Order (₹)", "Revenue Share (%)"];
+    const tblRows = tableInsights.map((t) => [
+      `Table ${t.table}`,
+      t.orders,
+      Number(t.revenue.toFixed(2)),
+      t.orders > 0 ? Number((t.revenue / t.orders).toFixed(2)) : 0,
+      t.share,
+    ]);
+    const wsTbl = XLSX.utils.aoa_to_sheet([tblHeaders, ...tblRows]);
+    wsTbl["!cols"] = [{ wch: 10 }, { wch: 10 }, { wch: 14 }, { wch: 14 }, { wch: 18 }];
+    XLSX.utils.book_append_sheet(wb, wsTbl, "Table Utilization");
+
+    // ── 12. Coupon Impact ────────────────────────────────────────────────────
+    const cpnHeaders = ["Coupon Code", "Discount Type", "Discount Value", "Times Used", "Total Discount Given (₹)", "Avg Discount per Use (₹)"];
+    const cpnRows = couponInsights.map((c) => [
+      c.code,
+      c.type,
+      c.type === "percentage" ? `${c.value}%` : `₹${c.value}`,
+      c.timesUsed,
+      Number(c.totalDiscount.toFixed(2)),
+      Number((c.totalDiscount / c.timesUsed).toFixed(2)),
+    ]);
+    const wsCpn = XLSX.utils.aoa_to_sheet([cpnHeaders, ...cpnRows]);
+    wsCpn["!cols"] = [{ wch: 16 }, { wch: 15 }, { wch: 15 }, { wch: 12 }, { wch: 24 }, { wch: 24 }];
+    XLSX.utils.book_append_sheet(wb, wsCpn, "Coupon Impact");
+
+    // ── 13. Line Item Detail ─────────────────────────────────────────────────
+    const lineHeaders = ["Order #", "Date", "Customer", "Table", "Product", "Qty", "Unit Price (₹)", "Line Total (₹)", "Coupon", "Employee"];
+    const lineRows: (string | number)[][] = [];
+    history.forEach((o) => {
+      const dt = new Date(o.created_at);
+      const dateStr = dt.toLocaleDateString("en-IN", { timeZone: "Asia/Kolkata", day: "2-digit", month: "short", year: "numeric" });
+      o.items.forEach((it) => {
+        lineRows.push([
+          o.order_number,
+          dateStr,
+          o.customer?.name ?? "Walk-in",
+          o.table?.table_number ?? "—",
+          it.product_name,
+          it.quantity,
+          Number(Number(it.unit_price).toFixed(2)),
+          Number(Number(it.line_total).toFixed(2)),
+          o.coupon?.code ?? "",
+          o.employee?.name ?? "",
+        ]);
+      });
+    });
+    const wsLine = XLSX.utils.aoa_to_sheet([lineHeaders, ...lineRows]);
+    wsLine["!cols"] = [{ wch: 12 }, { wch: 14 }, { wch: 20 }, { wch: 8 }, { wch: 28 }, { wch: 6 }, { wch: 15 }, { wch: 15 }, { wch: 14 }, { wch: 18 }];
+    XLSX.utils.book_append_sheet(wb, wsLine, "Line Item Detail");
+
     // ── Download ─────────────────────────────────────────────────────────────
     XLSX.writeFile(wb, `NexaBrew_Report_${range.from}_to_${range.to}.xlsx`);
   }
@@ -377,6 +485,94 @@ export default function ReportsPage(): React.ReactElement {
       return d >= range.from && d <= range.to;
     })
     .sort((a, b) => b.created_at.localeCompare(a.created_at));
+
+  // ── Advanced analytics (all derived from `history`) ───────────────────────
+
+  const hourlyData = useMemo(() => {
+    const map = new Map<number, { orders: number; revenue: number }>();
+    for (let h = 0; h < 24; h++) map.set(h, { orders: 0, revenue: 0 });
+    history.forEach((o) => {
+      const h = istHour(o.created_at);
+      const e = map.get(h)!;
+      e.orders += 1;
+      e.revenue = Math.round((e.revenue + Number(o.total_amount)) * 100) / 100;
+    });
+    return Array.from(map, ([hour, v]) => ({
+      hour: `${String(hour).padStart(2, "0")}:00`,
+      ...v,
+    }));
+  }, [history]);
+
+  const dowData = useMemo(() => {
+    const map = new Map<number, { orders: number; revenue: number }>();
+    for (let d = 0; d < 7; d++) map.set(d, { orders: 0, revenue: 0 });
+    history.forEach((o) => {
+      const d = istDow(o.created_at);
+      const e = map.get(d)!;
+      e.orders += 1;
+      e.revenue = Math.round((e.revenue + Number(o.total_amount)) * 100) / 100;
+    });
+    return Array.from(map, ([dow, v]) => ({ day: DOW_LABELS[dow], ...v }));
+  }, [history]);
+
+  const customerInsights = useMemo(() => {
+    const map = new Map<string, { name: string; email: string; orders: number; revenue: number; firstOrder: string; lastOrder: string }>();
+    history.forEach((o) => {
+      if (!o.customer) return;
+      const key = o.customer.id;
+      const e = map.get(key) ?? {
+        name: o.customer.name,
+        email: o.customer.email ?? "",
+        orders: 0,
+        revenue: 0,
+        firstOrder: o.created_at,
+        lastOrder: o.created_at,
+      };
+      e.orders += 1;
+      e.revenue = Math.round((e.revenue + Number(o.total_amount)) * 100) / 100;
+      if (o.created_at < e.firstOrder) e.firstOrder = o.created_at;
+      if (o.created_at > e.lastOrder) e.lastOrder = o.created_at;
+      map.set(key, e);
+    });
+    return Array.from(map.values()).sort((a, b) => b.revenue - a.revenue);
+  }, [history]);
+
+  const tableInsights = useMemo(() => {
+    const map = new Map<number, { orders: number; revenue: number }>();
+    history.forEach((o) => {
+      if (!o.table) return;
+      const t = o.table.table_number;
+      const e = map.get(t) ?? { orders: 0, revenue: 0 };
+      e.orders += 1;
+      e.revenue = Math.round((e.revenue + Number(o.total_amount)) * 100) / 100;
+      map.set(t, e);
+    });
+    const totalTableRev = Array.from(map.values()).reduce((s, v) => s + v.revenue, 0);
+    return Array.from(map, ([table, v]) => ({
+      table,
+      ...v,
+      share: totalTableRev > 0 ? Math.round((v.revenue / totalTableRev) * 1000) / 10 : 0,
+    })).sort((a, b) => b.revenue - a.revenue);
+  }, [history]);
+
+  const couponInsights = useMemo(() => {
+    const map = new Map<string, { code: string; type: string; value: number; timesUsed: number; totalDiscount: number }>();
+    history.forEach((o) => {
+      if (!o.coupon || !Number(o.discount_amount)) return;
+      const key = o.coupon.id;
+      const e = map.get(key) ?? {
+        code: o.coupon.code,
+        type: o.coupon.discount_type ?? "",
+        value: Number(o.coupon.discount_value ?? 0),
+        timesUsed: 0,
+        totalDiscount: 0,
+      };
+      e.timesUsed += 1;
+      e.totalDiscount = Math.round((e.totalDiscount + Number(o.discount_amount)) * 100) / 100;
+      map.set(key, e);
+    });
+    return Array.from(map.values()).sort((a, b) => b.totalDiscount - a.totalDiscount);
+  }, [history]);
 
   const maxProductRev = Math.max(...topProducts.map((p) => p.revenue), 1);
   const maxEmpRev = Math.max(...employees.map((e) => e.total_revenue), 1);
@@ -828,6 +1024,202 @@ export default function ReportsPage(): React.ReactElement {
             )}
           </CardContent>
         </Card>
+
+        {/* ── Peak Hours + Day of Week ──────────────────────────────────────── */}
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="flex items-center gap-2 text-sm">
+                <Clock className="h-4 w-4 text-wise-mute" />
+                Peak Hours (IST)
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {loading ? (
+                <div className="h-48 animate-pulse rounded-lg bg-wise-canvas-soft" />
+              ) : (
+                <ResponsiveContainer width="100%" height={192}>
+                  <ComposedChart data={hourlyData} margin={{ top: 4, right: 4, bottom: 0, left: -16 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#d7ddd2" vertical={false} />
+                    <XAxis dataKey="hour" tick={{ fontSize: 9 }} interval={3} tickLine={false} />
+                    <YAxis tick={{ fontSize: 10 }} tickLine={false} axisLine={false} />
+                    <Tooltip
+                      content={({ active, payload }) => {
+                        if (!active || !payload?.length) return null;
+                        const d = payload[0].payload as { hour: string; orders: number; revenue: number };
+                        return (
+                          <div className="rounded-lg border border-wise-border bg-white px-3 py-2 text-xs shadow-lg">
+                            <p className="font-semibold text-wise-body">{d.hour}</p>
+                            <p className="text-wise-ink-deep">{d.orders} orders · {formatCurrency(d.revenue)}</p>
+                          </div>
+                        );
+                      }}
+                    />
+                    <Bar dataKey="orders" fill="#9fe870" radius={[3, 3, 0, 0]} />
+                  </ComposedChart>
+                </ResponsiveContainer>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="flex items-center gap-2 text-sm">
+                <BarChart3 className="h-4 w-4 text-wise-mute" />
+                Day of Week
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {loading ? (
+                <div className="h-48 animate-pulse rounded-lg bg-wise-canvas-soft" />
+              ) : (
+                <ResponsiveContainer width="100%" height={192}>
+                  <ComposedChart data={dowData} margin={{ top: 4, right: 4, bottom: 0, left: -16 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#d7ddd2" vertical={false} />
+                    <XAxis dataKey="day" tick={{ fontSize: 11 }} tickLine={false} />
+                    <YAxis tick={{ fontSize: 10 }} tickLine={false} axisLine={false} tickFormatter={(v: number) => `₹${(v / 1000).toFixed(0)}k`} />
+                    <Tooltip
+                      content={({ active, payload }) => {
+                        if (!active || !payload?.length) return null;
+                        const d = payload[0].payload as { day: string; orders: number; revenue: number };
+                        return (
+                          <div className="rounded-lg border border-wise-border bg-white px-3 py-2 text-xs shadow-lg">
+                            <p className="font-semibold text-wise-body">{d.day}</p>
+                            <p className="text-wise-ink-deep">{formatCurrency(d.revenue)} · {d.orders} orders</p>
+                          </div>
+                        );
+                      }}
+                    />
+                    <Bar dataKey="revenue" fill="#163300" radius={[3, 3, 0, 0]} />
+                  </ComposedChart>
+                </ResponsiveContainer>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* ── Customer Insights ─────────────────────────────────────────────── */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-sm">
+              <Users className="h-4 w-4 text-wise-mute" />
+              Customer Insights
+              {customerInsights.length > 0 && (
+                <span className="ml-auto text-xs font-normal text-wise-mute">
+                  {customerInsights.filter((c) => c.orders > 1).length} repeat · {customerInsights.filter((c) => c.orders === 1).length} new
+                </span>
+              )}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="pt-0">
+            {loading ? (
+              <div className="space-y-2">{Array.from({ length: 5 }).map((_, i) => <div key={i} className="h-10 animate-pulse rounded bg-wise-canvas-soft" />)}</div>
+            ) : customerInsights.length === 0 ? (
+              <p className="py-8 text-center text-sm text-wise-mute">No customer orders in this period</p>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-wise-border">
+                      {["Customer", "Email", "Orders", "Total Spent", "Avg Order", "Type", "Last Visit"].map((h) => (
+                        <th key={h} className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-wise-mute">{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {customerInsights.slice(0, 12).map((c, i) => (
+                      <tr key={i} className="border-b border-wise-border last:border-0 hover:bg-wise-canvas-soft">
+                        <td className="px-3 py-2.5 font-medium text-wise-ink">{c.name}</td>
+                        <td className="px-3 py-2.5 text-wise-mute">{c.email || "—"}</td>
+                        <td className="px-3 py-2.5 text-center text-wise-body">{c.orders}</td>
+                        <td className="px-3 py-2.5 text-right font-semibold text-wise-ink">{formatCurrency(c.revenue)}</td>
+                        <td className="px-3 py-2.5 text-right text-wise-body">{formatCurrency(c.revenue / c.orders)}</td>
+                        <td className="px-3 py-2.5">
+                          <span className={`inline-flex rounded-wisePill px-2 py-0.5 text-xs font-semibold ${ c.orders > 1 ? "bg-wise-primary-pale text-wise-positive-deep" : "bg-wise-canvas-soft text-wise-mute" }`}>
+                            {c.orders > 1 ? "Repeat" : "New"}
+                          </span>
+                        </td>
+                        <td className="px-3 py-2.5 text-wise-mute">{fmtTime(c.lastOrder)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* ── Table Utilization + Coupon Impact ─────────────────────────────── */}
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-sm">
+                <MapPin className="h-4 w-4 text-wise-mute" />
+                Table Utilization
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="pt-0">
+              {tableInsights.length === 0 ? (
+                <p className="py-8 text-center text-sm text-wise-mute">No table orders in this period</p>
+              ) : (
+                <div className="space-y-2">
+                  {tableInsights.map((t) => {
+                    const bar = Math.max(4, t.share);
+                    return (
+                      <div key={t.table}>
+                        <div className="mb-1 flex items-center justify-between text-xs">
+                          <span className="font-medium text-wise-ink">Table {t.table}</span>
+                          <span className="text-wise-mute">{t.orders} orders · {formatCurrency(t.revenue)}</span>
+                        </div>
+                        <div className="h-2 overflow-hidden rounded-full bg-wise-canvas-soft">
+                          <div className="h-full rounded-full bg-wise-primary" style={{ width: `${bar}%` }} />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-sm">
+                <Tag className="h-4 w-4 text-wise-mute" />
+                Coupon Impact
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="pt-0">
+              {couponInsights.length === 0 ? (
+                <p className="py-8 text-center text-sm text-wise-mute">No coupons used in this period</p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-wise-border">
+                        {["Code", "Type", "Uses", "Total Discount", "Avg/Use"].map((h) => (
+                          <th key={h} className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-wise-mute">{h}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {couponInsights.map((c, i) => (
+                        <tr key={i} className="border-b border-wise-border last:border-0 hover:bg-wise-canvas-soft">
+                          <td className="px-3 py-2.5 font-mono font-semibold text-wise-ink">{c.code}</td>
+                          <td className="px-3 py-2.5 text-wise-mute capitalize">{c.type}</td>
+                          <td className="px-3 py-2.5 text-center text-wise-body">{c.timesUsed}</td>
+                          <td className="px-3 py-2.5 font-semibold text-wise-negative">− {formatCurrency(c.totalDiscount)}</td>
+                          <td className="px-3 py-2.5 text-wise-body">{formatCurrency(c.totalDiscount / c.timesUsed)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+
       </div>
     </div>
   );
