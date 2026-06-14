@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, memo } from "react";
 import { useRouter } from "next/navigation";
 import {
   CheckCircle2,
@@ -77,8 +77,8 @@ type Stage = (typeof STAGES)[number];
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-function elapsed(iso: string): string {
-  const diff = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
+function elapsed(iso: string, now: number): string {
+  const diff = Math.floor((now - new Date(iso).getTime()) / 1000);
   if (diff < 60) return `${diff}s ago`;
   const m = Math.floor(diff / 60);
   return m < 60 ? `${m}m ago` : `${Math.floor(m / 60)}h ${m % 60}m ago`;
@@ -115,19 +115,21 @@ function TicketSkeleton(): React.ReactElement {
 
 // ─── Ticket Card ──────────────────────────────────────────────────────────────
 
-function TicketCard({
+const TicketCard = memo(function TicketCard({
   ticket,
   stage,
+  now,
   onAdvance,
   onCompleteItem,
 }: {
   ticket: KitchenTicketWithItems;
   stage: Stage;
-  onAdvance: () => void;
-  onCompleteItem: (itemId: string) => void;
+  now: number;
+  onAdvance: (ticketId: string, status: string) => void;
+  onCompleteItem: (ticketId: string, itemId: string) => void;
 }): React.ReactElement {
   const canAdvance = ticket.status !== "completed";
-  const mins = Math.floor((Date.now() - new Date(ticket.sent_at).getTime()) / 60000);
+  const mins = Math.floor((now - new Date(ticket.sent_at).getTime()) / 60000);
   const isUrgent = mins >= 15 && canAdvance;
 
   return (
@@ -137,7 +139,7 @@ function TicketCard({
         isUrgent && "border-l-wise-negative ring-1 ring-wise-negative/30",
         canAdvance && "cursor-pointer transition-all hover:-translate-y-0.5 hover:shadow-wiseModal"
       )}
-      onClick={() => canAdvance && onAdvance()}
+      onClick={() => canAdvance && onAdvance(ticket.id, ticket.status)}
     >
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between gap-3">
@@ -153,7 +155,7 @@ function TicketCard({
               isUrgent ? "font-semibold text-wise-negative" : "text-wise-mute"
             )}>
               <Clock className="h-3 w-3 shrink-0" />
-              {elapsed(ticket.sent_at)}
+              {elapsed(ticket.sent_at, now)}
               {isUrgent && " · Urgent!"}
             </p>
           </div>
@@ -170,7 +172,7 @@ function TicketCard({
                     ? "border-wise-primary bg-wise-primary text-wise-ink hover:bg-wise-primary-active"
                     : "border-amber-400 bg-amber-50 text-amber-700 hover:bg-amber-100"
               )}
-              onClick={(e) => { e.stopPropagation(); onAdvance(); }}
+              onClick={(e) => { e.stopPropagation(); onAdvance(ticket.id, ticket.status); }}
             >
               Advance →
             </Button>
@@ -190,7 +192,7 @@ function TicketCard({
               key={item.id}
               onClick={(e) => {
                 e.stopPropagation();
-                if (!item.is_completed) onCompleteItem(item.id);
+                if (!item.is_completed) onCompleteItem(ticket.id, item.id);
               }}
               className={cn(
                 "flex cursor-pointer select-none items-center justify-between rounded-wise px-3 py-2.5 text-sm font-medium transition-colors",
@@ -207,7 +209,13 @@ function TicketCard({
       </CardContent>
     </Card>
   );
-}
+}, (prev, next) => {
+  return (
+    prev.stage.key === next.stage.key &&
+    prev.now === next.now &&
+    JSON.stringify(prev.ticket) === JSON.stringify(next.ticket)
+  );
+});
 
 // ─── Column ───────────────────────────────────────────────────────────────────
 
@@ -215,12 +223,14 @@ function KdsColumn({
   stage,
   tickets,
   loading,
+  now,
   onAdvance,
   onCompleteItem,
 }: {
   stage: Stage;
   tickets: KitchenTicketWithItems[];
   loading: boolean;
+  now: number;
   onAdvance: (id: string, status: string) => void;
   onCompleteItem: (ticketId: string, itemId: string) => void;
 }): React.ReactElement {
@@ -260,8 +270,9 @@ function KdsColumn({
               key={t.id}
               ticket={t}
               stage={stage}
-              onAdvance={() => onAdvance(t.id, t.status)}
-              onCompleteItem={(itemId) => onCompleteItem(t.id, itemId)}
+              now={now}
+              onAdvance={onAdvance}
+              onCompleteItem={onCompleteItem}
             />
           ))
         )}
@@ -275,15 +286,19 @@ function KdsColumn({
 export default function KdsPage(): React.ReactElement {
   const router = useRouter();
   const { data: tickets, loading } = useRealtimeKitchenTickets();
-  const [time, setTime] = useState("");
+  const [timeStr, setTimeStr] = useState("");
+  const [now, setNow] = useState(() => Date.now());
   const [search, setSearch] = useState("");
   const [categoryId, setCategoryId] = useState("all");
   const [categories, setCategories] = useState<{ id: string; name: string }[]>([]);
   const [productMeta, setProductMeta] = useState<Map<string, ProductMeta>>(new Map());
 
   useEffect(() => {
-    setTime(clockNow());
-    const id = setInterval(() => setTime(clockNow()), 30_000);
+    setTimeStr(clockNow());
+    const id = setInterval(() => {
+      setTimeStr(clockNow());
+      setNow(Date.now());
+    }, 30_000);
     return () => clearInterval(id);
   }, []);
 
@@ -327,22 +342,22 @@ export default function KdsPage(): React.ReactElement {
     completed: visible.filter((t) => {
       if (t.status !== "completed") return false;
       if (!t.completed_at) return true;
-      return Date.now() - new Date(t.completed_at).getTime() < 5 * 60 * 1000;
+      return now - new Date(t.completed_at).getTime() < 5 * 60 * 1000;
     }),
   };
 
-  async function handleAdvance(ticketId: string, currentStatus: string): Promise<void> {
+  const handleAdvance = useCallback(async (ticketId: string, currentStatus: string): Promise<void> => {
     const next = currentStatus === "to_cook" ? "preparing" : "completed";
     await fetch(`/api/kitchen/tickets/${ticketId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ status: next }),
     });
-  }
+  }, []);
 
-  async function handleCompleteItem(ticketId: string, itemId: string): Promise<void> {
+  const handleCompleteItem = useCallback(async (ticketId: string, itemId: string): Promise<void> => {
     await fetch(`/api/kitchen/tickets/${ticketId}/items/${itemId}`, { method: "PATCH" });
-  }
+  }, []);
 
   async function handleLogout(): Promise<void> {
     await createBrowserClient().auth.signOut();
@@ -388,7 +403,7 @@ export default function KdsPage(): React.ReactElement {
 
           <div className="flex items-center gap-1.5 rounded-wise border border-wise-border bg-wise-canvas-soft px-3 py-1.5">
             <Clock className="h-3.5 w-3.5 text-wise-mute" />
-            <span className="font-mono text-xs font-semibold text-wise-ink">{time}</span>
+            <span className="font-mono text-xs font-semibold text-wise-ink">{timeStr}</span>
           </div>
 
           <Button
@@ -412,6 +427,7 @@ export default function KdsPage(): React.ReactElement {
               stage={stage}
               tickets={byStatus[stage.key]}
               loading={loading}
+              now={now}
               onAdvance={handleAdvance}
               onCompleteItem={handleCompleteItem}
             />
