@@ -328,7 +328,8 @@ export default function MenuPage(): React.ReactElement {
                       key={p.id}
                       className="group overflow-hidden border-wise-border transition-all duration-200 hover:-translate-y-1 hover:shadow-wiseCard"
                     >
-                      <button onClick={() => addToCart(p)} className="block w-full text-left">
+                      {/* Tap the image to add one */}
+                      <button type="button" onClick={() => addToCart(p)} className="block w-full text-left" aria-label={`Add ${p.name}`}>
                         <div
                           className="relative flex h-24 items-end justify-end overflow-hidden p-2"
                           style={{ background: `linear-gradient(135deg, ${color}, ${color}cc)` }}
@@ -359,15 +360,37 @@ export default function MenuPage(): React.ReactElement {
                           )}
                           <UtensilsCrossed className="h-7 w-7 text-white/30 transition-transform duration-300 group-hover:scale-110" />
                         </div>
-                        <div className="p-3.5">
-                          <p className="font-semibold leading-snug text-wise-ink">{p.name}</p>
-                          {p.category && <p className="text-xs text-wise-mute">{p.category.name}</p>}
-                          <span className="mt-2.5 inline-flex items-center gap-1.5 rounded-wisePill bg-wise-primary-pale px-2.5 py-0.5 text-sm font-bold text-wise-ink-deep">
-                            {formatCurrency(Number(p.price))}
-                            <Plus className="h-3.5 w-3.5" />
-                          </span>
-                        </div>
                       </button>
+                      <div className="p-3.5">
+                        <p className="font-semibold leading-snug text-wise-ink">{p.name}</p>
+                        {p.category && <p className="text-xs text-wise-mute">{p.category.name}</p>}
+                        <div className="mt-2.5 flex items-center justify-between gap-2">
+                          <span className="rounded-wisePill bg-wise-primary-pale px-2.5 py-0.5 text-sm font-bold text-wise-ink-deep">
+                            {formatCurrency(Number(p.price))}
+                          </span>
+                          {/* Quantity stepper — both − and + */}
+                          <div className="flex items-center gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() => setQty(p.id, qty - 1)}
+                              disabled={qty === 0}
+                              aria-label={`Remove one ${p.name}`}
+                              className="flex h-7 w-7 items-center justify-center rounded-full border border-wise-border text-wise-body transition-colors hover:bg-wise-canvas-soft disabled:cursor-not-allowed disabled:opacity-40"
+                            >
+                              <Minus className="h-3.5 w-3.5" />
+                            </button>
+                            <span className="w-5 text-center text-sm font-semibold text-wise-ink">{qty}</span>
+                            <button
+                              type="button"
+                              onClick={() => addToCart(p)}
+                              aria-label={`Add one ${p.name}`}
+                              className="flex h-7 w-7 items-center justify-center rounded-full bg-wise-primary text-wise-ink transition-colors hover:bg-wise-primary-active"
+                            >
+                              <Plus className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
                     </Card>
                   );
                 })}
